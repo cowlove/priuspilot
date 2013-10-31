@@ -1,0 +1,8 @@
+#!/bin/sh
+
+INDEX=`pactl list short sinks | cut -f 1`
+
+
+pactl set-sink-volume $INDEX 65535
+pactl set-sink-mute $INDEX 0 
+

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sudo mount -o remount,ro /ro
+

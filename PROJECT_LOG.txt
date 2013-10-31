@@ -1,0 +1,9 @@
+
+10/22/2012
+
+FIXED - Investigated why HP3110 webcam seemed not to work on the latop.  Upgrading to kernel 3.6.3-030603-generic seemed to fix it fine. 
+
+Cleaned up the jar archive location, moved it to ~/pplib and ~/mbrola, changed scripts accordinly
+
+Need to document grub2 install problems with the imbedded pp machine- there was some reason why
+update-grub did not work, but I can't quite remember what it was now. 

@@ -1,0 +1,481 @@
+import java.awt.Color;
+
+import java.util.zip.GZIPInputStream;
+
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.Writer;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.Calendar;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
+import java.util.Date;
+
+
+import javax.imageio.ImageIO;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+
+import math.RunningAverage;
+import math.RunningLeastSquares;
+/*
+import org.gstreamer.Bus;
+import org.gstreamer.Element;
+import org.gstreamer.Gst;
+import org.gstreamer.GstObject;
+import org.gstreamer.Pipeline;
+import org.gstreamer.State;
+
+import com.centralnexus.input.*;
+*/
+import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+
+//import com.jme3.input.*;
+
+// mplayer -tv device=/dev/video0:driver=v4l2:height=240:width=320  -vo jpeg tv://
+// java -classpath /home/jim/workspace/WebCamCap/bin:/home/jim/Downloads/jna-3.2.4.jar:/home/jim/Downloads/gstreamer-java-1.3.jar:/home/jim/Downloads/swt.jar Silly
+//  java -classpath /home/jim/NetBeansProjects/WebCamCap/build/classes/:/home/jim/Downloads/jna-3.2.4.jar:/home/jim/Downloads/gstreamer-java-1.3.jar:/home/jim/Downloads/swt.jar Silly
+// 
+// todo- args
+// -latencytest <filename,filename...>
+
+
+/*
+class VidListener implements org.gstreamer.elements.RGBDataSink.Listener {
+
+    final FrameGrabberThread ft;
+    boolean dropFrames;
+   
+    public VidListener(boolean dropFrames, FrameGrabberThread ft) {
+        this.ft = ft;
+        this.dropFrames = dropFrames;
+    }
+
+    public void rgbFrame(int w, int h, IntBuffer rgb) {
+    	
+    	//ft.post(dropFrames, Calendar.getInstance().getTimeInMillis(), rgb);
+    }
+}
+*/
+class TemplateArgs {
+	public int x1 = 0, y1, x2, y2;
+	boolean isValid() { return x1 > 0; } 
+	void set(String s) {
+        String [] temp = s.split(",");
+        x1 = Integer.parseInt(temp[0]);
+        y1 = Integer.parseInt(temp[1]);
+        x2 = Integer.parseInt(temp[2]);
+        y1 = Integer.parseInt(temp[3]);
+	}
+}
+
+public class Silly {
+    /**
+     * @param args
+     * @throws IOException
+     * @throws IOException
+     */
+	static ByteBuffer rgb32toBgr24(ByteBuffer bb) {
+		int picsize = bb.capacity();
+		ByteBuffer newbb = ByteBuffer.allocate(picsize * 3 / 4);
+		int offset = 0;
+		for(int i = 0; i < bb.capacity(); i += 4) { 
+			byte r = bb.get(i + 1);
+			byte g = bb.get(i + 2);
+			byte b = bb.get(i + 3);
+			newbb.put(offset++, b);
+			newbb.put(offset++, g);
+			newbb.put(offset++, r);
+		}
+		newbb.rewind();
+		//System.out.println("Shrinkin rgb32 " + bb.capacity() + " bytes to bgr24 " + (offset) + " bytes");
+		return newbb;
+	}
+	static long now() { 
+		return Calendar.getInstance().getTimeInMillis();
+	}
+	
+	public static int debugFlags = 0;
+	public static final int DEBUG_FPS = 1;
+	public static final int DEBUG_CONT_TF = 4;
+	public static final int DEBUG_SHOW_TF = 8;
+	public static final int DEBUG_SERIAL = 16;
+	public static final int DEBUG_LINES = 32;
+	public static final int DEBUG_MARKUP = 64;
+	public static final int DEBUG_COPY_IMAGE = 128; 
+
+	static FrameCaptureJNI fc;
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        //args = Gst.init("VideoPlayer", args);
+
+        String filename = "/dev/video3", capFile = "";
+        int width = 640, height = 360;
+        int windx = 0, windy = 0, windw = width, windh = height;
+        int framerate = 30;
+        int rescale = 1;
+        String outputFile = null, logspec = null, logFile = null, chartFile = null, rawOutputFile = null;
+        boolean dropFrames = true, noDisplay = false, repeat = false, gstreamer = false, rgb32 = false;
+        int skipFrames = 0, debug = 0, capSize = 0, capCount = 0;
+        double colorThreshold = 0.35;
+        int frameCount = 0, pauseFrame = 0, exitFrame = 0, displayratio = 1;
+        int displayMode = 15;
+        int volume = 10;
+        int frameInterval = 50; // minimum interval between captured frames
+        boolean jni = false;
+        boolean flipVideo = false;  // warning- not flipping is currently broken, see FrameCaptureJNI.cpp, flip loops is 
+        // same as copyout loop 
+        HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
+        HashMap<Object,Point> clickMap = new HashMap<Object,Point>();
+        
+        int targx = 0, targy = 0, targh = 0, targw = 0;
+        
+        byte b = (byte)200;
+        System.out.printf("(byte)255 = %d\n", (int)b & 0xff);
+        
+        for(int i = 0; i < args.length; i++) {
+            String a = args[i];
+            if (a.compareTo("-nodrop") == 0) dropFrames = false;
+            else if (a.compareTo("-displayratio") == 0) displayratio = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-debug") == 0) debugFlags = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-volume") == 0) volume = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-repeat") == 0) repeat = true;
+            else if (a.compareTo("-rgb32") == 0) rgb32 = true;
+            else if (a.compareTo("-jni") == 0) jni = true;
+            else if (a.compareTo("-fps") == 0) framerate = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-rescale") == 0) rescale = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-skip") == 0) skipFrames = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-frames") == 0) frameCount = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-pause") == 0) pauseFrame = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-exit") == 0) exitFrame = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-displaymode") == 0) displayMode = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-capfile") == 0) capFile = args[++i];
+            else if (a.compareTo("-capcount") == 0) capCount = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-capsize") == 0) capSize = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-frameinterval") == 0) frameInterval = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-gstreamer") == 0) gstreamer = true;
+            else if (a.compareTo("-flip") == 0) flipVideo = true;
+                                       
+            else if (a.compareTo("-ct") == 0) colorThreshold = Double.parseDouble(args[++i]);
+            else if (a.compareTo("-size") == 0) {
+                String [] temp = args[++i].split("x");
+                windw = width = Integer.parseInt(temp[0]);
+                if (temp.length == 2)
+                    height = Integer.parseInt(temp[1]);
+                else
+                    height = width * 3 / 4;
+                windh = height;
+                windx = windy = 0;
+            }
+            else if (a.compareTo("-target") == 0) {
+                String [] temp = args[++i].split(",");
+                if (temp.length == 4) { 
+                    targx = Integer.parseInt(temp[0]);
+                    targy = Integer.parseInt(temp[1]);
+                    targw = Integer.parseInt(temp[2]);
+                    targh = Integer.parseInt(temp[3]);
+                }
+            }
+            else if (a.compareTo("-key") == 0) {
+            	// Support -key arguments in the format 1,65 1,A 1,a or 1,'a'
+                String [] temp = args[++i].split(",");
+                if (temp.length == 2) { 
+                    int frame = Integer.parseInt(temp[0]);
+                    int key = 0;
+                    Pattern p = Pattern.compile("(\\d+)");
+                    Matcher m = p.matcher(temp[1]);
+                    if (m.find()) {
+                      key = Integer.parseInt(m.group());
+                    }   
+                    p = Pattern.compile("'[^']'");
+                    m = p.matcher(temp[1]);                    
+                    if (key == 0 && m.find()) {
+                       key = m.group().charAt(1);
+                       key = Character.toUpperCase(key);
+                    } 
+                    if (key == 0 && temp[1].length() == 1) {
+                       key = temp[1].charAt(0);
+                       key = Character.toUpperCase(key);
+                    } 
+                    if (key == 0 && temp[1].contentEquals("up"))
+                    	key = 38;
+                    if (key == 0 && temp[1].contentEquals("down"))
+                    	key = 40;
+                    
+                    keypressMap.put(new Integer(frame), new Integer(key));
+                }
+            }
+            else if (a.compareTo("-click") == 0) {
+                String [] temp = args[++i].split(",");
+                if (temp.length == 3) { 
+                    int frame = Integer.parseInt(temp[0]);
+                    int x = Integer.parseInt(temp[1]);
+                    int y = Integer.parseInt(temp[2]);
+                    keypressMap.put(new Integer(frame), new Point(x,y));
+                }
+            }
+            else if (a.compareTo("-window") == 0) {
+                String [] temp = args[++i].split(",");
+                if (temp.length == 4) { 
+                    windx = Integer.parseInt(temp[0]);
+                    windy = Integer.parseInt(temp[1]);
+                    windw = Integer.parseInt(temp[2]);
+                    windh = Integer.parseInt(temp[3]);
+                }
+            }
+            else if (a.compareTo("-template") == 0) {
+            }
+            else if (a.compareTo("-log") == 0) logFile = args[++i];
+            else if (a.compareTo("-out") == 0) outputFile = args[++i];
+            else if (a.compareTo("-chart") == 0) chartFile = args[++i];
+            else if (a.compareTo("-raw") == 0) rawOutputFile = args[++i];
+            else if (a.compareTo("-logspec") == 0) logspec = args[++i];
+            else if (a.startsWith("-"))	usage();
+            else filename = a;
+        }
+
+        /*
+        ImageDisplay id = new ImageDisplay(256,256);
+        int [] d = new int[256 * 256];
+        for(int x = 0; x < 256; x++) { 
+        	for (int y = 0; y < 256; y++) { 
+        		d[x + y * 256] = 0xff000000 | x << 16 | y << 8 | (x + y) / 2;
+        	}
+        }
+        id.image.getWritableTile(0, 0).setDataElements(0, 0, 256, 256, d);
+        id.redraw(true);
+        */
+        /*
+        GnuplotWrapper gw = new GnuplotWrapper();
+        int y = 0;
+        while(gw != null) { 
+	        gw.startNew();    
+	        for(int i = 0 ; i < 100; i++) { 
+	        	gw.addXY(i + y, i + y++ * 2);
+	        }
+	        gw.draw();
+        }
+        */
+        
+        
+        final FrameProcessor fp = new FrameProcessor(windw, windh,
+        		outputFile, logFile, rescale, displayratio);
+        fp.colorThresholdPercent = colorThreshold;
+        fp.exitFrame = exitFrame;
+        fp.pauseFrame = pauseFrame;
+        fp.skipFrames = skipFrames;
+        fp.sounds.volume = volume; 
+        fp.tdChartFiles = chartFile;
+        fp.logSpec = logspec;
+        fp.zoom = width / windw;
+        fp.keypresses = keypressMap;
+        fp.clicks = clickMap;        
+        if (displayMode > 0) fp.displayMode = displayMode;
+
+
+        if (targx != 0) { 
+        	fp.tdStartX = targx;
+        	fp.tdStartY = targy;
+        	fp.tdTargetSize = targw;
+        	fp.tdTargetAspect = (double)targh / targw;
+        }
+        
+    	FrameGrabberThread ft = new FrameGrabberThread(fp);
+
+    	if (filename.startsWith("/dev/video")) { 
+    		jni = true;
+    	}
+    		
+    	if (filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".gif"))  { 
+    		// load in still image file, scale it to current size, use it as the image 
+      		try {
+      	  		File in = new File(String.format(filename));
+    			BufferedImage i = ImageIO.read(in);
+    			BufferedImage n = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+    			Graphics2D g = n.createGraphics();
+    			AffineTransform at = AffineTransform.getScaleInstance((double)width / i.getWidth(), 
+    					(double)height / i.getHeight());
+    			g.drawRenderedImage(i, at);
+    			
+    			ByteBuffer bb = ByteBuffer.allocate(width * height * 3);
+     			n.getTile(0, 0).getDataElements(0, 0, width, height, bb.array());
+     			long time = 0;
+     			do { 
+     	 			n.getTile(0, 0).getDataElements(0, 0, width, height, bb.array());
+      				fp.processFrame(time++, new OriginalImage(bb, width, height));
+     			} while(repeat);
+     		} catch(Exception e) { 
+
+      		}
+    	} else if (filename.endsWith(".gz") || !jni) {
+            IntervalTimer intTimer = new IntervalTimer(30);
+        	do {
+        		int picsize = height * width * 3;
+        		if (rgb32) picsize = height * width * 4;
+	        	ByteBuffer timebb = ByteBuffer.allocate(8);
+	        	IntBuffer ib = timebb.asIntBuffer();
+	        	long time;
+	        	FileInputStream fis = new FileInputStream(new File(filename));
+	        	GZIPInputStream gis = null;
+	        	if (filename.endsWith(".gz"))
+	        		gis = new GZIPInputStream(fis);
+	        	ByteBuffer bb = ByteBuffer.allocate(picsize);
+	        	while(fis.available() > 0) {
+		        	//ByteBuffer bb = ByteBuffer.allocate(picsize);
+	        		intTimer.start();
+	        		timebb.rewind();
+	        		ib.rewind();
+	        		bb.rewind();
+	        		if (gis != null) {
+	    				int needed = 8;
+	    				int offset = 0;
+	        			while(needed > 0) { 
+	        				int got = gis.read(timebb.array(), offset, needed);
+	        				//System.out.println("Read " + got + " bytes, needed " + needed);
+	        				needed -= got;
+	        				offset += got;
+	        			}
+	        				
+	        			needed = picsize;
+	        			offset = 0;
+	        			while(needed > 0) { 
+	        				int got = gis.read(bb.array(), offset, needed);
+	        				//System.out.println("Read " + got + " bytes, needed " + needed);
+	        				needed -= got;
+	        				offset += got;
+	        			}
+	        		} else {
+	        			fis.getChannel().read(timebb);
+	        			fis.getChannel().read(bb);
+	        		}
+	        		time = (((long)ib.get()) << 32) + ib.get();
+	        		ByteBuffer finalbb = bb;
+	        		if (rgb32) 
+	        			finalbb = rgb32toBgr24(bb);
+	        		// broken, bb contains t(the first 8-byte timestamp
+	        		//ft.post(false, time, new OriginalImage(finalbb, width)); //TODO need to pass time
+        			//System.out.printf("%dms\n", (int)intTimer.tick());
+	        		fp.processFrame(time, new OriginalImage(finalbb, width, height));
+        			//System.out.printf("%dms\n", (int)intTimer.tick());
+	        	}
+	        	//fp.close();
+        	} while(repeat);
+ 
+        
+        } else {
+        	fc = new FrameCaptureJNI();
+        	fc.configure(filename, width, height, windx, windy, windw, windh, 
+        			flipVideo, capFile, capSize, capCount, frameInterval);
+            int count = 0;
+        	int n;
+        	// BROKEN- when frames are dropped, this thread could read data into the buffer
+        	// currently being used by the FrameProcessor thread.  Probably just allocate/free
+        	// each buffer. 
+           	ByteBuffer [] picBB = new ByteBuffer[4];
+           	
+        //   	if (outputFile != null) 
+        //   		fc.setCaptureFile(outputFile);
+           	
+        	for(n = 0; n < picBB.length; n++) { 
+        		picBB[n] = ByteBuffer.allocateDirect(windw * windh * 3);
+        	}
+           	do { 
+           		long ms = now();
+       			int index = count++ % picBB.length;
+       			ByteBuffer bb = picBB[index];
+       			if (filename.equals("dummy")) {
+       				n = windw * windh;
+       				fp.noProcessing = true;
+       				if (framerate > 0) 
+       					Thread.sleep(1000 / framerate);
+       			} else {
+       				n = fc.grabFrame(bb);
+	       			if (n <= 0) 
+	       				fc.close();
+	       			ms = fc.getFrameTimestamp();
+       			}
+       			// System.out.println("Got " + n + " bytes");
+       			bb.rewind();
+       			//  int iarray[] = ib.array();
+       			//   for(int i = 0; i < width * height; i++) {
+       			//  	iarray[i] = (bb.get() << 0) + (bb.get() << 8) + (bb.get() << 16);
+           			// }
+       			if (n > 0) 
+       				ft.post(dropFrames, ms, new OriginalImage(bb, windw, windh));
+       	 	} while(n > 0 || repeat);
+        }
+       	System.exit(0);
+
+    }
+                	
+        	/*
+        } else {
+        	// Webcam pipeline
+ 	        VidListener vl = new VidListener(dropFrames, ft);
+	        Element rgb = new org.gstreamer.elements.RGBDataSink("RGBDataSink", vl);
+	        Pipeline pipe = null;
+	
+	        String caps = "video/x-raw-yuv,width=" + width + ",height=" + height + ",framerate=" + framerate + "/1";
+	
+	        if (filename.startsWith("/dev/video")) {
+	            pipe = Pipeline.launch("v4l2src device=" + filename + " ! videoscale ! videorate ! " + caps + " ! videoscale name=last");
+	        } else {
+	            pipe = Pipeline.launch("filesrc location=" + filename + " ! decodebin " + " ! videoscale ! videorate ! " + caps + " ! videoscale name=last");
+	        }
+	        pipe.add(rgb);
+	        Element e = pipe.getElementByName("last");
+	        e.link(rgb);
+	
+	        Bus bus = pipe.getBus();
+	        bus.connect(new Bus.ERROR() {
+	
+	            public void errorMessage(GstObject source, int code, String message) {
+	                System.out.println("Error: code=" + code + " message=" + message);
+	            }
+	        });
+	      
+	        bus.connect(new Bus.EOS() {
+	
+	            public void endOfStream(GstObject source) {
+	                System.out.println("Got EOS!");
+					fp.close();
+	                System.exit(0);
+	            }
+	        });
+	
+	        pipe.setState(State.PLAYING);
+	        Gst.main();
+        }*/
+    static void usage() { 		// TODO Auto-generated method stub
+
+        System.out.println("usage: Silly [-out <filename>] [-log <filename>] [-fps n] [-nodrop]");
+        System.out.println("             [-size <h>[x<w>]] [-rescale <n>]  <inputfile>");
+        System.exit(0);
+    }
+	public static boolean debug(int flag) {
+		return (debugFlags & flag) != 0;
+	}
+    
+}

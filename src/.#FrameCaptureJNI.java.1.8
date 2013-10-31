@@ -1,0 +1,17 @@
+import java.nio.ByteBuffer;
+
+public class FrameCaptureJNI {
+	public native void configure(String dev, int resWidth, int resHeight, int windX, int windY, int windWidth, int
+			windHeight, boolean flip, String captureFile, int captureFileSize, int captureFileCount,
+			int minInterval);
+	public native int grabFrame(ByteBuffer ib);
+	public native long getFrameTimestamp(); 
+	public native void close();
+	public native void renameCurrentCaptureFile(String filename);
+	public native void discardFrame(String filename);
+	public native void setCaptureFile(String filename);
+
+	static { System.loadLibrary("FrameCaptureJNI"); 
+		// TODO Auto-generated method stub
+	}
+}

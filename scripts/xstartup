@@ -1,0 +1,17 @@
+#!/bin/bash
+
+xrdb $HOME/.Xresources
+xsetroot -solid grey
+#x-terminal-emulator -geometry 80x24+10+10 -ls -title "$VNCDESKTOP Desktop" &
+#x-window-manager &
+# Fix to make GNOME work
+export XKL_XMODMAP_DISABLE=1
+
+if [ "$DISPLAY" == ":1" ]; then
+	x-terminal-emulator -geometry 120x24+10+150 -e ~jim/workspace/priuspilot/scripts/pploop &
+	x-terminal-emulator &
+	x-window-manager &
+else
+	/etc/X11/Xsession
+fi
+

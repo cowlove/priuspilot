@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Started by pp_restartloop, watched for an SD cart named PPDATA to be 
+# mounted, than moves yuv data files one at a time, newest first, 
+# out to the SD card.
+#
+
+TARGET_DIR=/media/PPDATA/
+SOURCE_DIR=/host/lanedumps/
+
+killall -o 5s `basename $0`
+
+while true; do
+	sleep 1
+	# Pick the one newest *.yuv file that is at least 2 minutes old 
+	FILE=`ls -1tr ${SOURCE_DIR}/*.yuvxx | tail -1 | xargs -I '{}' find '{}' -mmin +1 -print` 2> /dev/null
+
+	if [ -f /$FILE ] &&  [ -d ${TARGET_DIR}/ ]; then
+		echo Moving $FILE ....
+		time -p mv $FILE ${TARGET_DIR}/
+		echo Done. 
+		sync
+	fi
+done
+

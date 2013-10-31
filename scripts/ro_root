@@ -1,0 +1,22 @@
+#!/bin/sh
+# goes in /etc/initraamfs... /hooks
+
+PREREQ=''
+
+prereqs() {
+  echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+  prereqs
+  exit 0
+  ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+manual_add_modules aufs
+manual_add_modules tmpfs
+copy_exec /bin/chmod /bin
+/sbin/sysctl kernel.yama.protected_nonaccess_hardlinks=0
+

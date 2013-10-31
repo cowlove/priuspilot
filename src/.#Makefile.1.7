@@ -1,0 +1,31 @@
+
+CFLAGS=-I /usr/lib/jvm/java-6-openjdk/include/ -O3 -shared 
+
+LIBS= 
+FASTSRC=fast-C-src-2.1
+DEPS = 
+OBJ = FrameCaptureJNI.o v4l2.o
+TARGET=libFrameCaptureJNI.so
+
+all: $(TARGET) 
+%.o: %.c $(DEPS)
+	gcc -c -o $@ $< $(CFLAGS)
+
+%.o: %.cpp $(DEPS)
+	g++ -c -o $@ $< $(CFLAGS)
+
+%.h:  %.java
+	javac $<
+	(javah -jni FrameCaptureJNI)
+	
+$(TARGET): $(OBJ)
+	g++ -shared -o $@ $^ $(CFLAGS) $(LIBS)
+
+
+clean:
+	rm -f *.o  core $(TARGET) *.class math/*.class priuspilot.jar
+
+priuspilot.jar:   
+	javac -d ../bin/ -classpath /home/jim/Downloads/joystick/joystick/Joystick.jar:/home/jim/Downloads/jna-3.2.4.jar:/home/jim/Downloads/gstreamer-java-1.3.jar:/home/jim/Downloads/swt.jar:/home/jim/workspace/priuspilot/bin:/home/jim/Downloads/Jama-1.0.2.jar *.java math/*.java
+	cd ../bin && jar cf $@ -C ../bin *.class */*.class
+	

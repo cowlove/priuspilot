@@ -1,0 +1,11 @@
+#!/bin/sh
+
+rw
+cd /ro/home/jim/workspace/priuspilot
+cvs -d jim@vheavy.com:/home/jim/cvsroot update
+cp src/*.java bin/
+cd src
+make priuspilot.jar
+make
+killall java
+

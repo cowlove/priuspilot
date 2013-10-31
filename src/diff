@@ -1,0 +1,632 @@
+? CannyEdgeDetector.java.NEW
+? CannyEdgeDetector.java.OLD
+? FrameCaptureJNI.class
+? FrameCaptureJNI.cpp.WORKED
+? diff
+? gaus02.log
+? gaus03.log
+? gaus04.log
+? gaus05.log
+? gaus06.log
+? gaus07.log
+? gaus08.log
+? gaus10.log
+? hs_err_pid11175.log
+? hs_err_pid11238.log
+? hs_err_pid11270.log
+? hs_err_pid13302.log
+? hs_err_pid7052.log
+? hs_err_pid7083.log
+? notes.20110713
+? x.yuv
+Index: CannyEdgeDetector.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/CannyEdgeDetector.java,v
+retrieving revision 1.35
+diff -r1.35 CannyEdgeDetector.java
+74,76c74,75
+< ;
+< 	// statics
+< 	
+---
+> 
+> 	// statics	
+78,80d76
+< 	public final static float MAGNITUDE_SCALE = 100F;
+< 	private final static float MAGNITUDE_LIMIT = 1000F;
+< 	private final static int MAGNITUDE_MAX = (int) (MAGNITUDE_SCALE * MAGNITUDE_LIMIT);
+101d96
+< 	private int picsize;
+124,134d118
+< 
+< 	/**
+< 	 * The number of pixels across which the Gaussian kernel is applied.
+< 	 * The default value is 16.
+< 	 * 
+< 	 * @return the radius of the convolution operation in pixels
+< 	 */
+< 	
+< 	public int getGaussianKernelWidth() {
+< 		return gaussianKernelWidth;
+< 	}
+149,160d132
+< 
+< 	/**
+< 	 * The radius of the Gaussian convolution kernel used to smooth the source
+< 	 * image prio
+< 		detector.setGaussianKernelRadius(30)r to gradient calculation. The default value is 16.
+< 	 * 
+< 	 * @return the Gaussian kernel radius in pixels
+< 	 */
+< 	
+< 	public float getGaussianKernelRadius() {
+< 		return gaussianKernelRadius;
+< 	}
+180d151
+< 		picsize = width * height;
+199a171
+> 		final int picsize = width * height;
+270d241
+< 
+280c251
+< 		int initY = (ystart(x) + kwidth + 1);
+---
+> 		final int initY = (ystart(x) + kwidth + 1);
+283,291c254,262
+< 			int index = x + yY * width;
+< 			int indexN = index - width;
+< 			int indexS = index + width;
+< 			int indexW = index - 1;
+< 			int indexE = index + 1;
+< 			int indexNW = indexN - 1;
+< 			int indexNE = indexN + 1;
+< 			int indexSW = indexS - 1;
+< 			int indexSE = indexS + 1;
+---
+> 			final int index = x + yY * width;
+> 			final int indexN = index - width;
+> 			final int indexS = index + width;
+> 			final int indexW = index - 1;
+> 			final int indexE = index + 1;
+> 			final int indexNW = indexN - 1;
+> 			final int indexNE = indexN + 1;
+> 			final int indexSW = indexS - 1;
+> 			final int indexSE = indexS + 1;
+293,295c264,266
+< 			float xGrad = xGradient[index];
+< 			float yGrad = yGradient[index];
+< 			float gradMag = hypot(xGrad, yGrad);
+---
+> 			final float xGrad = xGradient[index];
+> 			final float yGrad = yGradient[index];
+> 			final float gradMag = hypot(xGrad, yGrad);
+297,306d267
+< 			//perform non-maximal supressionarray
+< 			float nMag = hypot(xGradient[indexN], yGradient[indexN]);
+< 			float sMag = hypot(xGradient[indexS], yGradient[indexS]);
+< 			float wMag = hypot(xGradient[indexW], yGradient[indexW]);
+< 			float eMag = hypot(xGradient[indexE], yGradient[indexE]);
+< 			float neMag = hypot(xGradient[indexNE], yGradient[indexNE]);
+< 			float seMag = hypot(xGradient[indexSE], yGradient[indexSE]);
+< 			float swMag = hypot(xGradient[indexSW], yGradient[indexSW]);
+< 			float nwMag = hypot(xGradient[indexNW], yGradient[indexNW]);
+< 			float tmp;
+335,348c296,367
+< 			int val; 
+< 			if (xGrad * yGrad <= 0f /*(1)*/
+< 				? Math.abs(xGrad) >= Math.abs(yGrad) /*(2)*/
+< 					? (tmp = Math.abs(xGrad * gradMag)) >= Math.abs(yGrad * neMag - (xGrad + yGrad) * eMag) /*(3)*/
+< 						&& tmp > Math.abs(yGrad * swMag - (xGrad + yGrad) * wMag) /*(4)*/
+< 					: (tmp = Math.abs(yGrad * gradMag)) >= Math.abs(xGrad * neMag - (yGrad + xGrad) * nMag) /*(3)*/
+< 						&& tmp > Math.abs(xGrad * swMag - (yGrad + xGrad) * sMag) /*(4)*/
+< 				: Math.abs(xGrad) >= Math.abs(yGrad) /*(2)*/
+< 					? (tmp = Math.abs(xGrad * gradMag)) >= Math.abs(yGrad * seMag + (xGrad - yGrad) * eMag) /*(3)*/
+< 						&& tmp > Math.abs(yGrad * nwMag + (xGrad - yGrad) * wMag) /*(4)*/
+< 					: (tmp = Math.abs(yGrad * gradMag)) >= Math.abs(xGrad * seMag + (yGrad - xGrad) * sMag) /*(3)*/
+< 						&& tmp > Math.abs(xGrad * nwMag + (yGrad - xGrad) * nMag) /*(4)*/
+< 			) {
+< 				if (gradMag > threshold) { 
+---
+> 			/*
+> 			if (xGrad * yGrad <= 0f // (1)
+> 					? Math.abs(xGrad) >= Math.abs(yGrad) // (2)
+> 						? (tmp = Math.abs(xGrad * gradMag)) >= Math.abs(yGrad * neMag - (xGrad + yGrad) * eMag) 
+> 							&& tmp > Math.abs(yGrad * swMag - (xGrad + yGrad) * wMag) 
+> 						: (tmp = Math.abs(yGrad * gradMag)) >= Math.abs(xGrad * neMag - (yGrad + xGrad) * nMag) 
+> 							&& tmp > Math.abs(xGrad * swMag - (yGrad + xGrad) * sMag) 
+> 					: Math.abs(xGrad) >= Math.abs(yGrad) //(2)
+> 						? (tmp = Math.abs(xGrad * gradMag)) >= Math.abs(yGrad * seMag + (xGrad - yGrad) * eMag) 
+> 							&& tmp > Math.abs(yGrad * nwMag + (xGrad - yGrad) * wMag) 
+> 						: (tmp = Math.abs(yGrad * gradMag)) >= Math.abs(xGrad * seMag + (yGrad - xGrad) * sMag) 
+> 							&& tmp > Math.abs(xGrad * nwMag + (yGrad - xGrad) * nMag)
+> 				) {
+> 			*/
+> 			//perform non-maximal supressionarray
+> /*
+> 			float nMag = hypot(xGradient[indexN], yGradient[indexN]);
+> 			float sMag = hypot(xGradient[indexS], yGradient[indexS]);
+> 			float wMag = hypot(xGradient[indexW], yGradient[indexW]);
+> 			float eMag = hypot(xGradient[indexE], yGradient[indexE]);
+> 			float neMag = hypot(xGradient[indexNE], yGradient[indexNE]);
+> 			float seMag = hypot(xGradient[indexSE], yGradient[indexSE]);
+> 			float swMag = hypot(xGradient[indexSW], yGradient[indexSW]);
+> 			float nwMag = hypot(xGradient[indexNW], yGradient[indexNW]);
+> 			*/
+> 			float tmp;
+> 			boolean r = false;
+> 			if (xGrad * yGrad <= 0f) {  /*(1)*/
+> 				if (Math.abs(xGrad) >= Math.abs(yGrad)) {  /*(2)*/
+> 					final float eMag = hypot(xGradient[indexE], yGradient[indexE]);
+> 					final float neMag = hypot(xGradient[indexNE], yGradient[indexNE]);
+> 					if ((tmp = Math.abs(xGrad * gradMag)) >= Math.abs(yGrad * neMag - (xGrad + yGrad) * eMag)) {
+> 						float swMag = hypot(xGradient[indexSW], yGradient[indexSW]);
+> 						float wMag = hypot(xGradient[indexW], yGradient[indexW]);
+> 						if (tmp > Math.abs(yGrad * swMag - (xGrad + yGrad) * wMag)) 
+> 							r = true;
+> 					}
+> 				} else { 
+> 					final float neMag = hypot(xGradient[indexNE], yGradient[indexNE]);
+> 					final float nMag = hypot(xGradient[indexN], yGradient[indexN]);
+> 					if ((tmp = Math.abs(yGrad * gradMag)) >= Math.abs(xGrad * neMag - (yGrad + xGrad) * nMag)) {
+> 						final float swMag = hypot(xGradient[indexSW], yGradient[indexSW]);
+> 						final float sMag = hypot(xGradient[indexS], yGradient[indexS]);
+> 						if (tmp > Math.abs(xGrad * swMag - (yGrad + xGrad) * sMag))
+> 							r = true;
+> 					}
+> 				}
+> 			} else { 
+> 				if (Math.abs(xGrad) >= Math.abs(yGrad))  { /*(2)*/
+> 					final float eMag = hypot(xGradient[indexE], yGradient[indexE]);
+> 					final float seMag = hypot(xGradient[indexSE], yGradient[indexSE]);
+> 					if ((tmp = Math.abs(xGrad * gradMag)) >= Math.abs(yGrad * seMag + (xGrad - yGrad) * eMag)) { 
+> 						final float wMag = hypot(xGradient[indexW], yGradient[indexW]);
+> 						final float nwMag = hypot(xGradient[indexNW], yGradient[indexNW]);
+> 						if (tmp > Math.abs(yGrad * nwMag + (xGrad - yGrad) * wMag)) { 
+> 							r = true; 
+> 						}
+> 					}
+> 				} else { 
+> 					final float seMag = hypot(xGradient[indexSE], yGradient[indexSE]);
+> 					final float sMag = hypot(xGradient[indexS], yGradient[indexS]);
+> 					if ((tmp = Math.abs(yGrad * gradMag)) >= Math.abs(xGrad * seMag + (yGrad - xGrad) * sMag)) { 
+> 						final float nMag = hypot(xGradient[indexN], yGradient[indexN]);
+> 						final float nwMag = hypot(xGradient[indexNW], yGradient[indexNW]);
+> 						if (tmp > Math.abs(xGrad * nwMag + (yGrad - xGrad) * nMag)) {
+> 							r = true;/*(4)*/
+> 						}	
+> 					}
+> 				}
+> 			}
+> 			
+> 			if (r && gradMag > threshold) { 
+351,356c370,371
+< 					} else 
+< 						data[index] = 0;
+< 					
+< 			} else {
+< 				data[index] = 0;
+< 			}
+---
+> 			} else 
+> 				data[index] = 0;			
+419c434
+< 	private float hypot(float x, float y) {
+---
+> 	private static float hypot(float x, float y) {
+424c439
+< 	private float gaussian(float x, float sigma) {
+---
+> 	private static float gaussian(float x, float sigma) {
+427,460d441
+< 	
+< 	private int luminance(float r, float g, float b) {
+< 		return Math.round(0.299f * r + 0.587f * g + 0.114f * b);
+< 	}
+< 
+< 	private void normalizeContrast() {
+< 		int[] histogram = new int[256];
+< 		for (int i = 0; i < data.length; i++) {
+< 			histogram[data[i]]++;
+< 		}
+< 		int[] remap = new int[256];
+< 		int sum = 0;
+< 		int j = 0;
+< 		for (int i = 0; i < histogram.length; i++) {
+< 			sum += histogram[i];
+< 			int target = sum*255/picsize;
+< 			for (int k = j+1; k <=target; k++) {
+< 				remap[k] = i;
+< 			}
+< 			j = target;
+< 		}
+< 		
+< 		for (int i = 0; i < data.length; i++) {
+< 			data[i] = remap[data[i]];
+< 		}
+< 	} 
+< 	
+< 	private void thresholdEdges() {
+< 		// TODO - work this into the threshold loop
+< 		for (int i = 0; i < picsize; i++) {
+< 			data[i] = data[i] == -1 ? -1 :	0xff000000;
+< 		}
+< 	} 
+< 	
+Index: CannyEdgeDetectorOriginal.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/CannyEdgeDetectorOriginal.java,v
+retrieving revision 1.3
+diff -r1.3 CannyEdgeDetectorOriginal.java
+52d51
+< 	private int[] tempData;
+281d279
+< 			tempData = new int[picsize];
+283d280
+< 
+Index: FrameProcessor.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/FrameProcessor.java,v
+retrieving revision 1.103
+diff -r1.103 FrameProcessor.java
+164c164,165
+<         pidRL.gain = pidRL.new PID(2.25, 0, 1.70, 0.13, 0);
+---
+>         pidRL.setGains(2.25, 0, 1.70, 0.13, 0);
+>         pidRL.gain.p.hiGain = 0.4;
+166c167
+<         pidRL.manualTrim = -0.00;   // slightly-right lane position seems more comfy
+---
+>         pidRL.manualTrim = -0.01;   // slightly-right lane position seems more comfy
+172,175c173,179
+<         pidLV.gain = pidLV.new PID(2.0, 0, 0.40, 0.30, 0);
+<         pidLV.finalGain = .60;
+<         pidLV.manualTrim = 0.0;
+<         pidLV.qualityFadeThreshold = .0100;
+---
+>         pidRL.gain.p.loTrans = -0.06;  // "bumper" points of increased gain for lane proximity
+>         pidLL.gain.p.hiTrans = +0.04;
+>         
+>         pidLV.setGains(2.0, 0, 0.40, 0.30, 0);
+>         pidLV.finalGain = .90;
+>         pidLV.manualTrim = 0;
+>         pidLV.qualityFadeThreshold = .084;
+179c183
+<         pidPV.qualityFadeThreshold = 0.0140;
+---
+>         pidPV.qualityFadeThreshold = 0.0100;
+181c185
+<         pidCA.gain = pidLV.new PID(10.0, 0, 0, 0, 0);
+---
+>         pidCA.setGains(10.0, 0, 0, 0, 0);
+188c192
+<         ccPid.gain = ccPid.new PID(.06, 0, .34, 0, 1);
+---
+>         ccPid.setGains(.06, 0, .34, 0, 1);
+202,204c206,208
+<         inputZeroPoint.zeroPoint.vanY = 68;
+<         inputZeroPoint.zeroPoint.rLane = 695;
+<         inputZeroPoint.zeroPoint.lLane = 50;
+---
+>         inputZeroPoint.zeroPoint.vanY = 64;
+>         inputZeroPoint.zeroPoint.rLane = 636;
+>         inputZeroPoint.zeroPoint.lLane = 7;
+311c315
+<         } else if (keyCode == 38) { // up arrow
+---
+>         } else if (keyCode == '.' || keyCode == 38) { // up arrow
+314c318
+<         } else if (keyCode == 40) { // down arrow  
+---
+>         } else if (keyCode == ',' || keyCode == 40) { // down arrow  
+608c612
+< 		if (gk.max > 30) {	
+---
+> 		if (gk.max > 15) {	
+636a641,646
+>    		// Propagate config changes from the selected lane pid to the other lane pid
+>    		// Except for hi/lo gain transition points
+>    		double d1 = pidLL.gain.p.loTrans;
+>  		double d2 = pidLL.gain.p.hiTrans;
+>  		double d3 = pidRL.gain.p.loTrans;
+>  		double d4 = pidRL.gain.p.hiTrans;   		
+640a651,654
+>    		pidLL.gain.p.loTrans = d1;
+>  		pidLL.gain.p.hiTrans = d2;
+>  		pidRL.gain.p.loTrans = d3;
+>  		pidRL.gain.p.hiTrans = d4;	
+641a656
+>    		
+672d686
+< 		persVanX *= pixelWidthPrescale;
+674d687
+< 
+847c860
+< 		            display.rectangle(Color.black, "D", pid.err.dd + 0.5, yoff + 0.015, bWidth, 0.02, true);	     
+---
+> 		            display.rectangle(Color.black, "D", pid.err.j + 0.5, yoff + 0.015, bWidth, 0.02, true);	     
+Index: FrameProcessorTunableParameters.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/FrameProcessorTunableParameters.java,v
+retrieving revision 1.18
+diff -r1.18 FrameProcessorTunableParameters.java
+10c10
+< 
+---
+> 		
+17a18,19
+> 		add("DECREASE", ',', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+> 		add("INCREASE", '.', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+20c22
+< 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.dd += i; }} );
+---
+> 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.j.loGain += i; }} );
+22c24
+< 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p += i; }} );
+---
+> 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
+24c26
+< 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.i += i; }} );
+---
+> 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.i.loGain += i; }} );
+26c28
+< 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.d += i; }} );
+---
+> 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.d.loGain += i; }} );
+85,87c87,89
+< 		add("fp.epsSteeringGain", 'L', .1, 
+< 				new TunableParameter.Adjust() { public double adjust(double i) { 
+< 					return fp.epsSteeringGain += i; }} );
+---
+> 		//add("fp.epsSteeringGain", 'L', .1, 
+> 		//		new TunableParameter.Adjust() { public double adjust(double i) { 
+> 		//			return fp.epsSteeringGain += i; }} );
+91c93
+< 		add("detector.threshold2", 'O', 1, 
+---
+> 		add("PID gain.p.loTrans", 'L', .001, 
+93c95,98
+< 					return fp.tfparam.threshold2 = (fp.tfparam.threshold2 += i); }} );
+---
+> 					return fp.selectedPid.gain.p.loTrans += i; }} );
+> 		add("PID gain.p.hiGain", 'O', .02, 
+> 				new TunableParameter.Adjust() { public double adjust(double i) { 
+> 					return (fp.selectedPid.gain.p.hiGain += i); }} );
+138c143,144
+< 		add("FP steer.lag.threshold", ',', .01,
+---
+> 		/*
+> 		 add("FP steer.lag.threshold", ',', .01,
+143a150
+> 		*/
+Index: HoughTransform.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/HoughTransform.java,v
+retrieving revision 1.13
+diff -r1.13 HoughTransform.java
+29c29
+< 	void applyCorrelation(double minA, double maxA, double r, boolean leftSide) { 
+---
+> 	void applyCorrelation(double minA, double maxA, boolean leftSide) { 
+66a67,69
+> 	float getAngSpread() { 
+> 		return (float)(angMax - angMin) * bestA / angSz;
+> 	}
+213a217
+> 				float ang2TanInv = 1f / ang2Tan;
+217c221
+< 					int x = Math.round((x1 - (y1 - rec.y - y) / ang2Tan - rec.x) / scale);
+---
+> 					int x = Math.round((x1 - (y1 - rec.y - y) * ang2TanInv - rec.x) / scale);
+241,242c245,246
+< 			int r = (int)((((float)x - origin.x) * cosLookup[a] + 
+< 					((float)y - origin.y) * sinLookup[a] - radMin) * radStepInv);
+---
+> 			int r = (int)((((float)(x - origin.x)) * cosLookup[a] + 
+> 					((float)(y - origin.y)) * sinLookup[a] - radMin) * radStepInv);
+244,245c248
+< 				hough[a + r * angSz]++;
+< 				if (hough[a + r * angSz] > maxhough)
+---
+> 				if (++hough[a + r * angSz] > maxhough) 
+Index: OriginalImage.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/OriginalImage.java,v
+retrieving revision 1.7
+diff -r1.7 OriginalImage.java
+7a8,10
+> 	// direct buffer and bb access methods is faster than a copy and direct array access
+> 	final static boolean useDirect = true;
+> 	byte[] array;
+9c12,20
+< 		this.pixels = b;
+---
+> 		if (useDirect) { 
+> 			pixels = b;
+> 		} else { 
+> 			this.pixels = ByteBuffer.allocate(width * height * 4);
+> 			b.rewind();
+> 			pixels.rewind();
+> 			pixels.put(b);;
+> 			array = pixels.array();
+> 		}
+38c49,53
+< 		return (int)pixels.get(i) & 0xff;
+---
+> 		if (useDirect) { 
+> 			return (int)pixels.get(i) & 0xff;
+> 		} else { 
+> 			return (int)array[i] & 0xff;
+> 		}
+Index: PidControl.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/PidControl.java,v
+retrieving revision 1.35
+diff -r1.35 PidControl.java
+6c6
+<         PID(double ap, double ai, double ad, double add, double al) {
+---
+>         PID(double ap, double ai, double ad, double aj, double al) {
+10c10
+<             dd = add;
+---
+>             j = aj;
+12a13
+>         PID() { p = i = d = j = l = 0; } 
+14c15
+<         	return new PID(p, i, d, dd, l);
+---
+>         	return new PID(p, i, d, j, l);
+16,17c17
+<         PID() {}
+<         double p, i, d, dd,  l;
+---
+>         double p, i, d, j,  l;
+19,20c19,20
+<         	return String.format("%sp=%.2f, %si=%.2f, %sd=%.2f, %sdd=%.2f, %sl=%.2f", 
+<         			pref, p, pref, i, pref, d, pref, dd, pref, l); 
+---
+>         	return String.format("%sp=%.2f, %si=%.2f, %sd=%.2f, %sj=%.2f, %sl=%.2f", 
+>         			pref, p, pref, i, pref, d, pref, j, pref, l); 
+22a23,64
+>     class GainChannel  {
+>     	double loGain = 1, hiGain = 0;
+>     	Double loTrans = Double.NaN, hiTrans = Double.NaN, max = Double.NaN;
+>     	double getCorrection(double v) { 
+>     		double c = loGain * v; 
+>     		if ((!Double.isNaN(loTrans) && v < loTrans))
+>     			c += loGain * hiGain * (v - loTrans);
+> 			if ((!Double.isNaN(hiTrans) && v > hiTrans)) 
+> 				c += loGain * hiGain * (v - hiTrans);		
+> 	   		if (!Double.isNaN(max)) { 
+>     			if (c < -max) c = -max;
+>     			if (c > max) c = max;
+>     		}
+>     		return c;
+>     	}
+>     	protected GainChannel clone() { 
+>     		GainChannel n = new GainChannel();
+>     		n.loGain = loGain;
+>     		n.hiGain = hiGain;
+>     		n.loTrans = loTrans;
+>     		n.hiTrans = hiTrans;
+>     		n.max = max;
+>     		return n;
+>     	}
+>     	
+>     }
+>     class GainControl {
+>     	GainChannel p = new GainChannel();
+>     	GainChannel i = new GainChannel();
+>     	GainChannel d = new GainChannel();
+>     	GainChannel j = new GainChannel();
+>     	GainChannel l = new GainChannel();
+>     	protected GainControl clone() { 
+>     		GainControl n = new GainControl();
+>     		n.p = p.clone();
+>     		n.i = i.clone();
+>     		n.d = d.clone();
+>     		n.l = l.clone();
+>     		n.j = j.clone();
+>     		return n;
+>     	}
+>     }
+26a69,75
+>     void setGains(double gp, double gi, double gd, double gj, double gl) { 
+>     	gain.p.loGain = gp;
+>       	gain.i.loGain = gp;
+>       	gain.d.loGain = gp;
+>       	gain.j.loGain = gp;
+>       	gain.l.loGain = gp;
+>     }
+29c78,79
+<     PID gain = new PID(2.5, 0.000, 1.2, 0, 0.0);
+---
+>     PID gainX = new PID(2.5, 0.000, 1.2, 0, 0.0);
+>     GainControl gain = new GainControl();
+54c104
+<         dd = new JamaLeastSquaresFit(derrDegree, period.dd);
+---
+>         dd = new JamaLeastSquaresFit(derrDegree, period.j);
+84c134
+<         err.p = p.calculate() * gain.p;
+---
+>         err.p = gain.p.getCorrection(p.calculate());
+99,101c149,150
+<         err.d = d.slope(n, 1) * gain.d; 
+<         
+<         err.dd = dd.slope(n, 2) * gain.dd;
+---
+>         err.d = gain.d.getCorrection(d.slope(n, 1));
+>         err.j = gain.j.getCorrection(d.slope(n, 2));
+Index: Silly.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/Silly.java,v
+retrieving revision 1.105
+diff -r1.105 Silly.java
+148a149
+>         boolean cannyDebug = false;
+166a168
+>             else if (a.compareTo("-cannyDebug") == 0) cannyDebug = true;
+432,433c434,453
+<        			if (n > 0) 
+<        				ft.post(dropFrames, ms, new OriginalImage(bb, windw, windh));
+---
+> 
+>        			if (cannyDebug) {
+>        				OriginalImage oi = new OriginalImage(bb, windw, windh);
+>        				CannyEdgeDetector c = new CannyEdgeDetector();
+>        				c.threshold = 10;
+>        				c.setGaussianKernelRadius(0.5f);
+>        				c.setGaussianKernelWidth(10);
+>        				c.zones.height = windh;
+>        				c.zones.clear();
+>        				Rectangle r = new Rectangle(0, 0, windw, windh);
+>        				c.processData(oi, r);
+>        				System.out.printf("new frame %d\n", count);
+>        				for(Point p : c.results.l) 
+>        					System.out.printf("%d, %d\n", p.x, p.y);
+>        				if (count == exitFrame)
+>        					break;
+>        			} else { 
+> 	       			if (n > 0) 
+> 	       				ft.post(dropFrames, ms, new OriginalImage(bb, windw, windh));
+>        			}
+Index: TargetFinderLines.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/TargetFinderLines.java,v
+retrieving revision 1.37
+diff -r1.37 TargetFinderLines.java
+62c62
+< 	double minAngWidth = 20, maxAngWidth = 45;
+---
+> 	double minAngWidth = 15, maxAngWidth = 45;
+128a129
+> @SuppressWarnings("unused")
+152,153c153
+< 		param.threshold1 = 12;  // 12 or 5 
+< 		param.threshold2 = 12; /* set high to disable */
+---
+> 		param.threshold1 = param.threshold2 = 10;  // 10 or 5 
+326c326
+< 			h.applyCorrelation(1.3, 3.0, Math.sqrt(sa.width * sa.width + sa.height * sa.height), leftSide);
+---
+> 			h.applyCorrelation(1.0, 2.5, leftSide);
+444,445c444,445
+< 		g2.drawString(String.format("%d %.1f", c.results.l.size(), 
+< 				getAngle()), textX, textY);
+---
+> 		g2.drawString(String.format("%d %.1f %.1f", c.results.l.size(), 
+> 				getAngle(), h.getAngSpread()), textX, textY);
+Index: TunableParameterList.java
+===================================================================
+RCS file: /home/jim/cvsroot/priuspilot/src/TunableParameterList.java,v
+retrieving revision 1.3
+diff -r1.3 TunableParameterList.java
+42c42
+< 		Iterator it = ps.iterator();
+---
+> 		Iterator<TunableParameter> it = ps.iterator();
+56c56
+< 		Iterator it = ps.iterator();
+---
+> 		Iterator<TunableParameter> it = ps.iterator();

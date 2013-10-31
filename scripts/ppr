@@ -1,0 +1,7 @@
+#!/bin/sh
+cd /host/lanedumps
+~jim/workspace/priuspilot/scripts/pp -displaymode 14   -displayratio 10 -out /host/lanedumps/%s.yuv $@
+ #
+
+#-log /host/lanedumps/%s.log $@
+

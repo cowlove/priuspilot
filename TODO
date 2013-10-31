@@ -1,0 +1,110 @@
+TODO - fix FrameCaptureJNI interface to support multiple cameras/instances of interface. 
+
+
+07/13/11  Just finished switching to HP 360p HD camera.  Works really well, 
+	barely holds 30FPS, need the following failures
+	
+20110713.121415.yuv last part BTLN, L line failure, follows concrete sealant, 
+	needs canny threshold of 9-10
+20110713.121836.yuv BTLS, per van drifts left
+FIXED 20110713.122308.yuv Entire BTLN, failed lane switches at -skip 3200	test case 
+20110712.204053.yuv NB I405 dusk, faint line problem, needs low canny threshold of 5-6
+20110713.204833.yuv  I90 WB at dusk, faint lane problem, needs low canny of 5-6
+
+Autotune canny parameters - possibly offline heuristic.  Does 10 give a lock?  use it. 
+Otherwise, use 5.   When using 5, periodically try 10, see if gives same lock.  If so, 
+revert to 10. 
+
+
+
+
+Toe-in
+
+Look at hough stuff, see why isn't more precise, investigate parameters, see
+if 75x75 field is really necessary
+
+Understand why targetfinder line correlation doesn't properly compute the 
+proper radius/angle step interval.  Now hardcoded to someting fixed
+
+Investigate why hand-calculated frame size scaling factors didn't work, and 
+why had to re-tune the perspective PID controllers. 
+
+Finish automatic day/night mode switching.  Possibly need to use manual brightness
+adjustment. 
+
+There still are some squirrely lines that show up in the hough perspective VP 
+grid.  Investigate. 
+
+
+* TODO - test case /host/lanedumps/20110710.194915.yuv grabs asphalt sealant line instead of left lane line    
+
+		l /host/lanedumps/20110710.194915.yuv -nodrop -jni -displayratio 1 -debug 0 -skip 4000 
+	IDEAS - expand check for proper luminance pixel next to canny pixel to check for a certain number
+	of pixesl, enforcing a minimum lane line width requirement. 
+
+	Seems to need a lineluminancedelta of about 55, but then is very flakey
+	
+	idea- transform on the hough space, multiply each bucket by the value of its constant offset neighbor, with
+	constant offsets chosen so that the two sides of a lane line are the only thing that correlate. 
+		
+
+* TODO prepare for double cameras
+
+* Make protocol to arduino more robust.  Right now a readSerialInt failure returns zero, so any serial gibberish containing a "s" gives full left control input.  Idea- checksum
+
+* Todo- Log cruise control inputs and outputs to log file 
+
+* Similar thing for line, move line in to the innermost line over a high percentage threshold
+of the global max score
+
+* In TFRed and others, keep a large search area, but make separate and tighter constraints on the center
+  of the target- must be closer to the center of the search area?
+
+* Ideas for better result filtering in TFRed - for each red blob, select based on horizontal/vertical internal symmetry, 
+  height-width ratio constraints, then apply symmetry test to pairs of blobs rather than the entire rectangle image. 
+  Finally, enforce much closer constraints to vehicle centerline. 
+  
+    
+* In TF line, do color filtering as discussed in papers
+
+* Investigate the smallest reasonable joystick pulse that can be used to spoof cruise control inputs
+
+* For detecting a loss of lock in TD tracking:
+	- look at a narrow y range constrait, 
+  	-  or enforce x/y/z correlation
+  	- Look at variance of matched image, rather than the variance of the pixel error values
+  
+* In TD, make sure the variance value being used as a quality indicator 
+  is variance of the test target, not variance of the match error.  I suspect
+  it's the latter 
+
+* In TD, introduce getImageByte abstraction to replace direct pic[], access
+  in preparation of yuyv image formats
+
+* Clean out FrameProcessor - create PidStatusDisplay, CruiseControl, KeyboardInterface,
+  move command formatting into SerialBusInterface.setSteer(), setCruise(), setTorqueLimit()
+  
+* Clean out PidControl, remove second parameters, etc.  
+
+* Clean out/remove LaneAnalyzer
+
+* Pull out common TF/TD parameters into a class so that it can be selected by the configuration interface in the same
+ 	manner as PID-  suggestions - canny parameters, gaussian smooth parameters, color filter parameters HSL hi/lo,
+ 	hough transform angle/radius constraints, nonmax suppression parameters, maybe a generic threshold or percentage or
+ 	two?  
+ 	
+* Pulldown configuration parameter list in the GUI
+
+* TODO for Morning of 4/11  
+	-  NOT DONE make display ratio a fps figure
+		
+*  Took data on apparent nonlinear gain of system 
+Offset vs	Similar-feeling oscillation magnitude
+steer offset vs.  sine wave magnitude 
+0		.20
+.1		.20
+.2		.15
+.3		.09
+.4		.05
+.5		.03
+
