@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x 
 
 sudo apt-get install openjdk-11-jdk-headless 
 
@@ -11,4 +11,6 @@ cp src/libFrameCaptureJNI.so pplib/
 make -C src priuspilot.jar
 cp src/priuspilot.jar pplib/
 
-
+#test installation
+./scripts/pp 
+ 
