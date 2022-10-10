@@ -135,7 +135,7 @@ public class Silly {
     public static void main(String[] args) throws IOException, InterruptedException {
         //args = Gst.init("VideoPlayer", args);
 
-        String filename = "/dev/video3", capFile = "";
+        String filename = "/dev/video3", capFile = "", swrc = null;
         int width = 424, height = 240;
         int windx = 0, windy = 0, windw = width, windh = height;
         int framerate = 30;
@@ -149,7 +149,7 @@ public class Silly {
         int volume = 10;
         int frameInterval = 0; // minimum interval between captured frames
         boolean jni = false;
-        boolean nightMode = false;
+        boolean nightMode = false, faketime = false, useSystemClock = true;
         boolean cannyDebug = false;
         boolean flipVideo = false;  // warning- not flipping is currently broken, see FrameCaptureJNI.cpp, flip loops is 
         // same as copyout loop 
@@ -182,6 +182,8 @@ public class Silly {
             else if (a.compareTo("-gstreamer") == 0) gstreamer = true;
             else if (a.compareTo("-flip") == 0) flipVideo = true;
             else if (a.compareTo("-night") == 0) nightMode = true;
+            else if (a.compareTo("-faketime") == 0) faketime = true;
+            else if (a.compareTo("-systemclock") == 0) useSystemClock = !useSystemClock;
                                         
             else if (a.compareTo("-ct") == 0) colorThreshold = Double.parseDouble(args[++i]);
             else if (a.compareTo("-size") == 0) {
@@ -259,7 +261,7 @@ public class Silly {
                 }
             }
             else if (a.compareTo("-swrc") == 0) {
-            	SteeringWheelResolverCam swrc = new SteeringWheelResolverCam(args[++i], 320, 240, true);            	
+            	swrc = args[++i];
             }
             else if (a.compareTo("-serial") == 0) {
             	serialDevice = args[++i];            	
@@ -300,7 +302,7 @@ public class Silly {
         
         
         final FrameProcessor fp = new FrameProcessor(windw, windh,
-        		outputFile, logFile, rescale, displayratio, serialDevice);
+        		outputFile, logFile, rescale, displayratio, serialDevice, swrc);
         fp.colorThresholdPercent = colorThreshold;
         fp.exitFrame = exitFrame;
         fp.pauseFrame = pauseFrame;
@@ -327,7 +329,7 @@ public class Silly {
     	}
     		
     	if (filename.endsWith(".yuv") || filename.equals("stdin")) {
-    		jni = true;
+    		//jni = true;
     		dropFrames = false;
     	}
     	
@@ -355,11 +357,16 @@ public class Silly {
     	} else if (filename.endsWith(".gz") || !jni) {
             IntervalTimer intTimer = new IntervalTimer(30);
         	do {
-        		int picsize = height * width * 3;
+                int count = 0;        		
+        		int picsize = height * width * 2;
         		if (rgb32) picsize = height * width * 4;
+        		int PAGE_SIZE=4096;
+           		picsize = (((picsize + PAGE_SIZE - 1) & (~(PAGE_SIZE - 1)))) - 8;
+                		
 	        	ByteBuffer timebb = ByteBuffer.allocate(8);
 	        	IntBuffer ib = timebb.asIntBuffer();
-	        	long time;
+	        
+	        	long time = 0;
 	        	FileInputStream fis = new FileInputStream(new File(filename));
 	        	GZIPInputStream gis = null;
 	        	if (filename.endsWith(".gz"))
@@ -390,18 +397,34 @@ public class Silly {
 	        				offset += got;
 	        			}
 	        		} else {
-	        			fis.getChannel().read(timebb);
-	        			fis.getChannel().read(bb);
+	        			fis.getChannel().read(timebb);  
+	        			fis.getChannel().read(bb); // TODO -off by 8 bytes
 	        		}
-	        		time = (((long)ib.get()) << 32) + ib.get();
+	        		
+	        		if (!faketime) { 
+		        		// Byte endianess for timeval 
+		        		timebb.rewind();
+		        		time = 0;
+		        		long posval = 0;
+		        		for(int bp = 0; bp < 8; bp++) {
+		        			int i1 = timebb.get() & 0xff;
+			        		time += ((long)i1) << (bp * 8);
+		        		}
+	        		} else {
+	        			time += 30;
+	        		}
 	        		ByteBuffer finalbb = bb;
 	        		if (rgb32) 
 	        			finalbb = rgb32toBgr24(bb);
+	        	
 	        		// broken, bb contains t(the first 8-byte timestamp
 	        		//ft.post(false, time, new OriginalImage(finalbb, width)); //TODO need to pass time
         			//System.out.printf("%dms\n", (int)intTimer.tick());
 	        		fp.processFrame(time, new OriginalImage(finalbb, width, height));
         			//System.out.printf("%dms\n", (int)intTimer.tick());
+	        		count++;
+	        		if (exitFrame >0 && count == exitFrame)
+	        			break;
 	        	}
 	        	//fp.close();
         	} while(repeat);
@@ -410,8 +433,10 @@ public class Silly {
         } else {
         	fc = new FrameCaptureJNI();
         	fc.configure(filename, width, height, windx, windy, windw, windh, 
-        			flipVideo, capFile, capSize, capCount, 50/*max ms per frame*/,
-        			0 /*raw record skip interval*/);
+        			flipVideo, capFile, capSize, capCount, 80/*max ms per frame*/,
+        			0 /*raw record skip interval*/, useSystemClock);
+        	if (fp.writer != null) 
+        		fp.writer.fc = fc; 
         	
             int count = 0;
         	int n;
@@ -470,6 +495,9 @@ public class Silly {
 	       		}
        	 	} while(n > 0 || repeat);
         }
+    	System.out.printf("%s: ", filename);
+    	fp.printFinalDebugStats();
+    	fp.close();
        	System.exit(0);
 
     }
@@ -527,6 +555,10 @@ public class Silly {
 	public static int debugInt(String s) { 
 		String v = debugOpts.get(s);
 		return Integer.parseInt(v);
+	}
+	public static double debugDouble(String s) { 
+		String v = debugOpts.get(s);
+		return Double.parseDouble(v);
 	}
 	public static String debugString(String s) { 
 		return debugOpts.get(s);

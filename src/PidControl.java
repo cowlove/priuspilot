@@ -1,8 +1,15 @@
 import math.*;
 
+class Average {
+	double sum;
+	long count;
+	void add(double d) { if (!Double.isNaN(d)) { sum += d; count++; } } 
+	double average() { return count > 0 ? sum / count : 0;  }
+}
 
 public class PidControl {
 	static final int EXPECTED_FPS = 30;
+	Average avgRmsErr = new Average();
     class PID {
         PID(double ap, double ai, double ad, double aj, double al) {
             p = ap;
@@ -24,7 +31,15 @@ public class PidControl {
     class GainChannel  {
     	double loGain = 1, hiGain = 0;
     	Double loTrans = Double.NaN, hiTrans = Double.NaN, max = Double.NaN;
-    	double getCorrection(double v) { 
+    	double limitToMax(double v) { 
+    		if (Double.isNaN(max))
+    			return v;
+    		if (max > 0) 
+    			return Math.min(max / loGain, Math.max(-max / loGain, v));
+    		return 0;
+    	}
+    	double getCorrection(double v) {
+    		// TODO his does not make sense to me, check it out
     		double c = loGain * v; 
     		if ((!Double.isNaN(loTrans) && v < loTrans))
     			c += loGain * hiGain * (v - loTrans);
@@ -64,8 +79,11 @@ public class PidControl {
     	}
     }
     public String toString(String pref) { 
-    	return String.format("%se=%.2f, %sdef=%.2f, %sq=%.2f, ", pref, corr, 
-    			pref, defaultValue.calculate(), pref, quality) + err.toString(pref);
+    	return String.format("%se=%.2f, %sdef=%.2f, %sq=%.2f, %sdrms=%f, ", pref, corr, 
+    			pref, defaultValue.calculate(), pref, quality, pref, drms) + err.toString(pref);
+    }
+    double getAvgRmsErr() {
+    	return avgRmsErr.average();
     }
     void setGains(double gp, double gi, double gd, double gj, double gl) { 
     	gain.p.loGain = gp;
@@ -75,10 +93,9 @@ public class PidControl {
       	gain.l.loGain = gl;
     }
     PID err = new PID(); 
-    PID period = new PID(0.1, 5, .8, .3, 3.0);  // TODO - change from explicit frame counts to a time period
+    PID period = new PID(0.05, 5, .8, .3, 3.0);  // TODO - change from explicit frame counts to a time period
     PID gainX = new PID(2.5, 0.000, 1.2, 0, 0.0);
     GainControl gain = new GainControl();
-    double ierrorLimit = 0.35;
     double finalGain = 1.85;
     double manualTrim = -0.03; 
     int derrDegree = 3;
@@ -88,21 +105,20 @@ public class PidControl {
     double qualityFadeThreshold = 0.10;
     double quality = 0.0;
     
+    
     // these values are set in reset() method
-    int skippedFrames = 0;
-    JamaLeastSquaresFit d, dd;
-    RunningLeastSquares i; 
-	RunningQuadraticLeastSquares p;
-	
+    double i;
+    RunningQuadraticLeastSquares dd, d, p;
+	   
     RunningAverage defaultValue = new RunningAverage(150);
     long starttime = 0;
 	public double corr = 0;
-    
-    void reset() {
-		p = new RunningQuadraticLeastSquares(1, 0, period.p);
-        i = new RunningLeastSquares((int)period.i);
-        d = new JamaLeastSquaresFit(derrDegree, period.d);
-        dd = new JamaLeastSquaresFit(derrDegree, period.j);
+ 
+	void reset() {
+		p = new RunningQuadraticLeastSquares(1, (int)(period.p * 2 * EXPECTED_FPS), period.p);
+        i = 0f;
+        dd = new RunningQuadraticLeastSquares(derrDegree, (int)(period.j * 2 * EXPECTED_FPS), period.j);
+        d = new RunningQuadraticLeastSquares(derrDegree, (int)(period.d * 2 * EXPECTED_FPS), period.d);
         defaultValue.clear();
         starttime = 0;
     }
@@ -112,10 +128,22 @@ public class PidControl {
     	reset();
     	description = name;
     }
+    
+    void rebase(long newStart) {
+    	double delta = (newStart - starttime) / 1000;
+    	starttime = newStart;
+    	d.rebase(-delta);
+    	dd.rebase(-delta);
+    	p.rebase(-delta);
+    }
+    
     double lastVal, drms;
     double add(double val, long time) {
         if (starttime == 0) 
         	starttime = time;
+        else if (time - starttime > 2 * 1000) { 
+        	rebase(time);
+        }
         lastVal = val;
         
         double n = ((double) (time - starttime)) / 1000;
@@ -123,18 +151,20 @@ public class PidControl {
         	val = Double.NaN;
         	d.removeAged(n);
         	dd.removeAged(n);
-        	p.trimToSize(n);
+        	p.removeAged(n);
         } else {         
 	        val += manualTrim;
 	        d.add(n, val);
 	        dd.add(n, val);
 	        p.add(n, val);
-	        i.add(n, val);
+	        i = gain.i.limitToMax(i + val);
         }
         
         err.p = gain.p.getCorrection(p.calculate());
                 
         drms = d.rmsError();
+        avgRmsErr.add(drms);
+        
         if (d.size() < fadeCountMin || Double.isNaN(drms) || 
         		drms > qualityFadeThreshold * (qualityFadeGain + 1))
         	quality = 0;
@@ -150,21 +180,15 @@ public class PidControl {
        }
         err.d = gain.d.getCorrection(d.slope(n, 1));
         err.j = gain.j.getCorrection(d.slope(n, 2));
-                
-        /*	    
- 		* double ierr = i.predict(n) / ierrorThreshold;
-	    err.i += ierr * ierr * ierr * gain.i;
-	    err.i = Math.min(Math.max(err.i, -ierrorLimit), ierrorLimit);	        
-	    */
-	    err.i = 0;
-               
+	    err.i = gain.i.getCorrection(i);
+	           
 	    corr = -(err.p + err.d + err.i + err.l) * finalGain * quality + 
 	    	0 * (1 - quality);
 	    defaultValue.add(corr);
-	    
+	    if (Double.isNaN(corr))
+	    	corr = 0.0;
 	    return corr;
     }
-
 
     void copySettings(PidControl pid) { 
     	gain = pid.gain.clone();

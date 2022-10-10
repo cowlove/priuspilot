@@ -49,7 +49,7 @@ class SerialCommandBus {
 
     	while(tty == null) { 
 	    	try {
-	    	    Process p = Runtime.getRuntime().exec("stty -F " + devName + " 9600");
+	    	    Process p = Runtime.getRuntime().exec("stty -F " + devName + " 9600 -echo raw");
 	    	    p.waitFor();
 	        	tty = new FileWriter(devName);
 				System.out.println("Opened " + devName + " for writing at 9600bps");
@@ -148,7 +148,7 @@ class SerialCommandBus {
 							}
 							if (c.equals("x") && st.hasMoreTokens()) {
 								int a = Integer.parseInt(st.nextToken());
-								fp.onArduinoArmed(a);
+								//fp.onArduinoArmed(a);
 							}
 							if (c.equals("a") && st.hasMoreTokens()) {
 								int a = Integer.parseInt(st.nextToken());
@@ -166,9 +166,9 @@ class SerialCommandBus {
     String lastDebugString = "";
     int ignitionOffCount = 0;
     void writeCmd(String s) {
-    	//System.out.print("to serial: " + s + "\n");
         try {
-        	if (tty != null) { 
+        	if (tty != null) {
+		    	//System.out.print("to serial: " + s + "\n");
 	        	tty.write(s);
 	        	tty.flush();
         	}

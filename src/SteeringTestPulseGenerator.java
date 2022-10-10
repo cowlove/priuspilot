@@ -8,16 +8,21 @@ class SteeringTestPulseGenerator {
     final static int TEST_TYPE_SQUARE = 3;
     final static int TEST_TYPE_LAST = 3;	    
     int testType = TEST_TYPE_SINE;
+	final String [] testTypeNames = {"TEST_TYPE_CONSTANT_OFFSET", 
+			"TEST_TYPE_SINE",
+			"TEST_TYPE_SAWTOOTH",
+			"TEST_TYPE_SQUARE"};
 	
-    double duration = 0.20;
-    double magnitude = 0.0; //0.10;
+    double duration = 0.15;
+    double magnitude = 0.15; //0.10;
     double offset = 0.0;
     long startTime = 0;
     int direction = 1;
     int count = -1;
 
     double changeTestType(int x) { 
-    	return (double)(testType = Math.max(Math.min(TEST_TYPE_LAST, testType + x), 0));
+    	testType = Math.max(Math.min(TEST_TYPE_LAST, testType + x), 0);
+    	return (double)testType;
     }
     
     void startPulse(int dir) { 

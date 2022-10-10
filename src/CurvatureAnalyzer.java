@@ -89,7 +89,7 @@ public class CurvatureAnalyzer {
 	
 	public void markup(OriginalImage orig) {
 		if (fit != null) { 
-			for(RunningQuadraticLeastSquares.Entry e : fit.history) {
+			for(RunningQuadraticLeastSquares.Entry e : fit.hist) {
 				orig.putPixel((int)e.y, (int)e.x, 0);
 				//orig.putPixel((int)caR.fit.calculate(e.x), (int)e.x, 0xffff0000);
 			}		
@@ -101,7 +101,7 @@ public class CurvatureAnalyzer {
 			return;
 		
 		int lastX = -1, lastY = -1;
-		for(RunningQuadraticLeastSquares.Entry e : fit.history) {
+		for(RunningQuadraticLeastSquares.Entry e : fit.hist) {
 			//int x = (int)e.y;
 			int x = (int)fit.calculate(e.x);
 			int y = (int)e.x;

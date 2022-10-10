@@ -1,3 +1,5 @@
+import java.lang.reflect.Array;
+
 
 class GaussianKernel { 
 	private final static float GAUSSIAN_CUT_OFF = 0.005f;
@@ -22,11 +24,13 @@ class GaussianKernel {
 	private float gaussian(double x, double sigma) {
 		return (float)Math.exp(-(x * x) / (2f * sigma * sigma));
 	}
+	float max = 0;
+	int bestX = 0, bestY = 0;
 	
-	int max = 0, bestX = 0, bestY = 0;
-	
-	void blur(int [] pic) {
-		int [] pic2 = new int[height * width];
+	// TODO template?
+	public void blur(int [] pic) {
+		int [] pic2 = new int[height*width];
+		//(T [])Array.newInstance(Class<T>,height*width);
 		for (int x = 0; x < width; x++) { 
 			for(int y = 0; y < height; y++) {				
 				float gausSum = 0;
@@ -51,6 +55,42 @@ class GaussianKernel {
 					}
 				}
 				int score = Math.round(gausSum);
+				pic[x + y * width] = score;
+				if (score > max || (score == max && y < bestY)) { 
+					max = score;
+					bestX = x;
+					bestY = y;
+				}
+			}	
+		}
+	}
+	
+	void blur(float [] pic) {
+		float [] pic2 = new float[height * width];
+		for (int x = 0; x < width; x++) { 
+			for(int y = 0; y < height; y++) {				
+				float gausSum = 0;
+				for (int dx = x - kwidth + 1; dx < x + kwidth; dx++) {
+					if (dx >= 0 && dx < width) { 
+						float g = kernel[Math.abs(x - dx)];
+						gausSum += g * pic[dx + y * width];
+					}
+				}
+				pic2[x + y * width] = Math.round(gausSum);
+			}
+		}
+	
+		max = 0;
+		for (int x = 0; x < width; x++) { 
+			for(int y = 0; y < height; y++) {				
+				float gausSum = 0;
+				for (int dy = y - kwidth + 1; dy < y + kwidth; dy++) {   
+					if (dy >= 0 && dy < height) {
+						float g = kernel[Math.abs(y - dy)];
+						gausSum += g * pic2[x + dy * width];
+					}
+				}
+				float score = gausSum;
 				pic[x + y * width] = score;
 				if (score > max || (score == max && y < bestY)) { 
 					max = score;

@@ -13,6 +13,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
@@ -41,7 +42,7 @@ class MyCanvas extends JComponent {
     }
 }
 
-class MyPanel extends JPanel implements MouseListener, ActionListener, KeyListener {
+class MyPanel extends JPanel implements MouseMotionListener, MouseListener, ActionListener, KeyListener {
 	//private static final long serialVersionUID = 3580688315933254868L;
 
 	JTextField   typingArea = new JTextField();
@@ -68,6 +69,7 @@ class MyPanel extends JPanel implements MouseListener, ActionListener, KeyListen
 	    
 	    box.add(typingArea);
 		addButton("RECORD");
+		addButton("ARM");
 		//addButton("EXIT");
 		
 //		addButton("FASTER");
@@ -129,12 +131,29 @@ class MyPanel extends JPanel implements MouseListener, ActionListener, KeyListen
 	@Override
 	public void mousePressed(MouseEvent arg0) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void mouseReleased(MouseEvent arg0) {
 		// TODO Auto-generated metqhod stub
+		fp.onMouseReleased();
+	}
+
+	@Override
+	public void mouseDragged(MouseEvent arg0) {
+		// TODO Auto-generated method stub
+		int x = arg0.getX() -6;
+		int y = arg0.getY() - 26;
+		
+		x = x * fp.width / width;
+		y = y * fp.height / height;
+		
+		fp.onMouseDragged(x, y);
+	}
+
+	@Override
+	public void mouseMoved(MouseEvent arg0) {
+		// TODO Auto-generated method stub
 		
 	}
 
@@ -269,6 +288,7 @@ class BufferedImageDisplayWithInputs extends BufferedImageDisplay {
         frame.setBounds(xpos,ypos, width + 160, height + 40);
         frame.getContentPane().add(panel, BorderLayout.EAST);
 		frame.addMouseListener(panel);
+		frame.addMouseMotionListener(panel);
 	    frame.setVisible(true);
 	    g2 = image.createGraphics();
 		panel.typingArea.requestDefaultFocus();

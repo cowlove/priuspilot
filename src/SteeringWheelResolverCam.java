@@ -14,26 +14,33 @@ class SteeringWheelResolverCam implements Runnable {
 	BufferedImageDisplay dd = null;
 	ByteBuffer bb = null;
 	TargetFinderLines tf; 
-	ImageFileWriter writer = new ImageFileWriter("/host/lanedumps/out%08d.png");
+	ImageFileWriter writer = null;
 	SteeringWheelResolverCam(String dev, int w, int h, boolean debugDisplay) { 
 		width = w;
 		height = h;
-		cam.configure(dev, width, height, 0, 0, width, height, false, "", 0, 0, 0, 0);
+		cam.configure(dev, width, height, 0, 0, width, height, false, "", 0, 0, 50, 0, false);
+		cam.setCaptureFile("/host/lanedumps/swrc.yuv");
+		ImageFileWriter writer = new ImageFileWriter("/host/lanedumps/swrc-%s.yuv", cam);
 		bb = ByteBuffer.allocateDirect(width * height * 2);
 		if (debugDisplay)
 			dd = new BufferedImageDisplay(width, height, BufferedImage.TYPE_3BYTE_BGR);
-		tf = new TargetFinderLines(w, h, new Rectangle(0, 0, w, h - 10), true, 45, 30, w/5, w/2, 12, 50);
+		tf = new TargetFinderLines(w, h, new Rectangle(0, 0, w, h - 10), true, 0, 180, w, w, 180, 180);
 		tf.vanLimits = null;
+		tf.focus.defaultIntercept = w / 2;
 		tf.minAng = 0;
 		tf.usePeriodDetection = false;
 		tf.useLuminanceCheck = false;
 		tf.param.threshold1 = tf.param.threshold2 = 8;
-		
+		tf.cannyMinPoints = 100;
+		tf.cannyMaxPoints = 150;
 //		tf.focus.defaultIntercept = w / 2;
 	//	tf.focus.defaultAngle = 90;
 		new Thread(this).start();
 	}
 	
+	void reset() { 
+		tf.reset();
+	}
 	void displayFrame(OriginalImage oi) { 
 		if (dd == null) 
 			return;		

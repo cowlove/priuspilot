@@ -10,9 +10,10 @@ import java.io.OutputStreamWriter;
 
 
 
-public class GnuplotWrapper {
+public class GnuplotWrapper{
 	String conf = "";
 	String filename;
+	String title;
 	BufferedWriter writer = null;
 	Process process = null;
 	OutputStreamWriter out = null;
@@ -67,6 +68,7 @@ public class GnuplotWrapper {
 
 			} else { 
 				setDisplay();
+	            out.write("set title \"" + title + "\"\n");
 	            out.write("replot\n");
 	            out.write("print \"done\"\n");
 	            out.flush();
@@ -103,6 +105,34 @@ public class GnuplotWrapper {
 		}
 	}
 
+	void draw2D(int ns) { 
+		try {
+			writer.close();
+			Runtime.getRuntime().exec("mv " + filename + " " + filename + ".1");
+			if (process == null) { 
+				process = Runtime.getRuntime().exec("gnuplot");
+	            out = new OutputStreamWriter(process.getOutputStream());
+	            setDisplay();
+	            out.write("plot ");
+	            for (int n = 0; n < ns; n++) { 
+	            	out.write(String.format("\"" + filename + ".1\" u 1:%d with lines ", n + 2));
+	            	if (options != null && options[n] != null) 
+	            		out.write(options[n]);
+	            	if (n == ns - 1) out.write("\n");
+	            	else out.write(",");
+	            }
+	            out.flush();	            
+			}
+            out.write("replot\n");
+            out.flush();
+	        	
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+
 	void startNew() { 
 		try {
 			writer = new BufferedWriter(new FileWriter(filename));
@@ -111,6 +141,20 @@ public class GnuplotWrapper {
 			e.printStackTrace();
 		}		
 	}
+	void add3DGrid(float []data, int xs, int ys) { 
+		try {
+			for(int x = 0; x < xs; x++) { 
+				for(int y = 0; y < ys; y++) { 
+					writer.write(String.format("%d %d %f\n", x, y, data[x + y * xs]));
+				}
+				writer.write("\n");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	
 	void add3DGrid(int []data, int xs, int ys) { 
 		try {
 			for(int x = 0; x < xs; x++) { 
@@ -134,6 +178,48 @@ public class GnuplotWrapper {
 	}
 	void addXYZ(double x, double y, double z) { 
 		
+	}
+
+	public void add3DGrid(double[] data, int xs, int ys) {
+		try {
+			for(int x = 0; x < xs; x++) { 
+				for(int y = 0; y < ys; y++) { 
+					writer.write(String.format("%d %d %f\n", x, y, data[x + y * xs]));
+				}
+				writer.write("\n");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void addArray(double[] x, int len) {
+		try {
+			for (int i = 0; i < len;i ++) 
+				writer.write(String.format("%d %f\n", i, x[i]));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void addArrays(double[][] x, int len) {
+		try {
+			for (int n = 0; n < len; n++) { 
+				writer.write(String.format("%d ", n));
+				for (int i = 0; i < x.length;i ++) {
+					if (x[i] != null)
+						writer.write(String.format("%f ", x[i][n]));
+				}
+				writer.write("\n");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	String[] options = null;
+	public void addOptions(String []strings) {
+		options = strings;
 	}
 
 }

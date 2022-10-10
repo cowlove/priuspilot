@@ -8,11 +8,13 @@ import java.util.ArrayList;
 
 import math.RunningAverage;
 import math.RunningLeastSquares;
+import math.RunningQuadraticLeastSquares;
 
 
 class Hist2D {
 	int [] data;
-	int minX, maxX, minY, maxY, w, h;
+	int minX, maxX, minY, maxY;
+	int w, h;
 	void clear() { data = null; }
 	
 	void setSize(int x1, int x2, int y1, int y2) { 
@@ -61,6 +63,45 @@ class Hist2D {
 	}
 }
 
+class HslRunningAverage {
+	RunningQuadraticLeastSquares [] avgs = new RunningQuadraticLeastSquares[3];
+	HslRunningAverage(int s) {
+		for(int n = 0; n < 3; n++)
+			avgs[n] = new RunningQuadraticLeastSquares(1, s, 0.0);
+	}
+	void clear() {
+		for(int n = 0; n < 3; n++)
+			avgs[n].clear();
+	}
+	void add(int []hsl) { 
+		for(int n = 0; n < 3; n++)
+			avgs[n].addY(hsl[n]);
+	}
+	int [] average() { 
+		if (!avgs[0].isFull())
+			return null;
+		int []rval = new int[3];
+		for(int n = 0; n < 3; n++)
+			rval[n] = (int)Math.round(avgs[n].calculate());
+		return rval;
+	}
+	int [] diff(int []hsl) {
+		if (!avgs[0].isFull())
+			return null;
+		int []rval = new int[3];
+		for(int n = 0; n < 3; n++)
+			rval[n] = (int)Math.round(hsl[n] - avgs[n].calculate());
+		return rval;
+	}
+	double [] rmsErr() { 
+		if (!avgs[0].isFull())
+			return null;
+		double [] rval = new double[3];
+		for(int n = 0; n < 3; n++)
+			rval[n] = avgs[n].rmsError();
+		return rval;
+	}
+}
 // historgram inspector to examine 2-d x vs y histogram 
 class HslHist2D {
 	Hist2D [] hists = new Hist2D[3];
@@ -73,7 +114,8 @@ class HslHist2D {
 	}
 	void add(int x, int []hsl) { 
 		for(int n = 0; n < 3; n++) { 
-			hists[n].add(x, hsl[n]);
+			hists[n].add(x, (int)(hsl[n]));
+			
 		}
 	}
 	void clear() { 
@@ -84,6 +126,7 @@ class HslHist2D {
 		for(int n = 0; n < 3; n++) { 
 			gp[n].startNew();
 			gp[n].add3DGrid(hists[n].data, hists[n].w, hists[n].h);
+			gp[n].title = String.format("%d", n);
 			gp[n].draw();
 		}
 	}
@@ -92,19 +135,18 @@ class HslHist2D {
 
 class PeriodicityDetector { 
 	int timeout;
-	PeriodicityDetector(double hystPct, int maxAvg, int t) { 
+	PeriodicityDetector(double hystPct, double maxAvg, int t) { 
 		timeout = t;
 		this.hystPct = hystPct; this.maxAvg = maxAvg;
 		hist = new RunningAverage(t);
 		av = new RunningAverage(15);
 	}
-	double hystPct;
-	int maxAvg;
+	double hystPct, maxAvg;
 	RunningAverage av;
 	RunningAverage hist;
 	boolean low = true;
 	int lastLowTime, lastPeriod;
-	void add(int t, int v) {
+	void add(int t, float v) {
 		hist.add(v);
 		double avg = hist.calculate();
 		int hyst = (int)(avg * hystPct);
@@ -125,7 +167,7 @@ class PeriodicityDetector {
 		}
 	}
 	int getPeriod() { 
-		if (hist.calculate() > maxAvg) 
+		if (maxAvg > 0 && hist.calculate() > maxAvg) 
 			return 0;
 		return (int)av.calculate();
 	}
@@ -260,12 +302,12 @@ class TargetFinderLines extends TargetFinder {
 	GnuplotWrapper gp2 = new GnuplotWrapper();
 	GnuplotWrapper gp3 = new GnuplotWrapper();
 	
-	PeriodicityDetector pd = new PeriodicityDetector(0.15, 200, 40);
+	PeriodicityDetector pd = new PeriodicityDetector(0.50, 0.0, 40);
 	ArrayList<ArrayList<Point>> ptHist = new ArrayList<ArrayList<Point>>();
 	final int histDelay = 20; //TODO -hardcoded array limits
 	boolean useLaneWidthFilter = false;
 	boolean usePeriodDetection = true;
-	boolean useLuminanceCheck = true;
+	boolean useLuminanceCheck = false;
 	int debugId = debugIdCount++;
 	static int debugIdCount = 0;
 	double sThresh = 0;
@@ -303,10 +345,15 @@ class TargetFinderLines extends TargetFinder {
 			focus.defaultAngle = 90 - defAngle;
 		}
 		h = new HoughTransform(houghAngSz, houghRadSz);
-		h.blurRadius = 0.09f;
+		h.blurRadius = 0.060;
+		if (Silly.debug("HOUGH_BLUR"))
+			h.blurRadius = Silly.debugDouble("HOUGH_BLUR");
+			
 		vanLimits = new Rectangle(w / 3, (int)(ht * 5 / 24), w / 8, ht / 9);
 	}
 	
+	int count = 0;
+
 	
 	Rectangle vanLimits = null;
 	Focus focus = new Focus();
@@ -323,6 +370,11 @@ class TargetFinderLines extends TargetFinder {
 		count = 0;
 		this.ptHist.clear();
 	}
+	
+	int rcHslThresh = 30;
+	int rcHueMaxDiff = 44;
+	
+	int cannyMaxPoints = 900, cannyMinPoints = 500;
 	@Override 
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
 		c.zones.height = sa.height;
@@ -368,8 +420,14 @@ class TargetFinderLines extends TargetFinder {
 
 		// Pick origin for hough transform- the intercept of the scanzone with lower edge or 
 		// far side edge of sa rectangle. 
+		/*
 		h.origin = new Point();
-		h.origin.y = sa.height;
+		h.origin.x = sa.width / 2;
+		h.origin.y = (int)Math.round(lineAtX(0, intercept,
+					0, ang, h.origin.x));
+	*/
+		
+		h.origin.y = (int)(sa.height*0.6);
 		double ox = lineAtY(focus.lastOX, focus.lastOY, focus.lastRadius, ang, h.origin.y);
 		if (Double.isNaN(ox) || ox < 0 || ox > sa.width) {
 			ox = leftSide ? 0 : sa.width - 1;
@@ -377,7 +435,8 @@ class TargetFinderLines extends TargetFinder {
 					0, ang, ox));
 		}
 		h.origin.x = (int)Math.round(ox);
-	
+
+		                       
 		if (h.id == 0) { 
 			// TMP HACK: for swrc use, clear out the scan zone until we get
 			// better working scan zone implementation
@@ -394,9 +453,10 @@ class TargetFinderLines extends TargetFinder {
 		
         // auto-tune canny thresholds to try and keep a reasonable number of edge points
         // TODO- normalize the point count to the scan area
-        if (c.results.l.size() > 900 && param.threshold1 < 13)
+        
+        if (c.results.l.size() > cannyMaxPoints && param.threshold1 < 13)
         	param.threshold1 = param.threshold2 += 1;
-        if (c.results.l.size() < 500 && param.threshold1 > 4)
+        if (c.results.l.size() < cannyMinPoints && param.threshold1 > 4)
         	param.threshold1 = param.threshold2 -= 1;
         
         //if (h.id == 0) 
@@ -405,9 +465,43 @@ class TargetFinderLines extends TargetFinder {
         lumPoints.clear();
         h.clear();
         ArrayList<Point> nonLumPoints = new ArrayList<Point>();
+
         
+        // Add in pixels to hough array.  The relative weight of the pixels is
+        // the product of the suppressed canny array, and the pixel luminosity,
+        // averaged over a small block kernel and normalized to the horizontal line
+        // that the pixel is in. 
+        double [] ar = null;
+		if (Silly.debug("DEBUG_LUM") && Silly.debugInt("DEBUG_LUM") == h.id) 
+			ar = new double[sa.height * sa.width];
+		final int kwidth = 1;  // 2 seems a little bit better, but slightly too slow 
+		for (int y = 0; y < sa.height; y++) { 
+			double maxLum = 1;
+			if (useLuminanceCheck) { 
+				for(int x = 0; x < sa.width; x++) {
+					double l = getLuminance(oi, sa, x,y, kwidth);
+					if (l > maxLum)
+						maxLum = l;
+				}
+			}
+			for(int x = 0; x < sa.width; x++) {
+        		double wt =  c.results.gradResults[y*sa.width+x];
+        		if (useLuminanceCheck) 
+        			wt *= ((float)getLuminance(oi, sa, x,y, 1) /maxLum);	
+        		if (ar != null) 
+        			ar[(sa.height - y - 1) * sa.width + x] = wt;
+        		h.add(x, y, (float)wt);
+			}
+		}
+		if (ar != null) { // from DEBUG_LUM above 
+			gp.startNew();
+			gp.add3DGrid(ar, sa.width, sa.height);
+			gp.draw();
+		}
+
+		// RELIC CODE, MAY NOT RUN
     	// retain only inner-most canny pixel for each pixel row
-        if (false && !this.useLaneWidthFilter) { 
+		if (false && !this.useLaneWidthFilter) { 
 			for (int y = 0; y < sa.height; y++) { 
 				int startX = leftSide ? sa.width - 1 : 0;
 				int endX = leftSide ? -1 : sa.width;
@@ -429,21 +523,23 @@ class TargetFinderLines extends TargetFinder {
 					}
 				}
 			}
-        } else  { 	        
-	        for( Point p : c.results.l ) {
+        } /*else  { 	        
+        	for( Point p : c.results.l ) {
 	        	if(!useLuminanceCheck || checkLuminance(oi, sa, p.x, p.y, minLineIntensity)) {
-	        		h.add(p.x, p.y);
+	        		h.add(p.x, p.y, 1);
 	        		lumPoints.add(p);
 	        	} else 
 	        		nonLumPoints.add(p);
 	        }
-        }
+        }*/
 		
 		// For a broken lane line, try to add in a couple older frames' data
-		// to make the line more continuous 
-        if (usePeriodDetection) { 
-			pd.add(count, h.maxhough);
+		// to make the line more continuous
+        // Broken, period detection is work in progress 
+        if (false && usePeriodDetection) { 
+			pd.add(count, (int)h.maxhough);
 			int period = pd.getPeriod();
+			//if (h.id < 2) System.out.printf("id %d period %d\n", h.id, period);
 			ptHist.add((ArrayList<Point>)lumPoints.clone());
 			if (ptHist.size() == histDelay) { 
 				if (period >= 4 && period < histDelay /*TODO - bounds/array checking*/) {
@@ -474,32 +570,37 @@ class TargetFinderLines extends TargetFinder {
 		h.blur();   
 		
 		if (useLaneWidthFilter)  
-			h.applyCorrelation(1.0, 2.5, leftSide);
+			h.applyCorrelationRad(3.0, 12.5, leftSide);
 		
 		
 		// search for a nearby max, giving slight preference to inside and 
 		// steeper lines.
 		final double prefPoint = 0.1;
 		int ca = leftSide ? 0 : h.angSz;
+		
 		h.findClosest(ca, leftSide ? h.radSz : 0, 0.7f);
+		//h.findCG(ca);
 
-		if (Silly.debug("DEBUG_LINES") && Silly.debugInt("DEBUG_LINES_ID") == h.id) {
-   			//if (Silly.debug(Silly.DEBUG_LINES)) { 
+		if (Silly.debug("DEBUG_LINES") && Silly.debugInt("DEBUG_LINES") == h.id) {
 			gp.startNew();
+			gp.title = String.format("Hough Transform Line %d", h.id);
 			gp.add3DGrid(h.hough, h.angSz, h.radSz);
 			gp.draw();
 			if (h.corHough != null) { 
 				gp2.startNew();
+				gp2.title = "corHough";
 				gp2.add3DGrid(h.corHough, h.angSz, h.radSz);
 				gp2.draw();
 			}
 		}
+		
+		
 		count++;
 				
 		double i = h.bestYIntercept();
 		double a = h.bestAngle();
 		//if (a < 90 && i > 0) i = -i;
-		focus.update(h.maxhough, h.origin, h.bestRadius(), (h.bestAngle() + 90) % 360, h.bestYIntercept());
+		focus.update((int)Math.round(h.maxhough), h.origin, h.bestRadius(), (h.bestAngle() + 90) % 360, h.bestYIntercept());
 		a = focus.getAngle();
 	
 		// reset if lock is too close to the horizon
@@ -529,7 +630,7 @@ class TargetFinderLines extends TargetFinder {
 			}
 		}
 
-		if (Silly.debug("DEBUG_COLOR_SEGMENTATION")  && (/*h.id == 0 ||*/ h.id == 1)) { 
+		if (Silly.debug("DEBUG_COLOR_SEGMENTATION") && Silly.debugInt("DEBUG_COLOR_SEGMENTATION") == h.id) { 
 			// examine the area near each lane line, trying to figure out some color
 			// segmentation tricks. 
 			nearPixels1.clear();
@@ -537,58 +638,90 @@ class TargetFinderLines extends TargetFinder {
 			hslRoad.clear();
 	
 			hsl2d.clear();
+			hsl2d2.clear();
 			
-			for(int y = (int)(sa.y + sa.height) - 20; y >= sa.y + 0; y--) {
+			math.LeastSquares ls = new math.LeastSquares();
+			
+			int runLen = 4;
+			HslRunningAverage ravg1 = new HslRunningAverage(runLen);
+			HslRunningAverage ravg2 = new HslRunningAverage(runLen);
+			double maxRmsErr = 0;
+			for(int y = (int)(sa.y + sa.height); y >= sa.y + 0; y--) {
 				int x = getInstantaneousX(y);
 				int s = leftSide ? -1 : 1;
 				int startX = -25;
-				int endX = -5;
+				int endX = +5;
+				ravg1.clear();
+				ravg2.clear();
+				int consecutive = 0;
 				for(int w = startX; w < endX + y / 5; w++) {
-					int normX = (w - (startX)) * 100 / (endX + y / 5 - startX); // a normalized width used for plotting  
+					float normX = w - startX;
+					//int normX = (w - (startX)) * 100 / (endX + y / 5 - startX); // a normalized width used for plotting  
 					int x1 = x + w * s;
 					if (x1 >= sa.x && x1  < sa.x + sa.width) {  
-							int [] hsl = oi.getHsl(x1, y);
-							int l = oi.getPixelLum(x1, y);
-							//if (w < -8 && y > sa.y + sa.height * .10 && y < sa.y + sa.height * .6) {
-							//	hslRoad.add(hsl[0], hsl[1], hsl[2]);
-							//	oi.dimPixel(x1,  y);
-							//}
-							oi.dimPixel(x1,  y);
-							hsl2d.add(normX, hsl);
-							if ((
-		//						hsl[0] < hslThresh[0] &&
-							//	hsl[1] > hslThresh[1] && 
-							//	hsl[2] > hslThresh[2] &&
-									tfrc != null && tfrc.isLine(y, hsl) && 
-									true
-											)
-									//|| (false && hsl[0] > 133 && hsl[0] < 140
-											) {
-								nearPixels1.add(hsl[0], hsl[1], hsl[2]);
-								oi.putPixel(x1,  y, 0);
-								
+							int []hsl = oi.getHsl(x1, y);
+							ravg1.add(hsl);
+							hsl = oi.getHsl(x1 + s * runLen, y);
+							ravg2.add(hsl);
+							
+							int []diff = ravg1.diff(ravg2.average());
+							int rms[] = new int[3];
+							for (int n = 0; n < 3; n++) {
+								rms[n] = (int)ravg1.avgs[n].rmsError() +
+										(int)ravg2.avgs[n].rmsError();
+							}
+							hsl2d2.add((int)normX, rms);
+							if (diff != null && rms[1] + rms[2] < 20) {
+								hsl2d.add((int)normX, diff);
+							}
+							/*
+							int []diff = hslAvg.diff(hsl);
+							if (diff != null && diff[1] + diff[2] + 
+									Math.abs(diff[0] / 4)  > rcHslThresh) {
+								//oi.putPixel(x1,  y, 0);						
+								consecutive++;
+							} else {
+								hslAvg.add(hsl);
+								if (consecutive > 2 && consecutive < 17) {
+									for(int w1 = w - consecutive; w1 < w; w1++) {
+										//nearPixels1.add(hsl[0], hsl[1], hsl[2]);
+										oi.putPixel(x + w1 * s,  y, 0x0);
+										ls.add(x + w1 * s, y);
+									}
+								}
+								consecutive = 0;
 							} 
+							*/
 					}	 
 				}
 			}
+			if (ls.slope() != 0) 
+				csX = (height - ls.intercept())/ls.slope();
 			
-			nearPixels1.draw(1);
-			//hsl2d.draw();
+			else
+				csX = 0;
+				//nearPixels1.draw(1);
+			hsl2d2.draw();
+			hsl2d.draw();
+			//System.out.printf("maxRmsErr: %f\n", maxRmsErr);
 		}
 
 		//redo hough with all points (not just innermost color-segmented points
 		//for the vanish point detection code. 
-		h.clear();
+		/*h.clear();
 		for( Point p : c.results.l ) 
 			h.add(p.x, p.y);
         h.blur();
+        */
 		return null;
 	}
+	
+	double csX = 0; // color segmentation X value 
 	
 	HslHistogram nearPixels1 = new HslHistogram();
 	HslHistogram nearPixels2 = new HslHistogram();
 	HslHistogram hslRoad = new HslHistogram();
-	int count = 0;
+	
 	
 	public double getAngle() {		
     	return focus.angle.predict(focus.count);
@@ -597,15 +730,33 @@ class TargetFinderLines extends TargetFinder {
 	public double getInstantaneousAngle() {		
     	return focus.lastAngle;
 	}
-	public int getInstantaneousX(int y) {		
-    	double m = Math.tan(Math.toRadians(focus.lastAngle));
+	
+	public double getInstantaneousXDouble(int y) {
+	   	double m = Math.tan(Math.toRadians(focus.lastAngle));
 		double b = (int)Math.round(sa.y + focus.lastIntercept) - sa.x * m;
-		//double b = (int)Math.round(sa.y + focus.getLastIntercept() - sa.x * m;
-		// x = (y - b) / m
-		return (int)Math.round((y - b) / m);
+		return (y - b) / m;
+		
 	}
+	public int getInstantaneousX(int y) {		
+    	return (int)Math.round(getInstantaneousXDouble(y));
+   	}
 
-	HslHist2D hsl2d = new HslHist2D();
+	HslHist2D hsl2d = new HslHist2D(), hsl2d2 =new HslHist2D();
+	public Point hOriginOverride = null;
+
+	private float getLuminance(OriginalImage oi, Rectangle sa, int x, int y, int kernSize) {
+		float lum=0;
+		for(int dx = -kernSize; dx <= kernSize; dx++) { 
+			for(int dy = -kernSize; dy <= kernSize; dy++) { 			
+				if (x + dx >= 0 && x + dx < sa.width && dy + y >= 0 && dy + y < sa.height) {  
+					lum += oi.getPixelLum(x + dx + sa.x, y + dy + sa.y);
+				}
+			}
+		}
+		//System.out.println(String.format("%.2f", lum));
+		return lum;
+				
+	}
 	
 	private boolean checkLuminance(OriginalImage oi, Rectangle sa, int x, int y, int thresh) {
 		for(int dx = -1; dx <= 1; dx++) { 
@@ -736,15 +887,16 @@ class TargetFinderLines extends TargetFinder {
 			getAngle(), getOffsetX(), h.getAngSpread()), midLine.x + sa.x + txtOffset, 
 			midLine.y + sa.y + txtOffset);
 		
-		if (focus.getQuality() > Focus.minWeight) {
+		//if (focus.getQuality() > Focus.minWeight) {
 			//drawLine(g2, r, x1, focus.getAngWidth() * focus.angZoneOffset);
 			drawLine(g2, r, x1, 0);
 			//drawLine(g2, r, x1, -focus.getAngWidth() * (1 - focus.angZoneOffset));
         	//System.out.printf("ang %.2f\n", tfl.focus.angle.calculate());
-		}
+		//}
 
 		final int oDot = 3;
 		g2.draw(new Rectangle(sa.x + h.origin.x - oDot, sa.y + h.origin.y - oDot, oDot * 2, oDot * 2));
+		//g2.draw(new Rectangle((int)Math.round(csX) - oDot, height - oDot * 2, oDot * 2, oDot * 2));
 	}
 	
 	boolean insideVanRect(Point p) { 

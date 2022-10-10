@@ -74,16 +74,20 @@ public class TargetFinderRoadColor extends TargetFinder {
 			}
 		}
 		//hh.draw(0.0);
-		roadIntensity = hh.hists[2].maxbucket;  // TODO- this very important parameter needs to be documented
-		hslThresh[0] = (int)hh.hists[0].percentile(0.25);
-		hslThresh[1] = Math.min((int)hh.hists[1].percentile(0.99) + 2, 255);
-		hslThresh[2] = Math.min((int)hh.hists[2].percentile(0.99) + 30, 255);
+		
+		
+		HslHistogram hx = (HslHistogram)hh;
+		roadIntensity = hx.getHist(2).maxbucket;  // TODO- this very important parameter needs to be documented
+		hslThresh[0] = (int)hh.getHist(0).percentile(0.25);
+		hslThresh[1] = Math.min((int)hh.getHist(1).percentile(0.99) + 2, 255);
+		hslThresh[2] = Math.min((int)hh.getHist(2).percentile(0.99) + 30, 255);
 
 		for (int y = 0; y < sa.height; y++) { 
-			rowAverageThresholds[y].h = (int)rowAverageHH[y].hists[0].percentile(0.25);
-			rowAverageThresholds[y].s = Math.min((int)rowAverageHH[y].hists[1].percentile(0.99) + 1, 255);
-			rowAverageThresholds[y].l = Math.min((int)rowAverageHH[y].hists[2].percentile(0.99) + 28, 255);
+			rowAverageThresholds[y].h = (int)rowAverageHH[y].getHist(0).percentile(0.25);
+			rowAverageThresholds[y].s = Math.min((int)rowAverageHH[y].getHist(1).percentile(0.99) + 1, 255);
+			rowAverageThresholds[y].l = Math.min((int)rowAverageHH[y].getHist(2).percentile(0.99) + 28, 255);
 		}
+		
 		//System.out.printf("%d %d %d\n", hslThresh[0], hslThresh[1], hslThresh[2]);
 		return null;
 	}	

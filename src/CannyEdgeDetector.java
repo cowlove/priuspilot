@@ -44,9 +44,11 @@ class CannyResults {
 	CannyResults(int h, int w) { 
 		this.h = h; this.w = w;
 		results = new Integer[h * w];
+		gradResults = new float[h * w *2];
 	}
 	int w, h;
 	Integer [] results;
+	float [] gradResults;
 	int last = 0, index = 0, length = 0;
 	
 	void rewind() { last = 0; index = 0; }
@@ -70,15 +72,22 @@ class CannyResults {
 }
 
 public class CannyEdgeDetector {
-	public CannyResults results = new CannyResults(1, 1);
+	public CannyResults results = null;
 
 	// statics	
 	private final static float GAUSSIAN_CUT_OFF = 0.005f;
 
 	// fields
 	public ScanZonePair zones = new ScanZonePair();
-	int yend(int x) { return zones.yend(x); }
-	int ystart(int x) { return zones.ystart(x); }
+
+	int yend(int x) {  
+		int y = zones.yend(x) - kwidth;
+		return Math.max(Math.min(y, height - kwidth), kwidth); // limit between kwidth and height - kwidth
+	}
+	int ystart(int x) {
+		int y = zones.ystart(x) + kwidth;
+		return Math.max(Math.min(y, height - kwidth), kwidth); // limit between kwidth and height - kwidth
+	}
 	
 	// new stuff to limit the canny processing to the area between new lines. 
 	// currently unused, need to modify all iteration loops to only go from
@@ -155,6 +164,7 @@ public class CannyEdgeDetector {
 		for(int x = 0; x < r.width; x++) {
 			int lasty = yend(x);
 			for (int y = ystart(x); y < lasty; y++) {
+				// TODO exception right here with y=-2147483538
 				data[x + y * width] = i.getPixelLum(r.x + x, r.y + y);
 			}
 		}
@@ -181,6 +191,7 @@ public class CannyEdgeDetector {
 		// TODO- figure out border artifact problems, this is 
 		// pretty inefficient
 		data = new int[picsize];
+		results = new CannyResults(width, height);
 	}
 
 	float kernel[];
@@ -235,7 +246,13 @@ public class CannyEdgeDetector {
 		}
 	}
 
-	
+	double getGradient(int x, int y)  {
+		final int index = x + y * width;
+		final float xGrad = xGradient[index];
+		final float yGrad = yGradient[index];
+		final float gradMag = hypot(xGrad, yGrad);
+		return gradMag;
+	}
 	// compute magnitude for column x.  Needs gradients to be complete through
 	// column x + 1, inclusive.  
 	void doMagnitude(int x) { 
@@ -363,7 +380,8 @@ public class CannyEdgeDetector {
 					}
 				}
 			}
-			
+			if (r) 
+				results.gradResults[index] = gradMag;
 			if (r && gradMag > threshold) { 
 					data[index] = -1;
 					results.add(x, yY);
@@ -408,6 +426,7 @@ public class CannyEdgeDetector {
 				int xOffset = 1;
 				int yOffset = width;
 				for(; xOffset < kwidth ;) {
+					// Array bounds exception here!  -159 
 					sumY += kernel[xOffset] * (data[index - yOffset] + data[index + yOffset]);
 					sumX += kernel[xOffset] * (data[index - xOffset] + data[index + xOffset]);
 					yOffset += width;

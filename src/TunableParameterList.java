@@ -8,23 +8,32 @@ class TunableParameter {
 	int places;
 	public interface Adjust { 
 		abstract double adjust(double v);
+		//abstract String valueAsString(); 
 	}
+	public interface Print { 
+		abstract String print();
+	}
+	public Print valueAsString = new Print() { public String print() { 
+		return String.format("%." + places + "f", adjuster.adjust(0)); 
+	} }; 
 	double increment;
 	Adjust adjuster;
-	TunableParameter(String d, char k, double i, Adjust a) { 
+	TunableParameter(String d, char k, double i, Adjust a, Print p) {
 		desc = d; key = k; increment = i; adjuster = a;
 		if (i >= 1) places = 0;
 		else if (i >= .1) places = 1;
 		else if (i >= .01) places = 2;
 		else if (i >= .001) places = 3;
 		else places = 4;
+		
+		if (p != null)
+			valueAsString = p;
 	}
 	void adjust(int direction) { 
 		adjuster.adjust(increment * direction);
 	}
 	String asString() { 
-		return String.format("'" + desc + "' (key '" + key + "') is now %." + places + "f", adjuster.adjust(0));
-		
+		return String.format("'" + desc + "' (key '" + key + "') is now " + valueAsString.print());
 	}
 }
 

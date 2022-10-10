@@ -4,6 +4,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -16,12 +18,21 @@ class ImageFileWriter {
     ByteBuffer bb;
     IntBuffer ib;
     String dateString = "";
-    public ImageFileWriter(String f) {
+    FrameCaptureJNI fc;
+    public ImageFileWriter(String f, FrameCaptureJNI c) {
         fmt = f;
+        fc = c;
+        instances.add(this);
     }
     boolean active = true;
     int count = 0;
     
+    static ArrayList<ImageFileWriter> instances = new ArrayList<ImageFileWriter>();
+    static void RestartAllFiles(String s) { 
+    	for(ImageFileWriter iw : instances) {
+    		iw.restartFile(s);
+    	}
+    }
     public void restartFile(String d) { 
     	close();
     	fos = null;
@@ -30,13 +41,13 @@ class ImageFileWriter {
     	  	active = !active;
     	else if (fmt.endsWith(".yuv")) { 
     		active = !active;
-	    	if (Silly.fc != null) { 
+	    	if (fc != null) { 
 	    		String filename = String.format(fmt, dateString);
 	    		if (active) {
-		    		Silly.fc.setCaptureFile(filename);
+		    		fc.setCaptureFile(filename);
 	    			System.out.println("Opened yuv output file " + filename);
 	    		} else { 
-		    		Silly.fc.setCaptureFile("");
+		    		fc.setCaptureFile("");
 	    			System.out.println("Closed yuv output file");
 	    		}
     		}
@@ -101,7 +112,7 @@ class ImageFileWriter {
 				e.printStackTrace();
 			}
     	}
-    	if (Silly.fc != null) 
-    		Silly.fc.setCaptureFile("");
+    	if (fc != null) 
+    		fc.setCaptureFile("");
     }
 }

@@ -1,9 +1,14 @@
 
 class FrameProcessorTunableParameters extends TunableParameterList { 
 	void add(String s, char k, double inc, TunableParameter.Adjust a) { 
+		add(s,k,inc,a, null);
+		
+	}
+	void add(String s, char k, double inc, TunableParameter.Adjust a, 
+			TunableParameter.Print p) { 
 		if (findParam((int)k) !=  null) 
 			System.out.printf("Warning: key '%c'/%d already bound\n", k, (int)k);
-		super.add(new TunableParameter(s, k, inc, a));
+		super.add(new TunableParameter(s, k, inc, a, p));
 	}
 	public FrameProcessorTunableParameters(FrameProcessor f) { 
 		fp = f;
@@ -18,6 +23,11 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("DECREASE", ',', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		add("INCREASE", '.', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		
+		add("dither.magnitude", 'K', 0.01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.magnitude += i; }} );
+		add("dither.period", 'L', 0.01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.duration += i; }} );
+
 		add("PID DD gain", 'F', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.j.loGain += i; }} );
 		add("PID P gain", 'P', 0.05, 
@@ -38,7 +48,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.period.l += i; }} );
 				*/
 
-		add("Reset input zero point", (char)192/**/, 0, 
+		add("Reset input zero point", (char)127/**/, 0, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					fp.inputZeroPoint.setAutoZero(); return 0;
 				}});
@@ -84,31 +94,34 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 						return fp.tfparamIndex;
 					}} );
 
-		//add("fp.epsSteeringGain", 'L', .1, 
+		add("fp.servoTrim", 'Y', .01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { 
+					return fp.servoTrim += i; }} );
+		add("fp.epsSteeringGain", 'C', .1, 
+				new TunableParameter.Adjust() { public double adjust(double i) { 
+					return fp.epsSteeringGain += i; }} );
+//		add("detector.threshold1", 'Y', 1, 
+//				new TunableParameter.Adjust() { public double adjust(double i) { 
+//					return fp.tfparam.threshold1 = (fp.tfparam.threshold1 += i); }} );
+		//add("PID gain.p.loTrans", 'L', .001, 
 		//		new TunableParameter.Adjust() { public double adjust(double i) { 
-		//			return fp.epsSteeringGain += i; }} );
-		add("detector.threshold1", 'Y', 1, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.tfparam.threshold1 = (fp.tfparam.threshold1 += i); }} );
-		add("PID gain.p.loTrans", 'L', .001, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.selectedPid.gain.p.loTrans += i; }} );
+		//			return fp.selectedPid.gain.p.loTrans += i; }} );
 		add("PID gain.p.hiGain", 'O', .02, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return (fp.selectedPid.gain.p.hiGain += i); }} );
 		add("ca.growSegmentSize", '7', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.caR.growSegmentSize = (fp.caL.growSegmentSize += i); }} );
-		add("ca.maxGrowGap", '8', 1, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.caR.maxGrowGap = (fp.caL.maxGrowGap += i); }} );
-		add("ca.maxGrowError", '9', 0.1, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.caR.maxGrowError = (fp.caL.maxGrowError += i); }} );
+		//add("ca.maxGrowGap", '8', 1, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { 
+		//			return fp.caR.maxGrowGap = (fp.caL.maxGrowGap += i); }} );
+		//add("ca.maxGrowError", '9', 0.1, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { 
+		//			return fp.caR.maxGrowError = (fp.caL.maxGrowError += i); }} );
 		add("detector.gaussianRadius", '0', 0.1, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.tfparam.gaussianKernelRadius = (fp.tfparam.gaussianKernelRadius += i); }} );
-		add("tfl.h.blurRadius", '-', .01, 
+		add("tfl.h.blurRadius", '-', .005, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.tfl.h.blurRadius = fp.tflo.h.blurRadius = fp.tfro.h.blurRadius = (fp.tfr.h.blurRadius += i); }} );
 
@@ -123,9 +136,13 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 						if (idx < 0)
 							idx = fp.pids.size() - 1;
 						fp.selectedPid = fp.pids.get(idx);
-						System.out.print("Selected PID now " + fp.selectedPid.description);
 					}
-					return 0; }} );
+					return 0; 
+				}},
+				new TunableParameter.Print() { public String print() {
+					return fp.selectedPid.description;
+				}}
+				);
 		
 		//add("PID derrDegree", 'T', 1,
 		//		new TunableParameter.Adjust() { public double adjust(double i) {
@@ -134,12 +151,17 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.displayMode = (fp.displayMode + (int)i) % 16 ; }} );
 
-		add("FP maxSteerIncrease", '[', .01,
+		add("ST steer.maxSteer", (char)59, .025,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.maxSteerIncrease = Math.max(0, fp.steering.maxSteerIncrease + i); }});
-		add("FP maxSteerReturn", ']', .01,
+					return fp.steering.maxSteer += i; }});
+
+		add("FP steer.maxSteerIncrease", '[', .005,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.maxSteerReturn = Math.max(0, fp.steering.maxSteerReturn + i); }});
+					return fp.steering.maxSteerIncrease += i; }});
+		add("FP deadbsnd", ']', .01,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.steeringDeadband += i; }});
+
 		
 		 add("FP steer.lag.threshold", '1', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
@@ -148,12 +170,16 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.lag.gain += i; }});
 		
-		add("FP steer.lag.delay", '3', .01,
+		add("FP steer.lag.actuationTime", '3', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.lag.delay += i; }});
-		add("FP steer.nonLinearPoint", 'J', .01,
+					return fp.steering.lag.actuationTime += i; }});
+		add("FP steer.lag.deadTime", '4', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.nonLinearPoint += i; }});
+					return fp.steering.lag.deadTime += i; }});
+		add("FP steer.lag.lagTime", '5', .01,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.steering.lag.lagTime += i; }});
+
 /*		add("TF H.low", '1', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.tf.param.H.low += i; }});		
@@ -173,21 +199,31 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.tf.param.L.high += i; }});
 	*/
-	/*
-		add("FP testPulse magnitude", '7', .10,
+	
+		add("FP testPulse magnitude", '6', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.magnitude += i; }});
-		add("FP testPulse duration", '8', .10,
+		add("FP testPulse duration", '7', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.duration += i; }});
-		add("FP testPulse type", '9', 1,
+		add("FP testPulse type", '0', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steeringTestPulse.changeTestType((int) i); }});
+					return fp.steeringTestPulse.changeTestType((int) i); }},
+				new TunableParameter.Print() { public String print() { 
+					return fp.steeringTestPulse.testTypeNames[fp.steeringTestPulse.testType]; }});
+				
+	
+/*(add("FP selectedPid.gain.i", '8', .01,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.selectedPid.gain.i.loGain += i;  }});
 */
-		add("FP steering.lag.basisFactor", 'C', .01, 
+		add("FP selectedPid.gain.i.max", 'U', .005,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.selectedPid.gain.i.max += i;  }});
+	/*	add("FP steering.lag.basisFactor", 'C', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return  fp.steering.lag.basisFactor += i; }} );		
-
+*/
 		add("PID quality fade threshold", 'W', .0002,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.selectedPid.qualityFadeThreshold += i; }});
@@ -200,9 +236,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("FP displayRatio", 'H', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.displayRatio = (int)Math.min(10, Math.max(0, fp.displayRatio + i)); }});
-		add("TF nonmaxThreshold", 'U', .01,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.tf.param.nonmaxThreshold += i; }});
+	//	add("TF nonmaxThreshold", 'U', .01,
+	//			new TunableParameter.Adjust() { public double adjust(double i) {
+	//				return fp.tf.param.nonmaxThreshold += i; }});
 		add("TF fp.lineIntensityDelta", 'V', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.lineIntensityDelta += i; }});

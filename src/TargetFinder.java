@@ -25,7 +25,7 @@ class ByteSpan {
 
 class FinderParameters { 
 	float threshold1 = 12F, threshold2 = 8F;
-	float gaussianKernelRadius = 1.5F;
+	float gaussianKernelRadius = 0.8F;
 	int gaussianKernelWidth = 8;
 	float nonmaxThreshold = 0.50f;
 	ByteSpan H = new ByteSpan(0,256);   
@@ -37,36 +37,46 @@ class FinderParameters {
 
 
 
-
 class HistogramDisplay { 
 	BufferedImageDisplay display = null;
 	int w, h;
 	HistogramDisplay() { 
 		w = 320; h = 240; // hardcoded size for histogram display
 	}
-	class HistogramInfo {
-		Histogram h;
+	class LineDrawerInfo {
+		LineDrawer h;
 		Color c;
 	}
-	ArrayList<HistogramInfo> hists = new ArrayList<HistogramInfo>();
-	void add(Histogram h, Color c) { 
-		HistogramInfo hi = new HistogramInfo();
+	ArrayList<LineDrawerInfo> hists = new ArrayList<LineDrawerInfo>();
+	void add(LineDrawer h, Color c) { 
+		LineDrawerInfo hi = new LineDrawerInfo();
 		hi.h = h;
 		hi.c = c;
 		hists.add(hi);
 	}
 	void draw() { 
+		draw(0);
+	}
+	void draw(double blur) { 
 		if (display == null) 
 			display = new BufferedImageDisplay(w, h, BufferedImage.TYPE_INT_ARGB);
 		display.g2.clearRect(0, 0, w, h);
-		for(HistogramInfo hi : hists) {
+		for(LineDrawerInfo hi : hists) {
 			display.g2.setColor(hi.c);
-			hi.h.draw(display.g2, w, h);
+			hi.h.draw(display.g2, w, h, blur);
 		}
 		display.done(null);	
 	}
 }
-class Histogram { 
+
+interface LineDrawer { 
+	public void draw(Graphics2D g2, int w, int h, double blur);
+	public void add(double v);
+	public void clear();
+	public void recount();
+}
+
+class Histogram implements LineDrawer { 
 	Histogram(double mi, double ma, int s) {
 		size = s;
 		min = mi;
@@ -74,7 +84,7 @@ class Histogram {
 		step = (max - min) / s;
 		clear();
 	}
-	void clear() { 
+	public void clear() { 
 		buckets = new int[size];
 		maxbucket = -1;
 		count = 0;
@@ -97,7 +107,7 @@ class Histogram {
 	int bucketIndex(double v) { 
 		return (int)Math.floor((v - min) / step);
 	}
-	void add(double v) { 
+	public void add(double v) { 
 		if (v >= min && v <= max) { 
 			int i = bucketIndex(v);
 			buckets[i]++;
@@ -109,7 +119,12 @@ class Histogram {
 		}
 	}
 	
-	void draw(Graphics2D g2, int w, int h) {
+	public void draw(Graphics2D g2, int w, int h, double blur) {
+		if (blur > 0) { 
+			GaussianKernel gk = new GaussianKernel(blur, 10, size, 1);
+			gk.blur(buckets);
+			recount();
+		}
 		w -= 10;
 		int botBorder = 50;
 		if (maxbucket == -1 || buckets[maxbucket] == 0) 
@@ -142,17 +157,41 @@ class Histogram {
 	}
 }
 
+class Chronograph implements LineDrawer {
+	Chronograph() {}
+	
+	int botBorder = 30;
+	ArrayList<Integer> values = new ArrayList<Integer>();
+	@Override
+	public void draw(Graphics2D g2, int w, int h, double blur) {
+		int size = values.size();
+		int maxval = 300;
+		for(int i = 0; i < size - 1; i++) { 
+			g2.drawLine(i * w / size, h - botBorder - values.get(i) * h / maxval, 
+					(i + 1) * w / size, h - botBorder - values.get(i + 1) * h / maxval);
+		}
+	}
 
-class HslHistogram {
-	Histogram [] hists = new Histogram[3];
+	@Override
+	public void add(double v) {
+		values.add((int)v);
+	}
+
+	@Override
+	public void clear() {
+		values.clear();
+	}
+
+	@Override
+	public void recount() {
+	} 
+	
+}
+
+abstract class HslChart {
+	LineDrawer [] hists = new LineDrawer[3];
 	HistogramDisplay disp = new HistogramDisplay();
-	HslHistogram() { 
-		hists[0] = new Histogram(0, 256, 256);
-		hists[1] = new Histogram(0, 256, 256);
-		hists[2] = new Histogram(0, 256, 256);
-		disp.add(hists[0], Color.red);
-		disp.add(hists[1], Color.yellow);
-		disp.add(hists[2], Color.white);
+	HslChart() { 
 	}
 	void add(int []h) { 
 		add(h[0], h[1], h[2]);
@@ -163,22 +202,39 @@ class HslHistogram {
 		hists[2].add(l);
 	}
 	void clear() { 
-		for(Histogram h : hists) 
+		for(LineDrawer h : hists) 
 			h.clear();
 	}
 	void draw() { 
 		draw(0);
 	}
 	void draw(double blur) { 
-		if (blur > 0) { 
-			GaussianKernel gk = new GaussianKernel(blur, 10, hists[0].size, 1);
-			for(Histogram h : hists) {
-				gk.blur(h.buckets);
-				h.recount();
-			}
-			
-		}
 		disp.draw();
+	}
+}
+
+class HslHistogram extends HslChart {
+	HslHistogram() { 
+		hists[0] = new Histogram(0, 256, 256);
+		hists[1] = new Histogram(0, 256, 256);
+		hists[2] = new Histogram(0, 256, 256);
+		disp.add(hists[0], Color.red);
+		disp.add(hists[1], Color.yellow);
+		disp.add(hists[2], Color.white);
+	}
+	Histogram getHist(int n) { 
+		return (Histogram)hists[n];
+	}
+}
+
+class HslChronograph extends HslChart {
+	HslChronograph() { 
+		hists[0] = new Chronograph();
+		hists[1] = new Chronograph();
+		hists[2] = new Chronograph();
+		disp.add(hists[0], Color.red);
+		disp.add(hists[1], Color.yellow);
+		disp.add(hists[2], Color.white);
 	}
 }
 

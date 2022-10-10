@@ -18,10 +18,31 @@ import math.JamaLeastSquaresFit;
 import math.RunningAverage;
 import math.RunningLeastSquaresSine;
 import math.RunningQuadraticLeastSquares;
+import math.FFT;
+import math.Complex;
+
 
 import com.centralnexus.input.*;
 
 
+
+class HistoryArray { 
+	double []values;
+	HistoryArray(int size) {
+		values = new double[size];
+	}
+	void add(double v) { 
+		for (int i = 0; i < values.length - 1; i++)
+			values[i] = values[i + 1];
+		values[values.length - 1] = v;
+	}
+	void addExtrapolate(double v, int count) { 
+		double last = values[values.length - 1];
+		double step = (v - last) / count;
+		for (int n = 0; n < count; n++)
+			add(last + step * (n + 1));
+	}
+}
 class InputZeroPointTrim { 
 	class Entry { 
 		int vanX = 0;
@@ -58,6 +79,7 @@ class InputZeroPointTrim {
 		rLaneAvg.clear();
 	}
 	void setAutoZero() { 
+		System.out.printf("Setting autoZero\n");
 		if (vanXAvg.count != historySize)
 			return;
 		zeroPoint.vanX = (int)vanXAvg.calculate();
@@ -74,7 +96,7 @@ class FrameProcessor {
     long count = 0;
     int skipFrames = 0;
     int interval = 10;
-    double servoTrim = -0.03;
+    double servoTrim = 0.0;
     double zoom = 1.0; // zoom, normalized to 320x240
     int displayMode = 10; 
     //LaneAnalyzer la = null;
@@ -84,6 +106,9 @@ class FrameProcessor {
     public PidControl ccPid = new PidControl("Cruise Control PID");
     public ControlLagLogic ccLag = new ControlLagLogic();
     public PidControl pidLL = new PidControl("Left Line PID");
+    public PidControl pidCSR = new PidControl("Right Lane Color Segment PID");
+    public PidControl pidCSL = new PidControl("Right Lane Color Segment PID");
+         
     public PidControl pidRL = new PidControl("Right Line PID");
     public PidControl pidPV = new PidControl("Perspective PID");
     public PidControl pidLV = new PidControl("Line X PID");
@@ -93,12 +118,10 @@ class FrameProcessor {
     public PidControl selectedPid = pidLL;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
     
-    SteeringLogic steering = new SteeringLogic();
+    SteeringLogic steering = null;
     int width, height, displayRatio;
     FrameProcessorTunableParameters tp = new FrameProcessorTunableParameters(this);
     TargetFinder tf = null;
-    
-    
        
     TargetFinderLines tfl, tfr, tfro, tflo;
     TargetFinderRoadColor tfrc;
@@ -110,41 +133,53 @@ class FrameProcessor {
     
     InputZeroPointTrim inputZeroPoint = new InputZeroPointTrim();
     PriusVoice pv = new PriusVoice();
-    
+	HistoryArray corrHist = null, predHist = null;
+    double []ch = null;
+
+	GnuplotWrapper gp = new GnuplotWrapper();
+
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
-    		int displayRatio, String serialDevice) throws IOException {
+    		int displayRatio, String serialDevice, String swCam) throws IOException {
         if (displayRatio > 0) 
         	display = new BufferedImageDisplayWithInputs(this, w * rescale, h * rescale);        
     	if (outFile != null) 
-    		writer = new ImageFileWriter(outFile);
+    		writer = new ImageFileWriter(outFile, Silly.fc);
         if (dumpFile != null) 
         	logfile = new Logfile(dumpFile);
+        steering = new SteeringLogic(swCam);
+        
         width = w;
         height = h;
         this.rescale = rescale;
         this.displayRatio = displayRatio;
         cmdBus = new SerialCommandBus(serialDevice, this);
-        
- 		
+        	
 		restartOutputFiles();
         //td = new TemplateDetectCannyCorrelation(w, h);
         //td = new TemplateDetectRGB(w, h);
         
         int minSz = 65; // min/max radius
         int maxSz = 100;
-        int houghSize = 71;
+        int houghSize = 91;
         if (Silly.debug("HOUGH_SIZE"))
         	houghSize = Silly.debugInt("HOUGH_SIZE");
         tfl = new TargetFinderLines(w, h, null, true, 45, houghSize, minSz, maxSz, 15, 45);
         tfr = new TargetFinderLines(w, h, null, false, 45, houghSize, minSz, maxSz, 15, 45);
-        tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 15, 45);
-        tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 15, 45);
+        tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45);
+        tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45);
     
     	caR = new CurvatureAnalyzer(false, w, h); 
     	caL = new CurvatureAnalyzer(true, w, h); 
 
         tfparams.add(tfl.param);
-        tfparams.add(tfr.param);	   
+        tfparams.add(tfr.param);	
+        
+        tfl.useLuminanceCheck = tfr.useLuminanceCheck = true;
+        tflo.useLuminanceCheck = tfro.useLuminanceCheck = false;
+        
+        if (Silly.debug("GK_RAD"))
+        	tfl.param.gaussianKernelRadius = tfr.param.gaussianKernelRadius =
+        	(float)Silly.debugDouble("GK_RAD");
         
         tf = new TargetFinderRed(w, h);
         tfparams.add(tf.param);
@@ -152,8 +187,8 @@ class FrameProcessor {
         tfparam = tfparams.get(0);
 
         tfrc = new TargetFinderRoadColor(w, h);
-        tfrcRect = new Rectangle((int)(w * 0.47), (int)(h * 0.26), (int)(w * .12), 
-        		(int)(h * 0.45));
+        tfrcRect = new Rectangle((int)(w * 0.47), (int)(h * 0.42), (int)(w * .12), 
+        		(int)(h * 0.36));
         //new Rectangle((int)(w * 0.44), (int)(h * 0.35), 
         //		(int)(w * .12), (int)(h * .30));
         pids.add(pidLL);
@@ -162,16 +197,20 @@ class FrameProcessor {
         pids.add(pidLV);
         pids.add(pidCA);
         pids.add(ccPid);
-        selectedPid = pidRL;
+        //pids.add(steering.clc.pid);
+        //selectedPid = steering.clc.pid;
         
         steeringTestPulse.testType = steeringTestPulse.TEST_TYPE_SQUARE;
         steeringTestPulse.magnitude = 0.2;
-        steeringTestPulse.duration = 0.5;
+        steeringTestPulse.duration = 0.7;
         steeringTestPulse.count = 0;
         steeringTestPulse.offset = -0.00;
        
-        pidRL.setGains(2.25, 0, 2.00, 0.20, 0);
-        pidRL.gain.p.hiGain = 1.52;  
+        steeringDitherPulse.magnitude = .10;
+        
+        pidRL.setGains(2.25, 0.04, 2.00, 0, 0);
+        pidRL.gain.p.hiGain = 1.52;
+        pidRL.gain.i.max = 0.00; // I control has minor oscillating problems 
         pidRL.finalGain = 1.70;
         pidRL.manualTrim = -0.00;   
         pidRL.qualityFadeThreshold = .0046;
@@ -182,7 +221,7 @@ class FrameProcessor {
         pidRL.gain.p.loTrans = -0.045;  // "bumper" points of increased gain for lane proximity
         pidLL.gain.p.hiTrans = +0.037;  // TODO - change when the tfl prescale constant changes
         
-        pidLV.setGains(2.0, 0, 0.40, 0.30, 0);
+        pidLV.setGains(2.0, 0, 0.40, 0, 0);
         pidLV.finalGain = .90;
         pidLV.manualTrim = 0;
         pidLV.qualityFadeThreshold = .084;
@@ -213,9 +252,9 @@ class FrameProcessor {
         tdStartY = h / 3;
         
         inputZeroPoint.zeroPoint.vanX = 204;
-        inputZeroPoint.zeroPoint.vanY = 39;
-        inputZeroPoint.zeroPoint.rLane = 464;
-        inputZeroPoint.zeroPoint.lLane = -37;
+        inputZeroPoint.zeroPoint.vanY = 64; // set to 39 and run pp /host/lanedumps/20171118.155503.yuv to crash pidLV
+        inputZeroPoint.zeroPoint.rLane = 473;
+        inputZeroPoint.zeroPoint.lLane = 56;
         
         cmdBus.start();
     }
@@ -225,13 +264,17 @@ class FrameProcessor {
     int rescale = 1;
     double fps = 0;
     int framesDropped = 0;
-    boolean keepFocus = false;
+    boolean keepFocus = false, noSteering = false;
     IntervalTimer intTimer = new IntervalTimer(100);
     boolean paused = false;
     double manualSteerIncrement = .1;
     Map<Object,Object> keypresses = null;
     Map<Object,Point> clicks = null;
-    
+    synchronized void resetPIDs() {
+        for(PidControl p : pids) 
+        	p.reset();
+    }
+   
     synchronized void reset() {
         for(PidControl p : pids) 
         	p.reset();
@@ -245,7 +288,7 @@ class FrameProcessor {
     private int normalizePixel(int x) { 
     	return x * height / 360;
     }
-
+     	
     public void close() {
     	if (writer != null) 
     		writer.close();
@@ -263,7 +306,6 @@ class FrameProcessor {
     }
     
     synchronized void keyPressedSync(int keyCode) { 
-     	
         // TODO replace the tunable keys mess down below with an array,
         // or better yet, a call to the tunable object to see if it handles
         // the key. 
@@ -295,7 +337,7 @@ class FrameProcessor {
         else if (keyCode == 'A')  
         	restartOutputFiles();
         else if (keyCode == 10) { // [ENTER] key
-        	// nothing right now
+        	    noSteering = !noSteering;
         }  else if (keyCode == 32) { // [SPACE] key
         		noProcessing = !noProcessing;  // toggle processing on/off
          		reset();
@@ -312,6 +354,7 @@ class FrameProcessor {
 	           	}
 	           	*/
         } else if (keyCode == 8) { // backspace
+        	System.out.printf("Keyboard reset at frame %d,  time %d\n", count, time);
         	onCruiseJoystick(4);
         	setSteering(0);
         } else if (keyCode == '/') {
@@ -378,8 +421,8 @@ class FrameProcessor {
     JoystickControl joystick = new JoystickControl();
     SerialCommandBus cmdBus = null;
     
-    double steeringDeadband = 0.00;
-    double epsSteeringGain = 3.1;			
+    double steeringDeadband = 0.10;
+    double epsSteeringGain = 2.5;	
     double trq1 = 0, trq2 = 0;
     int steerOverrideTorque = 300;
     
@@ -405,13 +448,14 @@ class FrameProcessor {
     
     synchronized void setSteering(double x) { 
     	x += servoTrim;
+    	x += joystick.trim;
         x = x * epsSteeringGain;
         
         final double maxSteer = 2.2; // wasn't 2.20 a bit excessive?! (WTF)
         x = Math.max(x, -maxSteer);
         x = Math.min(x, maxSteer);
             
-    	int st = (int)(-x * 128 / 2.5);
+    	int st = (int)(x * 128 / 2.5);
     	
     	cmdBus.writeCmd('s', st);
     	if (count % 30 == 0) { 
@@ -424,6 +468,7 @@ class FrameProcessor {
     // TODO- separate text window to display test stats
     void writeDisplayText() {
         display.writeText("FRAME: " + String.format("%d", count));
+        display.writeText("LTIME: " + String.format("%d",  time - logFileStartTime));
         display.writeText("FPS: " + String.format("%.1f", fps));
         display.writeText("DROPPED: " + framesDropped);
         //display.writeText("L   : " + String.format("%.2f", pid.la.calculate()));
@@ -467,7 +512,7 @@ class FrameProcessor {
     double colorThresholdPercent = 0.10;
     int pauseFrame = 0;
     int exitFrame = 0;
-    long time = 0;
+    long time = 0, frameResponseMs = 0;
     boolean noProcessing = false;
     RemoteTcpCommandSocket cmdSocket = null; //new RemoteTcpCommandSocket();
     
@@ -536,7 +581,6 @@ class FrameProcessor {
     int ccSetPoint = 15;
 	RunningAveragePoint houghVan = new RunningAveragePoint(5);
 	
-	GnuplotWrapper gp = new GnuplotWrapper();
     
     static Rectangle scaleRect(Rectangle r, int scale) {
     	return new Rectangle(r.x * scale, r.y * scale, r.width * scale, r.height * scale);
@@ -547,8 +591,13 @@ class FrameProcessor {
 	
 
 	OriginalImage coi = null;
-    synchronized void processFrameSync(long t, OriginalImage oi) throws IOException {
-		double lpos = Double.NaN, rpos = Double.NaN, laneVanX = Double.NaN,
+	double lpos = Double.NaN, rpos = Double.NaN;
+	double laneVanX = Double.NaN,persVanX = Double.NaN;
+
+	synchronized void processFrameSync(long t, OriginalImage oi) throws IOException {
+		lpos = Double.NaN;
+		rpos = Double.NaN;
+		laneVanX = Double.NaN;
 		persVanX = Double.NaN;
 
 		time = t;
@@ -570,7 +619,7 @@ class FrameProcessor {
 	   				tfrc.hslThresh;
 	   		tflo.tfrc = tfro.tfrc = tfl.tfrc = tfr.tfrc = tfrc;
 	   		
-	   		if (Silly.debug("DEBUG_COLOR_SEGMENTATION")) { 
+	   		if (Silly.debug("xDEBUG_COLOR_SEGMENTATION")) { 
 		   		BufferedImageDisplay.nextX = 640;
 		   		BufferedImageDisplay.nextY = 20;
 		   		tfrc.hh.draw(1);
@@ -652,7 +701,7 @@ class FrameProcessor {
 		   		caR.markup(coi);
 	   		}
 			
-	   		if (Silly.debug("DEBUG_LINES")) {
+	   		if (Silly.debug("DEBUG_VAN")) {
 				// flip chart to make it easier to read
 	   			int w = tfr.vanLimits.width / vpScale;
 	   			int h = tfr.vanLimits.height / vpScale;
@@ -705,10 +754,13 @@ class FrameProcessor {
 			final int laneMinQuality = 20;
 	
 			if (tfl.focus.getQuality() > laneMinQuality) 	        		
-	    		lpos = (double)(tfl.getInstantaneousX(height) - inputZeroPoint.zeroPoint.lLane) / width * lanePosPrescale;
+	    		lpos = (double)(tfl.getInstantaneousXDouble(height) - inputZeroPoint.zeroPoint.lLane) / width * lanePosPrescale;
+			
+			
+			
 			
 			if (tfr.focus.getQuality() > laneMinQuality) 	        		
-	    		rpos = (double)(tfr.getInstantaneousX(height) - (inputZeroPoint.zeroPoint.rLane)) / width * lanePosPrescale;
+	    		rpos = (double)(tfr.getInstantaneousXDouble(height) - (inputZeroPoint.zeroPoint.rLane)) / width * lanePosPrescale;
 			
 			if (tfr.focus.getQuality() > laneMinQuality && tfl.focus.getQuality() > laneMinQuality) {
 	       		laneVanish = TargetFinderLines.linePairIntercept(tfl, tfr);
@@ -716,13 +768,18 @@ class FrameProcessor {
 	      			laneVanX = ((double)(laneVanish.x - inputZeroPoint.zeroPoint.vanX)) / width * 1.5 * pixelWidthPrescale; 
 			}
 			
-			if (!Double.isNaN(lpos) && !Double.isNaN(rpos) && !Double.isNaN(laneVanX)) { 
+			if (!Double.isNaN(lpos) && !Double.isNaN(rpos) && !Double.isNaN(laneVanish.x) && !Double.isNaN(laneVanish.y)) { 
 				inputZeroPoint.add(laneVanish.x, laneVanish.y, tfl.getInstantaneousX(height), tfr.getInstantaneousX(height));
 			} else { 
 				inputZeroPoint.reset();
 			}
 			
 			
+			//System.out.printf("%f\n", (double)time/1000);
+			pidCSR.add((tfr.csX - inputZeroPoint.zeroPoint.rLane) /width * lanePosPrescale, time);
+			pidCSL.add((tfl.csX - inputZeroPoint.zeroPoint.lLane) /width * lanePosPrescale, time);
+			
+
 			corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
 			corr += -(pidLV.add(laneVanX, time) + pidPV.add(persVanX, time));
 			double curve = 0;
@@ -794,12 +851,6 @@ class FrameProcessor {
 	        	}
 	        } 
 
-	        // TODO- deadband should probably be applied last
-	        // TODO- deadband and other things should be moved into steering control code
-	        if (steeringDeadband > 0 || (steeringDeadband < 0 && Math.abs(corr) > Math.abs(steeringDeadband))) { 
-		        if (corr < 0) corr -= steeringDeadband;
-		        if (corr > 0) corr += steeringDeadband;
-	        } 
         }
         
         if (cmdSocket != null) { 
@@ -807,22 +858,88 @@ class FrameProcessor {
 	        if (remoteInput != 0.0) 
 	        	steer = remoteInput / 10;
         }
+
+        if (corrHist == null) {
+        	ch = new double[256];
+        	corrHist = new HistoryArray(64);
+        	predHist = new HistoryArray(corrHist.values.length);
+        }
+        System.arraycopy(corrHist.values, 0, ch, 0, corrHist.values.length);
+        double pred = 0;
+        int extrapolate = 1;
+               int filterCent = (int)Math.round(((double)ch.length) * 18/ 512 / extrapolate);
+        int filterW = (int)Math.round(((double)ch.length) * 4/ 512 / extrapolate);
+        double filterMag = 0.0;
         
-        if (!noProcessing) 
+        corrHist.addExtrapolate(corr, extrapolate);
+        Complex [] ar = Complex.complexArray(ch);
+        ar = FFT.fft(ar);
+   
+        pred = ar[filterCent].re() * Math.cos((ch.length - 1) * 2 * Math.PI) + 
+        		ar[filterCent].im() * Math.sin((ch.length - 1) * 2* Math.PI);
+        //if (pred < -corr) pred = -corr;
+        
+        
+        // apply filter around oscillation frequency 
+        for (int i = filterCent - filterW; i <= filterCent + filterW ; i++) { 
+        	if (i >= 0 && i < ar.length){  
+	        	ar[i] = ar[i].scale(filterMag);
+	        	ar[ar.length - i - 1] = ar[ar.length -i -1].scale(filterMag);
+        	}
+        }	        	
+        Complex [] iar = FFT.ifft(ar);
+        
+        pred = iar[corrHist.values.length - 1].re();
+        //pred = ar[filterCent].abs();
+        
+        predHist.addExtrapolate(pred, extrapolate);
+ 	        
+        if (Silly.debug("FFT")) {
+	        double [][]x = new double[5][];
+	        x[0] = corrHist.values;
+	        x[1] = predHist.values;
+	        x[2] = Complex.magArray(ar);
+	        x[3] = Complex.arrayOfRe(ar);
+	        x[4] = Complex.arrayOfIm(ar);
+	    
+	        gp.startNew();
+	        gp.addArrays(x, x[0].length);
+	        gp.addOptions(new String[]{"ax x1y2", "ax x1y2", null, null, null});
+	        gp.draw2D(5);
+        }
+        corr = pred;
+        
+        if (!noProcessing && !noSteering) 
         	steer = corr;    
         else
             steer = 0;
         
         //temp disabled for steering gain investigations 	
         //if (Math.abs(steer) < .25 && arduinoArmed)
-        //	steer += steeringDitherPulse.currentPulse();
+        steer += steeringDitherPulse.currentPulse();
 
-        steer = steering.steer(time, steer);
         steer += steeringTestPulse.currentPulse();
         
-        steer = joystick.steer(steer);
+        //if (!noSteering) 
+        	steer = steering.steer(time, steer);
         
+        steer = joystick.steer(steer);
+
+        
+        // TODO- deadband should probably be applied last
+        // TODO- deadband and other things should be moved into steering control code
+        if (steeringDeadband > 0 || (steeringDeadband < 0 && Math.abs(steer) > Math.abs(steeringDeadband))) { 
+	        if (steer < 0) steer -= steeringDeadband;
+	        if (steer > 0) steer += steeringDeadband;
+        } 
+
         setSteering(steer);
+	    
+	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
+	    avgFrameDelay.add(frameResponseMs);
+
+	    if (Silly.debug("RESET_PIDS") && (count % Silly.debugInt("RESET_PIDS")) == 0) 
+	    	resetPIDs();
         
         double tc = joystick.getThrottleChange();
         if (tc != 0.0)
@@ -830,18 +947,17 @@ class FrameProcessor {
     	
         if (joystick.getExit())  
         	this.keyPressed('Q');
-        if (joystick.getArm())
-        	noProcessing = false;
-        if (joystick.getDisarm())
-        	noProcessing = true;
         
+        if (joystick.joystickPresent() && arduinoArmed && !joystick.isArmed()) {
+        	arduinoArmed = false;
+        	cmdBus.writeCmd('a', 0);
+        } else if (!arduinoArmed && joystick.isArmed()) {
+        	arduinoArmed = true;
+        	cmdBus.writeCmd('a', 1);        	
+        }
+ 
         if (joystick.getRecordButtonPressed()) {
         	restartOutputFiles();
-        }
-        if (false) { 
-	        long delay = Calendar.getInstance().getTimeInMillis() - t;
-	        avgFrameDelay.add(delay);
-	        System.out.printf("delay %d ms\n", (int)avgFrameDelay.calculate());
         }
         
         if (displayRatio > 0 && (count % displayRatio) == 0) {
@@ -861,7 +977,7 @@ class FrameProcessor {
 	            if (tdFindResult != null) {  
 	            	display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
 	            }
-
+ 
 	            setLineColorAndWidth(Color.green, 1);
     			TargetFinderLines.displayLinePairToOutsideVanRec(tflo, tfro, display.g2);
 	            setLineColorAndWidth(Color.red, 2);
@@ -891,14 +1007,15 @@ class FrameProcessor {
     			final double bWidth = 0.06;
 	            display.rectangle(Color.blue, "FB", steering.lag.feedback + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
-	            display.rectangle(Color.red, "ST", steer + 0.5, yoff, bWidth, 0.05);
+	            display.rectangle(arduinoArmed ? Color.red : Color.white, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 
 	            	yoff += yspace;
 	            	display.text(pid.description, 0, yoff + 0.05);
-		            display.rectangle(Color.white, "S", -pid.corr + 0.5, yoff, bWidth, 0.05, true);
+		            display.rectangle(Color.red, "S", -pid.corr + 0.5, yoff, bWidth, 0.05, true);
 		            display.rectangle(Color.yellow, "P", pid.err.p + 0.5, yoff + 0.005, bWidth, 0.04, true);
-		            display.rectangle(Color.green, "D", pid.err.d + 0.5, yoff + 0.01, bWidth, 0.03, true);	     
-		            display.rectangle(Color.black, "D", pid.err.j + 0.5, yoff + 0.015, bWidth, 0.02, true);	     
+		            display.rectangle(Color.white, "I", pid.err.i + 0.5, yoff, bWidth, 0.03, true);
+		            display.rectangle(Color.green, "D", pid.err.d + 0.5, yoff + 0.01, bWidth, 0.02, true);	     
+		            display.rectangle(Color.black, "D", pid.err.j + 0.5, yoff + 0.015, bWidth, 0.01, true);	     
 		        	Color c = pid.quality < 1.0 ? Color.red : Color.yellow;
 		       		display.rectangle(c, String.format("%03d", (int)(pid.drms / pid.qualityFadeThreshold * 100)), 
 		       				.41 + pid.quality * 0.52, yoff, bWidth, 0.05, false);
@@ -906,6 +1023,7 @@ class FrameProcessor {
 	            }
 	            display.rectangle(Color.cyan, String.format("%.1f", fps), Math.min(0.95, (double)fps / 32), yoff, bWidth, 0.05);	            
             }
+            displayPid(pidLL, Color.yellow);
             if (false && (displayMode & 0x8) != 0) {
             	displayPid(pidLL, Color.yellow);
                	displayPid(pidLV, Color.green);
@@ -972,7 +1090,7 @@ class FrameProcessor {
         	keyPressedSync(key);
         }
         
-        if (cmdBus.ignitionOffCount > 5) {
+        if (false && cmdBus.ignitionOffCount > 5) {
         	System.out.printf("Ignition seems off, exiting\n");
         	System.exit(1);
         }
@@ -984,6 +1102,7 @@ class FrameProcessor {
 		display.g2.setColor(c);    	
     }
     int repeatFrame = 0;
+    
     void processFrame(long t, OriginalImage orig) throws IOException {
 	    count++;
     	do {
@@ -997,6 +1116,14 @@ class FrameProcessor {
 				}
 				*/
     		processFrameSync(t, orig);
+    		if (repeatFrame == count) {
+				try {
+					Thread.sleep(1);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+    		}
     	} while(repeatFrame > 0 && repeatFrame == count); 
     	
     	if (keypresses != null && keypresses.get((int)count) != null) { 
@@ -1006,8 +1133,8 @@ class FrameProcessor {
     		Point p = clicks.get((int)count);
     		this.onMouseClick(p.x, p.y, 1);
     	}
-    	if (exitFrame > 0 && count == exitFrame)
-        	System.exit(0);
+    	//if (exitFrame > 0 && count == exitFrame)
+        	//System.exit(0);
         if (pauseFrame > 0 && count == pauseFrame) 
         	pauser.togglePaused();
         pauser.checkPaused();
@@ -1016,17 +1143,17 @@ class FrameProcessor {
     
     SteeringTestPulseGenerator steeringDitherPulse = new SteeringTestPulseGenerator();
     SteeringTestPulseGenerator steeringTestPulse = new SteeringTestPulseGenerator();
-        
-    void displayPid(PidControl p, Color c) { 
+      
+
+    void displayLs(PidControl p, JamaLeastSquaresFit d, Color c) { 
     	double minX, maxX, minY, maxY;
     	minX = minY = maxX = maxY = 0;
     
-    	if (!p.d.hist.isEmpty()) {
-    		minX = maxX = p.d.hist.peekLast().x;
-    		minY = maxY = p.d.hist.peekLast().y;
+    	if (!d.hist.isEmpty()) {
+    		minX = maxX = d.hist.peekLast().x;
+    		minY = maxY = d.hist.peekLast().y;
     	}
-    		
-    	for(JamaLeastSquaresFit.Entry i : p.d.hist) { 
+    	for(JamaLeastSquaresFit.Entry i : d.hist) { 
     		if (i.x < minX) minX = i.x;
     		if (i.x > maxX) maxX = i.x;
     		if (i.y < minY) minY = i.y;
@@ -1037,17 +1164,17 @@ class FrameProcessor {
     	maxY += rangeY * 2 + 2	; 
     	minY -= rangeY * 1 + 1;
     	maxX = (maxX - minX) * 1.1 + minX;
-    	for(JamaLeastSquaresFit.Entry i : p.d.hist) { 
+    	for(JamaLeastSquaresFit.Entry i : d.hist) { 
     		display.rectangle(c, "", (i.x - minX) / (maxX - minX), 
     				(i.y - minY) / (maxY - minY), .02, .02);
     	}
-    	double y = 0;
+     	double y = 0;
     	double q = p.quality;
     	if (Double.isNaN(p.quality)) { 
     		System.out.printf("hjello\n");
     	}
        	for(double x = 0.0; x < 1.0; x += .01) { 
-       		y = p.d.predict(minX + x * (maxX - minX));
+       		y = p.d.calculate(minX + x * (maxX - minX));
 //	    	display.rectangle(c, "", x, (y - minY) / (maxY - minY), .01, .01);
 	    	display.rectangle(c, "", x, (y - minY) / (maxY - minY) - (1 - q) / 5, .01, .01);
 	    	display.rectangle(c, "", x, (y - minY) / (maxY - minY) + (1 - q) / 5, .01, .01);
@@ -1059,20 +1186,73 @@ class FrameProcessor {
    		display.rectangle(c, "", 0.96, y + p.quality / 30, 0.08, .04);
    		display.rectangle(c, String.format("%.1f", p.quality), 0.96, y - (1 - q) / 5, 0.08, .04);
     }
+    	
+   
+    void displayLs(PidControl p, RunningQuadraticLeastSquares d, Color c) { 
+    	double minX, maxX, minY, maxY;
+    	minX = minY = maxX = maxY = 0;
     
+    	if (!d.hist.isEmpty()) {
+    		minX = maxX = d.hist.get(d.hist.size() - 1).x;
+    		minY = maxY = d.hist.get(d.hist.size() - 1).y;
+    	}
+    	for(RunningQuadraticLeastSquares.Entry i : d.hist) { 
+    		if (i.x < minX) minX = i.x;
+    		if (i.x > maxX) maxX = i.x;
+    		if (i.y < minY) minY = i.y;
+    		if (i.y > maxY) maxY = i.y;       		
+    	}
+    	
+    	double rangeY = maxY - minY;
+    	maxY += rangeY * 2 + 2	; 
+    	minY -= rangeY * 1 + 1;
+    	maxX = (maxX - minX) * 1.1 + minX;
+    	for(RunningQuadraticLeastSquares.Entry i : d.hist) { 
+    		display.rectangle(c, "", (i.x - minX) / (maxX - minX), 
+    				(i.y - minY) / (maxY - minY), .02, .02);
+    	}
+     	double y = 0;
+    	double q = p.quality;
+    	if (Double.isNaN(p.quality)) { 
+    		System.out.printf("hjello\n");
+    	}
+       	for(double x = 0.0; x < 1.0; x += .01) { 
+       		y = p.d.calculate(minX + x * (maxX - minX));
+//	    	display.rectangle(c, "", x, (y - minY) / (maxY - minY), .01, .01);
+	    	display.rectangle(c, "", x, (y - minY) / (maxY - minY) - (1 - q) / 5, .01, .01);
+	    	display.rectangle(c, "", x, (y - minY) / (maxY - minY) + (1 - q) / 5, .01, .01);
+	    }        
+    	c = p.quality > 1.0 ? Color.red : c;
+    	y = (y - minY) / (maxY - minY);
+   		display.rectangle(c, "", 0.96, y + p.quality / 30, 0.08, .04);
+   		display.rectangle(c, String.format("%.1f", p.quality), 0.96, y - (1 - q) / 5, 0.08, .04);    	
+    }
+    
+    void displayPid(PidControl p, Color c) { 
+    	displayLs(p, p.d, c);
+    }
+      
+    void printFinalDebugStats() { 
+    	System.out.printf("Avg RMS errs: HL=%f, HR=%f, VP=%f\n", pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr());
+    }
+     
+
     Logfile logfile = null;
-    long startTime = 0;
+    long logFileStartTime = 0;
 	public String logSpec = null;
 	
     void logData() {
+    	if (logFileStartTime == 0)
+    		logFileStartTime = time;
     	if (logfile != null) { 
-	    	if (startTime == 0)
-	    		startTime = time;
 	    	String s = null;
+	    	if (logSpec == null) 
+	    		logSpec = "%TEST1";
+	    	
 	    	if (logSpec == null) {
 	    			// TODO - replace all this coded stuff with just a default logSpec string that accomplishes
 	    			// the same thing
-			    	s = String.format("Frame=%d, Time=%d", count, (int)(time - startTime));
+			    	s = String.format("Frame=%d, Time=%d", count, (int)(time - logFileStartTime));
 			    	s += String.format(", Corr=%.2f, Steer=%.2f, ", corr, steer);
 			    	s += pidLL.toString("pidll-") + ", ";
 			    	s += pidRL.toString("pidrl-") + ", ";
@@ -1102,8 +1282,12 @@ class FrameProcessor {
 			       	cmdBus.lastDebugString = "";
 	    	} else { 
 	    			s = new String(logSpec);
+	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");
+	    			s = s.replace("%TEST1", "%time %steer %corr %tfl %tfr %pvx");
 	    			s = s.replace("%frame", String.format("%d", count));
-	    			s = s.replace("%time", String.format("%d", (int)(time - startTime)));
+	    			s = s.replace("%time", String.format("%d", (int)(time - logFileStartTime)));
+	    			s = s.replace("%ts", String.format("%d", time));
+	    			s = s.replace("%delay", String.format("%d", (int)frameResponseMs));
 	    			s = s.replace("%fps", String.format("%.2f", fps));
 	    			s = s.replace("%tdx", String.format("%d", tdFindResult == null ? 0 : tdFindResult.x));
 	    			s = s.replace("%tdy", String.format("%d", tdFindResult == null ? 0 : tdFindResult.y));
@@ -1117,8 +1301,17 @@ class FrameProcessor {
 	    			s = s.replace("%tfw", String.format("%d", tfResult == null ? 0 : tfResult.width));
 	    			s = s.replace("%tfh", String.format("%d", tfResult == null ? 0 : tfResult.height));
 
-	    			s = s.replace("%steer", String.format("%.2f", steer));
-	    			s = s.replace("~", " ");
+
+	    			s = s.replace("%tfl-cs", String.format("%.2f", tfl.csX));
+	    			s = s.replace("%tfr-cs", String.format("%.2f", tfr.csX));
+	    			s = s.replace("%tfl", String.format("%.4f", lpos));
+	    			s = s.replace("%tfr", String.format("%.4f", rpos));
+	    			s = s.replace("%pvx", String.format("%.4f", persVanX));
+	    			s = s.replace("%lvx", String.format("%.4f", laneVanX));
+	    	    			
+	    			s = s.replace("%steer", String.format("%.4f", steer));
+	    			s = s.replace("%corr", String.format("%.4f", corr));
+	    	    	s = s.replace("~", " ");
 	    			
 	    	}
 	       	logfile.write(s);
@@ -1128,8 +1321,8 @@ class FrameProcessor {
     void restartOutputFiles() {
     	SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd.HHmmss");
     	String dateString = format.format(new Date());
+		ImageFileWriter.RestartAllFiles(dateString);
     	if (writer != null) {
-    		writer.restartFile(dateString);
         	if (writer.active)  
         		pv.speak("Recording started!");
         	else
@@ -1137,6 +1330,7 @@ class FrameProcessor {
     	}
     	if (logfile != null) 
     		logfile.restartFile(dateString);
+    	logFileStartTime = 0;
     	System.out.println("Outputfile datestring is now " + dateString);
     }
 
@@ -1144,6 +1338,8 @@ class FrameProcessor {
 		String s = ae.getActionCommand();
 		if (s.equals("RECORD")) { 
 			keyPressed('A');
+		} else if (s.equals("ARM")) { 
+			onCruiseJoystick(4);
 		} else if (s.equals("EXIT")) { 
 			keyPressed('Q');				
 		} else if (s.equals("FASTER")) { 
@@ -1156,6 +1352,9 @@ class FrameProcessor {
 	synchronized public void onMouseClick(int x, int y, int clickCount) {
 		System.out.printf("Mouse click %d,%d,%d\n", x, y, clickCount);
 		
+		if (Silly.debug("DEBUG_ORIGIN")) { 
+			this.tfr.hOriginOverride = new Point(x,y);
+		}
 		//tdStartX  = x - 2; // TODO - figure out why these constant offsets are needed
 		//tdStartY = y - 22;
 		
@@ -1225,6 +1424,25 @@ class FrameProcessor {
 
         return 0xff000000 | ((int) (r * dim) << 16) | ((int) (b * dim) << 8) | (int) (b * dim);
     }
+
+	HslHist2D hsl2d = new HslHist2D();
+	HslChronograph hh = new HslChronograph();
+	
+	public void onMouseDragged(int x, int y) {
+		int []hsl = this.coi.getHsl(x, y);
+		System.out.printf("Mouse Dragged %d, %d = (%d,%d,%d)\n", x, y, hsl[0], hsl[1], hsl[2]); 
+		hsl2d.add(hsl2d.hists[0].maxX + 1, hsl);
+		hh.add(hsl);
+	}
+
+	public void onMouseReleased() {
+		// TODO Auto-generated method stub
+		//hsl2d.draw();
+		hh.draw();
+		hh.clear();
+		//hsl2d.clear();
+		
+	}
 
 }
 

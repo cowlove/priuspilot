@@ -58,4 +58,9 @@ public class NonmaxSuppression {
 			}
 		}
 	}
+
+	public void suppressNonmaxTODO(float[] hough, int dist, float thresh, ArrayList<Point> pts) {
+		// TODO Auto-generated method stub
+		assert(false);
+	}
 }

@@ -18,8 +18,8 @@ class HoughTransform {
 	float radStepInv;
 	int angSz, radSz;
 	
-	int maxhough = 0;
-	int [] hough;
+	float maxhough = 0;
+	float [] hough;
 	float sinLookup[];
 	float cosLookup[];
 	float ang2TanLookup[];
@@ -30,11 +30,12 @@ class HoughTransform {
 	// look for nearly-parallel lines between minA and maxA apart.  Hough map is multiplied
 	// by itself for each discrete angStep angle between minA and maxA.  New map with the best
 	// peak is retained as the new map, and adjust bestA, bestAng, bestR, bestRad accordingly.
+	float [] corHough = null;
 	
-	int [] corHough = null;
-	void applyCorrelation(double minA, double maxA, boolean leftSide) { 
+	// obsoleted, rewrote this as applyCorrelationRad below
+	void applyCorrelationAngle(double minA, double maxA, boolean leftSide) { 
 		maxhough = 0;
-		int [] nh = null, bestNh = null;
+		float [] nh = null, bestNh = null;
 		
 		double angStep = (double)(angMax - angMin) / angSz;
 		double rStep = 9f / 6;
@@ -45,7 +46,7 @@ class HoughTransform {
 		
 		for(int as = aStart; as <= aEnd; as++) { 
 			int rs = (int)Math.round(as * rStep);
-			nh = new int[angSz * radSz];
+			nh = new float[angSz * radSz];
 			for(int x = 0; x < angSz; x++) { 
 				for(int y = 0; y < radSz; y++) {
 					int x1 = x - as * aStep;
@@ -74,6 +75,53 @@ class HoughTransform {
 		//	hough = nh;
 		corHough = bestNh;
 	}
+
+	void applyCorrelationRad(double minR, double maxR, boolean leftSide) { 
+		maxhough = 0;
+		float [] nh = null, bestNh = null;
+		
+		double radStep = (double)(radMax - radMin) / radSz;
+
+		// hard-coded emperical values correlating the typical observed relation between
+		// lane angle/radius hotspots on the hough map
+		double aStep = leftSide ? -1.8 : -0.8;
+
+		int rStep = leftSide ? -1 : 1;
+		int rStart = (int)Math.floor(minR / radStep);
+		int rEnd = (int)Math.ceil(maxR / radStep);
+		
+		for(int rs = rStart; rs <= rEnd; rs++) { 
+			int as = (int)Math.round(rs * aStep); // was rstep
+			nh = new float[angSz * radSz];
+			for(int x = 0; x < angSz; x++) { 
+				for(int y = 0; y < radSz; y++) {
+					int x1 = x - as;
+					int y1 = y - rs;
+					if (x1 >= 0 && x1 < angSz && y1 >= 0 && y1 < radSz) { 
+						float val = (int)Math.sqrt((hough[x + y * angSz] * hough[x1 + y1 * angSz]));
+						//int val = (hough[x + y * angSz] + hough[x1 + y1 * angSz]) / 2;
+						nh[x + y * angSz] = val;
+					}		
+				}
+			}
+
+			GaussianKernel gk = new GaussianKernel(blurRadius, (int)(blurRadius * 10 + 2), angSz, radSz);
+			gk.blur(nh);
+			if (gk.max > maxhough) { 
+				maxhough = gk.max;
+				bestAng = gk.bestX;
+				bestRad = gk.bestY;
+				bestA = as;
+				bestR = rs;
+				bestNh = nh;
+			}
+		}
+
+		//	if (bestNh != null)  // probably don't do this, VP code would like unchanged map
+		//	hough = nh;
+		corHough = bestNh;
+	}
+	
 	
 	float getAngSpread() { 
 		return (float)(angMax - angMin) * bestA / angSz;
@@ -146,7 +194,7 @@ class HoughTransform {
 		}
 	}
 	void clear() { 
-		hough = new int[angSz * radSz];
+		hough = new float[angSz * radSz];
 		maxhough = 0;
 	}
 	
@@ -191,7 +239,7 @@ class HoughTransform {
 	}
 	
 
-
+	// used to project strong lines into external rectangle, as in the vanishing point calc
 	void projectIntoRect(int []s, Rectangle rec, int scale) {
 		ArrayList<Point> pts = new ArrayList<Point>();
 		
@@ -265,13 +313,18 @@ class HoughTransform {
 //		System.out.printf("\n");
 	}
 	
+	void add(int x, int y) {
+		add(x, y, 1);
+	}
 	
-	void add(int x, int y) { 
+	void add(int x, int y, float w) { 
+		if (w == 0.0)
+			return;
 		for (int a = 0; a < angSz; a++) { 
 			int r = (int)((((float)(x - origin.x)) * cosLookup[a] + 
 					((float)(y - origin.y)) * sinLookup[a] - radMin) * radStepInv);
 			if (r >= 0 && r < radSz) {
-				if (++hough[a + r * angSz] > maxhough) 
+				if ((hough[a + r * angSz] += w) > maxhough) 
 					maxhough = hough[a + r * angSz];
 			}
 		}
@@ -279,7 +332,8 @@ class HoughTransform {
 	}
 
 	int bestAng, bestRad;
-	double blurRadius = 0.3;
+	double blurRadius = 15;
+	
 	void blur() { 
 		GaussianKernel gk = new GaussianKernel(blurRadius, (int)(blurRadius * 10 + 2), angSz, radSz);
 		gk.blur(hough);
@@ -288,14 +342,14 @@ class HoughTransform {
 		maxhough = gk.max;
 	}
 	
-	
 	// moves bestAng and bestRad to the closest point to (x,y) that still has over 
 	// thresh portion of maxhough;
+	
 	void findClosest(int x, int y, float thresh) {
 		double bestDist = -1;
 		for(int a = 0; a < angSz; a++) {
 			for (int r = 0; r < radSz; r++) { 
-				int v = hough[a + r * angSz];
+				float v = hough[a + r * angSz];
 				if (v >= maxhough * thresh) {
 					double d = Math.sqrt((x - a) * (x - a) + (y - r) * (y  - r));;
 					if (bestDist < 0 || d < bestDist) { 
@@ -334,7 +388,7 @@ class HoughTransform {
 			double radStep = (radMax - radMin) / radSz;
 			int r = (int)(((x - origin.x) * cosLookup[a] + (y - origin.y) * sinLookup[a] - radMin) / radStep);
 			if (r >= 0 && r < radSz) {
-				int w = hough[a + r * angSz];
+				float w = hough[a + r * angSz];
 				if (w > minW) 
 					pixel += w;
 			}
@@ -345,7 +399,7 @@ class HoughTransform {
 	
 	void suppressNonmax(int dist, float thresh, ArrayList<Point> pts) { 
 		NonmaxSuppression ns = new NonmaxSuppression(angSz, radSz);
-		ns.suppressNonmax(hough, dist, thresh, pts);
+		ns.suppressNonmaxTODO(hough, dist, thresh, pts);
 		maxhough = ns.max;
 		bestAng = ns.bestX;
 		bestRad = ns.bestY; 
@@ -357,6 +411,27 @@ class HoughTransform {
 		double ly = origin.y + bestRadius() * Math.sin(Math.toRadians(bestAngle()));
 		double i = ly - lx * Math.tan(Math.toRadians(bestAngle() - 90));
 		return (int)Math.round(i);
+	}
+
+	// experimental finish - don't look for the global max or local max, just 
+	// use the global CG of the hough results.  Doesn't even work well enough to focus lane zones.
+	public void findCG(int ca) {
+		float asum = 0, rsum = 0, sum = 0;
+		for(int a = 0; a < angSz; a++) {
+			for (int r = 0; r < radSz; r++) { 
+				float v = hough[a + r * angSz];
+				asum += a * v;
+				rsum += r * v;
+				sum += v;
+			}
+		}
+		if (sum >= 0.0) { 
+			bestAng = Math.round(asum / sum);
+			bestRad = Math.round(rsum / sum);
+			// leave maxhough unchanged
+		} else { 
+			bestAng = bestRad = 0;
+		}
 	}
 	
 	

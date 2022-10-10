@@ -1,7 +1,7 @@
 package math;
 
 public class RunningAverage extends Average { 
-	double [] values;
+	public double [] values;
 	int [] weights;
 	int index = 0;
 	public int size = 0;

@@ -56,7 +56,7 @@ public class JamaLeastSquaresFit {
     	}
     }
  
-    public double predict(double x) {
+    public double calculate(double x) {
     	if (!solve()) 
     		return 0.0;
     	double y = 0;
@@ -95,7 +95,7 @@ public class JamaLeastSquaresFit {
      }
     
     public double err(double x, double y) { 
-    	return y - predict(x);
+    	return y - calculate(x);
     }
     
     

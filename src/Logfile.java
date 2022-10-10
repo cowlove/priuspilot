@@ -3,8 +3,56 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+interface LogWriter { 
+	public void write(String s);
+	public void flush();
+	public void close();
+}
 
-class AsynchWriter { 
+class SynchWriter implements LogWriter { 
+	BufferedWriter writer = null;
+	SynchWriter(String fn) { 
+		String filename = fn;
+		try {
+			writer = new BufferedWriter(new FileWriter(filename));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			writer = null;
+		}
+		System.out.println("Synchwriter is Opening logfile ");       			
+	}
+	@Override public void close() {
+		try {
+			writer.flush();
+			writer.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	@Override
+	public void flush() {
+		try {
+			writer.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+    @Override  
+    public void write(String s) { 
+		try {
+			writer.write(s);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    
+}
+
+class AsynchWriter implements LogWriter { 
 	AsynchWriter(String fn) { 
 		filename = fn;
 		try {
@@ -21,6 +69,9 @@ class AsynchWriter {
 	String filename = null;
 	BufferedWriter writer = null;
 	boolean done = false;
+	
+	@Override
+	public void flush() {}
 	
     Thread t = new Thread (new Runnable() {
         public void run() {
@@ -49,14 +100,15 @@ class AsynchWriter {
         }
     });
 
-    void close() {
+    @Override 
+    public void close() {
 		done = true;
 		synchronized(buffer) { 
     		buffer.notify();
     	}
     }
-    
-    void write(String s) { 
+    @Override  
+    public void write(String s) { 
     	synchronized(buffer) { 
     		buffer.add(s);
     		buffer.notify();
@@ -66,23 +118,24 @@ class AsynchWriter {
 
 class Logfile {
 	String filename = "";
-	AsynchWriter writer = null;
+	LogWriter writer = null;
 	String dateString = "";
 	
 	public Logfile(String fn) {
 		filename = fn;
 	}
-	public void write(String s) { 	if (filename.length() > 0) { 
+	public void write(String s) { 	
+		if (filename.length() > 0) { 
 	       	if (filename.compareTo("-") == 0) 
 	       		System.out.println(s);
 	       	else {
 	       		s += "\n";
 	       		if (writer == null) {
-	     			writer = new AsynchWriter(String.format(filename, dateString));
-	     			System.out.println("Opening logfile ");       			
+	       			String fn = String.format(filename, dateString);
+	       			writer = new SynchWriter(fn); 
+	     			System.out.println("Opening logfile " + fn);       			
 	       		}
 	       		writer.write(s);	       		
-	       		//writer.flush();
 	       	}
 	    }
 	}
