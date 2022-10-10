@@ -1,6 +1,6 @@
 #!/bin/sh
-cd /host/lanedumps
-~jim/workspace/priuspilot/scripts/pp -displaymode 14   -displayratio 10 -out /host/lanedumps/%s.yuv $@
+SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
+$SCRIPT_DIR/pp -displaymode 14   -displayratio 10 -out /host/lanedumps/%s.yuv $@
  #
 
 #-log /host/lanedumps/%s.log $@

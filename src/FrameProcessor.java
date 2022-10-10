@@ -251,10 +251,10 @@ class FrameProcessor {
         tdStartX = w / 2;
         tdStartY = h / 3;
         
-        inputZeroPoint.zeroPoint.vanX = 204;
-        inputZeroPoint.zeroPoint.vanY = 64; // set to 39 and run pp /host/lanedumps/20171118.155503.yuv to crash pidLV
-        inputZeroPoint.zeroPoint.rLane = 473;
-        inputZeroPoint.zeroPoint.lLane = 56;
+        inputZeroPoint.zeroPoint.vanX = 160;
+        inputZeroPoint.zeroPoint.vanY = 72; // set to 39 and run pp /host/lanedumps/20171118.155503.yuv to crash pidLV
+        inputZeroPoint.zeroPoint.rLane = 330;
+        inputZeroPoint.zeroPoint.lLane = 0;
         
         cmdBus.start();
     }
@@ -625,8 +625,8 @@ class FrameProcessor {
 		   		tfrc.hh.draw(1);
 	   		}
 	   		
-	   		final int vanRectW = 100;
-	   		final int vanRectH = 24;
+	   		final int vanRectW = 128;
+	   		final int vanRectH = 32;
 			final int vpScale = 1;
 			   		
 	   		tflo.vanLimits = tfro.vanLimits = tfl.vanLimits = tfr.vanLimits = new

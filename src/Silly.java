@@ -136,7 +136,7 @@ public class Silly {
         //args = Gst.init("VideoPlayer", args);
 
         String filename = "/dev/video3", capFile = "", swrc = null;
-        int width = 424, height = 240;
+        int width = 320, height = 240;
         int windx = 0, windy = 0, windw = width, windh = height;
         int framerate = 30;
         int rescale = 1;
