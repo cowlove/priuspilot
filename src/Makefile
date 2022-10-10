@@ -31,6 +31,6 @@ clean:
 	rm -f *.o  core $(TARGET) *.class math/*.class priuspilot.jar
 
 priuspilot.jar:   
-	javac -d ../bin/ -classpath $(CP) *.java math/*.java
-	cd ../bin && jar cf $@ -C ../bin *.class */*.class
+	javac -d ./bin/ -classpath $(CP) *.java math/*.java
+	jar cf $@ bin/*.class bin/*/*.class
 	
