@@ -32,5 +32,5 @@ clean:
 
 priuspilot.jar:   
 	javac -d ./bin/ -classpath $(CP) *.java math/*.java
-	jar cf $@ bin/*.class bin/*/*.class
+	cd ./bin/ && jar cf ../$@ *.class */*.class
 	
