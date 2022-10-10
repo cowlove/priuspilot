@@ -2,7 +2,7 @@
 import java.io.*;
 import javax.sound.midi.*;
 
-import sun.audio.*;
+//import sun.audio.*;
 
 
 import javax.sound.sampled.AudioFormat;

@@ -1,6 +1,6 @@
 
-CFLAGS=-I /usr/lib/jvm/java-6-openjdk/include/ -O3 -shared 
-JARS=~/pplib
+CFLAGS=-I /usr/lib/jvm/java-11-openjdk-amd64/include/linux -I /usr/lib/jvm/java-11-openjdk-amd64/include/ -O3 -g -fpermissive -fPIC -shared 
+JARS=../pplib
 
 LIBS= 
 FASTSRC=fast-C-src-2.1
@@ -8,11 +8,11 @@ DEPS =
 OBJ = FrameCaptureJNI.o 
 TARGET=libFrameCaptureJNI.so
 
-LIB=$(HOME)/pplib
+LIB=../pplib
 CP=$(LIB)/Joystick.jar:$(LIB)/jna-3.2.4.jar:/home/jim/workspace/priuspilot/bin:$(LIB)/Jama-1.0.2.jar:$(LIB)/mbrola.jar:$(LIB)/freetts-jsapi10.jar:$(LIB)/jsapi.jar:$(LIB)/freetts.jar
         
 
-all: $(TARGET) 
+all: $(TARGET) 			
 %.o: %.c $(DEPS)
 	gcc -c -o $@ $< $(CFLAGS)
 
