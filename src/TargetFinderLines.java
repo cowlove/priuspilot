@@ -291,7 +291,6 @@ class TargetFinderLines extends TargetFinder {
 	boolean leftSide = false;
 	final double toeIn = 0; // TODO -broken? 
 	int rawPeakHough = 0;
-	
 	TargetFinderRoadColor tfrc = null;
 	HslHistogram hhist = null;
 	int minLineIntensity = 0;
@@ -332,8 +331,8 @@ class TargetFinderLines extends TargetFinder {
 		if (sa == null) { 
 			sa = new Rectangle(0,0,0,0);
 			sa.width = w / 2;
-			sa.height = (int)(ht * .66);
-			sa.y = (int)(ht * .20);
+			sa.height = (int)(ht * .70);
+			sa.y = (int)(ht * .30);
 			sa.x = leftSide ? 0 : sa.width;
 		}
 		
@@ -873,7 +872,8 @@ class TargetFinderLines extends TargetFinder {
 			pts.add(new Point((int)Math.round(n + rec.x), rec.y + rec.height));
 		
 		if (pts.size() == 2) { 
-			g2.drawLine(pts.get(0).x, pts.get(0).y, pts.get(1).x, pts.get(1).y);
+			g2.drawLine(pts.get(0).x * rescaleDisplay, pts.get(0).y * rescaleDisplay, 
+			pts.get(1).x * rescaleDisplay, pts.get(1).y * rescaleDisplay);
 		}
 	}
 	
@@ -883,9 +883,9 @@ class TargetFinderLines extends TargetFinder {
 		Point midLine = findMiddleOfLine(h.origin, h.bestRadius(), focus.getLastAngle(), sa);
 		final int txtOffset = 0;
 
-		g2.drawString(String.format("%d %.1f/%d %.1f", c.results.l.size(), 
-			getAngle(), getOffsetX(), h.getAngSpread()), midLine.x + sa.x + txtOffset, 
-			midLine.y + sa.y + txtOffset);
+		g2.drawString(String.format("%d %.1f/%d %.1f", c.results.l.size() * rescaleDisplay, 
+			getAngle(), getOffsetX(), h.getAngSpread()), (midLine.x + sa.x + txtOffset) * rescaleDisplay, 
+			(midLine.y + sa.y + txtOffset) * rescaleDisplay);
 		
 		//if (focus.getQuality() > Focus.minWeight) {
 			//drawLine(g2, r, x1, focus.getAngWidth() * focus.angZoneOffset);
@@ -895,7 +895,9 @@ class TargetFinderLines extends TargetFinder {
 		//}
 
 		final int oDot = 3;
-		g2.draw(new Rectangle(sa.x + h.origin.x - oDot, sa.y + h.origin.y - oDot, oDot * 2, oDot * 2));
+		g2.draw(new Rectangle((sa.x + h.origin.x - oDot) * rescaleDisplay,
+		 (sa.y + h.origin.y - oDot) * rescaleDisplay, 
+		 oDot * 2 * rescaleDisplay, oDot * 2 * rescaleDisplay));
 		//g2.draw(new Rectangle((int)Math.round(csX) - oDot, height - oDot * 2, oDot * 2, oDot * 2));
 	}
 	
@@ -920,7 +922,9 @@ class TargetFinderLines extends TargetFinder {
 		int rad = 5;
 		Rectangle r = l1.vanLimits;
 		if (l1.focus.getQuality() > Focus.minWeight && l2.focus.getQuality() > Focus.minWeight) {
-			r = new Rectangle(p.x - rad, p.y - rad, rad * 2 + 1, rad * 2 + 1);
+			r = new Rectangle((p.x - rad) * l1.rescaleDisplay, (p.y - rad) * l1.rescaleDisplay, 
+			(rad * 2 + 1) * l1.rescaleDisplay, 
+			(rad * 2 + 1) * l1.rescaleDisplay);
 			g2.draw(r);
 		}
 		l1.display(g2, l1.sa, 0);

@@ -543,7 +543,10 @@ public class Silly {
     static void usage() { 		// TODO Auto-generated method stub
 
         System.out.println("usage: Silly [-out <filename>] [-log <filename>] [-fps n] [-nodrop]");
-        System.out.println("             [-size <h>[x<w>]] [-rescale <n>]  <inputfile>");
+        System.out.println("             [-size <h>[x<w>]] [-rescale <n>] [-displayratio <n>]");
+        System.out.println("             [-displayMode <n>]");
+        System.out.println("             <inputfile>");
+        System.out.println("-displayMode flags: 0x1 write text, 0x2 draw lines, 0x8 show PIDS  ");
         System.exit(0);
     }
     

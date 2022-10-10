@@ -38,8 +38,9 @@ public class TargetFinderRoadColor extends TargetFinder {
 	}
 	int [] hslThresh = new int[3];
 	void draw(Graphics2D g2) { 
-		if (sa != null) 
-			g2.draw(sa);
+		if (sa != null) {
+			g2.draw(scaleRect(sa, rescaleDisplay));
+		}
 	}
 	HslHistogram hh = new HslHistogram();
 	final static int rowAverageHeight = 5;

@@ -242,7 +242,10 @@ class TargetFinder {
 	static int luminance(int r, int g, int b) {
 		return Math.round(0.299f * (r & 0xff) + 0.587f * (g & 0xff) + 0.114f * (b & 0xff));
 	}
-	
+    static Rectangle scaleRect(Rectangle r, int scale) {
+    	return new Rectangle(r.x * scale, r.y * scale, r.width * scale, r.height * scale);
+    }
+	public int rescaleDisplay = 1;
 	FinderParameters param = new FinderParameters();
 	
 	void setCanny(FinderParameters p) { 

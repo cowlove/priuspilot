@@ -971,27 +971,27 @@ class FrameProcessor {
                 if (writer != null && writer.active)  
                 	display.rectangle(Color.red, "REC", 0.90, 0.10, 0.1, 0.05);
 
-                double yoff = 0.65;
-	            double yspace = 0.05;
             	display.g2.setStroke(new BasicStroke(2));
 	            if (tdFindResult != null) {  
 	            	display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
 	            }
  
-	            setLineColorAndWidth(Color.green, 1);
+				tfrc.rescaleDisplay = tflo.rescaleDisplay = tfro.rescaleDisplay = tfr.rescaleDisplay = tfl.rescaleDisplay = rescale;
+	            setLineColorAndWidth(Color.green, 1 * rescale);
     			TargetFinderLines.displayLinePairToOutsideVanRec(tflo, tfro, display.g2);
-	            setLineColorAndWidth(Color.red, 2);
+	            setLineColorAndWidth(Color.red, 2 * rescale);
     			TargetFinderLines.displayLinePair(tfl, tfr, display.g2);
 	            setLineColorAndWidth(Color.blue, 2);
        			caL.display(display.g2);
     			caR.display(display.g2);
                 setLineColorAndWidth(Color.lightGray, 2);
         		tfrc.draw(display.g2);
-        		display.g2.draw(tfl.vanLimits);
+        		display.g2.draw(tfl.scaleRect(tfl.vanLimits, rescale));
 
     			
     			int s = 7;
-        		Rectangle r1 = new Rectangle(houghVan.calculate().x - s, houghVan.calculate().y - s, s * 2 + 1, s * 2 + 1);
+        		Rectangle r1 = scaleRect(new Rectangle(houghVan.calculate().x - s, 
+					houghVan.calculate().y - s, s * 2 + 1, s * 2 + 1), rescale);
     			display.g2.setColor(Color.orange);
     			display.g2.draw(r1);
     			display.g2.drawLine(r1.x, r1.y, r1.x + r1.width, r1.y + r1.height);
@@ -1004,6 +1004,19 @@ class FrameProcessor {
     			if (tfFindTargetNow)
 	            	display.draw(Color.yellow, scaleRect(tfSearchArea, rescale));
 
+
+            }
+            //displayPid(pidLL, Color.yellow);
+            if (false && (displayMode & 0x8) != 0) {
+            	displayPid(pidLL, Color.yellow);
+               	displayPid(pidLV, Color.green);
+               	displayPid(pidPV, Color.blue);
+               	displayPid(pidRL, Color.white);
+            }
+            	
+            if ((displayMode & 0x10) != 0) {
+                double yoff = 0.65;
+	            double yspace = 0.05;
     			final double bWidth = 0.06;
 	            display.rectangle(Color.blue, "FB", steering.lag.feedback + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
@@ -1022,16 +1035,9 @@ class FrameProcessor {
 		  //          display.text(pid.description, 0.0, yoff);
 	            }
 	            display.rectangle(Color.cyan, String.format("%.1f", fps), Math.min(0.95, (double)fps / 32), yoff, bWidth, 0.05);	            
-            }
-            displayPid(pidLL, Color.yellow);
-            if (false && (displayMode & 0x8) != 0) {
-            	displayPid(pidLL, Color.yellow);
-               	displayPid(pidLV, Color.green);
-               	displayPid(pidPV, Color.blue);
-               	displayPid(pidRL, Color.white);
-            }
-            	
-            if ((displayMode & 0x10) != 0) {
+
+
+
  //           	TemplateDetect.Tile ti = td.scaledTiles.getTileByScale(tdFindResult.scale);
  //           	display.image.getWritableTile(0,0).setDataElements(0, 0, ti.loc.width, ti.loc.height, 
  //               		ti.data);
