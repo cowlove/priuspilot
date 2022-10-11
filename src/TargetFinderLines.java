@@ -301,7 +301,7 @@ class TargetFinderResearch extends TargetFinder {
 		super(w, ht);
 		houghSize = houghSz;
 		
-		param.name = "TFLines," + (left ? "left" : "right");
+		param.name = "TFResearch";
 		param.gaussianKernelRadius = 0.3f; // TODO- bug in canny stuff, artifacts show up above 1.0
 		param.threshold1 = param.threshold2 = 5;  // Range between 13 or 5 
 		
