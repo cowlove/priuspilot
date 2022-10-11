@@ -88,7 +88,7 @@ public class CurvatureAnalyzer {
 	}
 	
 	public void markup(OriginalImage orig) {
-		if (fit != null) { 
+		if (false && fit != null) { 
 			for(RunningQuadraticLeastSquares.Entry e : fit.hist) {
 				orig.putPixel((int)e.y, (int)e.x, 0);
 				//orig.putPixel((int)caR.fit.calculate(e.x), (int)e.x, 0xffff0000);

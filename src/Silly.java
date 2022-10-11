@@ -300,6 +300,7 @@ public class Silly {
         }
         */
         
+		exitFrame += skipFrames;
         
         final FrameProcessor fp = new FrameProcessor(windw, windh,
         		outputFile, logFile, rescale, displayratio, serialDevice, swrc);
@@ -546,7 +547,8 @@ public class Silly {
         System.out.println("             [-size <h>[x<w>]] [-rescale <n>] [-displayratio <n>]");
         System.out.println("             [-displayMode <n>]");
         System.out.println("             <inputfile>");
-        System.out.println("-displayMode flags: 0x1 write text, 0x2 draw lines, 0x8 show PIDS  ");
+        System.out.println("-displayMode flags: 0x1 write text, 0x2 draw lines, 0x4 show image, 0x8 show PIDS  ");
+        System.out.println("-displayMode flags: 0x1 write text, 0x2 draw lines, 0x4 show image, 0x8 show PIDS  ");
         System.exit(0);
     }
     

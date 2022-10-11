@@ -1,0 +1,8 @@
+lanedumps/20221010.141245.yuv: Avg fr=89.77, RMS errs: HL=0.00419, HR=0.00103, VP=0.00454
+lanedumps/20221010.145903.yuv: Avg fr=81.10, RMS errs: HL=0.01142, HR=0.00203, VP=0.00869
+lanedumps/20221010.150916.yuv: Avg fr=80.71, RMS errs: HL=0.00274, HR=0.00408, VP=0.00647
+lanedumps/20221010.151339.yuv: Avg fr=84.75, RMS errs: HL=0.00337, HR=0.00168, VP=0.00502
+
+real	3m53.912s
+user	6m51.930s
+sys	0m3.801s

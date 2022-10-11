@@ -649,11 +649,11 @@ class FrameProcessor {
 	   	   		Rectangle r = (Rectangle)tfl.vanLimits.clone();
 	   	   		r.x -= tfl.sa.x;
 	   	   		r.y -= tfl.sa.y;
-	   	   		tfl.h.projectIntoRect(vpL, r, vpScale);
+	   	   		tfl.h2.projectIntoRect(vpL, r, vpScale);
 	   	   		r = (Rectangle)tflo.vanLimits.clone();
 	   	   		r.x -= tflo.sa.x;
 	   	   		r.y -= tflo.sa.y;
-	   			tflo.h.projectIntoRect(vpL, r, vpScale);
+	   			tflo.h2.projectIntoRect(vpL, r, vpScale);
 	
 	   		} });
 	   		t1.start();
@@ -667,12 +667,12 @@ class FrameProcessor {
 	   		Rectangle r = (Rectangle)tfr.vanLimits.clone();
 	   		r.x -= tfr.sa.x;
 	   		r.y -= tfr.sa.y;
-			tfr.h.projectIntoRect(vpR, r, vpScale);
+			tfr.h2.projectIntoRect(vpR, r, vpScale);
 	   	
 	   		r = (Rectangle)tfro.vanLimits.clone();
 	   		r.x -= tfro.sa.x;
 	   		r.y -= tfro.sa.y;
-			tfro.h.projectIntoRect(vpR, r, vpScale);
+			tfro.h2.projectIntoRect(vpR, r, vpScale);
 	   		
 	   		try { 
 	   			t1.join(0);
@@ -692,14 +692,12 @@ class FrameProcessor {
 				persVanX = (((double)houghVan.ax.calculate()  - inputZeroPoint.zeroPoint.vanX) / width) * pixelWidthPrescale;
 			}
 	   		
-	   		if (Silly.debug("MARKUP")) { 
-		   		tfl.markup(coi);
-		   		tfr.markup(coi);
-		   		tflo.markup(coi);
-		   		tfro.markup(coi);
-		   		caL.markup(coi);
-		   		caR.markup(coi);
-	   		}
+			tfl.markup(coi);
+			tfr.markup(coi);
+			tflo.markup(coi);
+			tfro.markup(coi);
+			caL.markup(coi);
+			caR.markup(coi);
 			
 	   		if (Silly.debug("DEBUG_VAN")) {
 				// flip chart to make it easier to read
@@ -1237,9 +1235,10 @@ class FrameProcessor {
     void displayPid(PidControl p, Color c) { 
     	displayLs(p, p.d, c);
     }
-      
+
     void printFinalDebugStats() { 
-    	System.out.printf("Avg RMS errs: HL=%f, HR=%f, VP=%f\n", pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr());
+        double avgMs = intTimer.average();
+ 	  	System.out.printf("Avg fr=%.2f, RMS errs: HL=%.5f, HR=%.5f, VP=%.5f\n", 1000.0/avgMs, pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr());
     }
      
 

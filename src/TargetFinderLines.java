@@ -310,6 +310,7 @@ class TargetFinderLines extends TargetFinder {
 	int debugId = debugIdCount++;
 	static int debugIdCount = 0;
 	double sThresh = 0;
+	HoughTransform h2;
 
 	TargetFinderLines(int w, int ht, Rectangle sa1, boolean left, int defAngle, int houghSz, 
 			int minSz, int maxSz, int minAng, int maxAng) {
@@ -347,7 +348,10 @@ class TargetFinderLines extends TargetFinder {
 		h.blurRadius = 0.060;
 		if (Silly.debug("HOUGH_BLUR"))
 			h.blurRadius = Silly.debugDouble("HOUGH_BLUR");
-			
+
+		h2 = new HoughTransform(houghAngSz, houghRadSz);
+		h2.blurRadius = h.blurRadius;	
+
 		vanLimits = new Rectangle(w / 3, (int)(ht * 5 / 24), w / 8, ht / 9);
 	}
 	
@@ -471,22 +475,17 @@ class TargetFinderLines extends TargetFinder {
         // averaged over a small block kernel and normalized to the horizontal line
         // that the pixel is in. 
         double [] ar = null;
+
 		if (Silly.debug("DEBUG_LUM") && Silly.debugInt("DEBUG_LUM") == h.id) 
 			ar = new double[sa.height * sa.width];
-		final int kwidth = 1;  // 2 seems a little bit better, but slightly too slow 
+		double maxLum = 255;
 		for (int y = 0; y < sa.height; y++) { 
-			double maxLum = 1;
-			if (useLuminanceCheck) { 
-				for(int x = 0; x < sa.width; x++) {
-					double l = getLuminance(oi, sa, x,y, kwidth);
-					if (l > maxLum)
-						maxLum = l;
-				}
-			}
 			for(int x = 0; x < sa.width; x++) {
         		double wt =  c.results.gradResults[y*sa.width+x];
-        		if (useLuminanceCheck) 
-        			wt *= ((float)getLuminance(oi, sa, x,y, 1) /maxLum);	
+        		if (useLuminanceCheck) {
+					double rlum = (float)getLuminance(oi, sa, x, y) / maxLum; 
+        			wt = wt * rlum * rlum;
+				}	
         		if (ar != null) 
         			ar[(sa.height - y - 1) * sa.width + x] = wt;
         		h.add(x, y, (float)wt);
@@ -705,13 +704,16 @@ class TargetFinderLines extends TargetFinder {
 			//System.out.printf("maxRmsErr: %f\n", maxRmsErr);
 		}
 
-		//redo hough with all points (not just innermost color-segmented points
-		//for the vanish point detection code. 
-		/*h.clear();
+		//maintain a copy of the hough with all points (not just innermost color-segmented points
+		//for the vanish point detection code.
+		h2.setAngleRange(h.angMin, h.angMax);
+		h2.setRadRange(h.radMin, h.radMax);
+		h2.origin = new Point(h.origin); 
+		h2.clear();
 		for( Point p : c.results.l ) 
-			h.add(p.x, p.y);
-        h.blur();
-        */
+			h2.add(p.x, p.y);
+		h2.blur();
+
 		return null;
 	}
 	
@@ -743,10 +745,12 @@ class TargetFinderLines extends TargetFinder {
 	HslHist2D hsl2d = new HslHist2D(), hsl2d2 =new HslHist2D();
 	public Point hOriginOverride = null;
 
-	private float getLuminance(OriginalImage oi, Rectangle sa, int x, int y, int kernSize) {
+	private float getLuminance(OriginalImage oi, Rectangle sa, int x, int y) {
 		float lum=0;
-		for(int dx = -kernSize; dx <= kernSize; dx++) { 
-			for(int dy = -kernSize; dy <= kernSize; dy++) { 			
+		// ???? The odd shape of this kernel lowered test results, don't understand why 
+		for(int dx = -2; dx <= 2; dx++) { 
+			for (int dy = 0; dy <= 1; dy++) { 
+			//for(int dy = -kernSize; dy <= kernSize; dy++) { 			
 				if (x + dx >= 0 && x + dx < sa.width && dy + y >= 0 && dy + y < sa.height) {  
 					lum += oi.getPixelLum(x + dx + sa.x, y + dy + sa.y);
 				}
@@ -938,21 +942,23 @@ class TargetFinderLines extends TargetFinder {
 	}
 	
 	public void markup(OriginalImage coi) {
-        // retain only inner-most canny pixel for each pixel row
-		for (int y = 0; y < sa.height; y++) { 
-			int startX = leftSide ? sa.width - 1 : 0;
-			int endX = leftSide ? -1 : sa.width;
-			int step = leftSide ? -1 : 1;
-			for(int x = startX; x != endX; x  += step) { 
-				if (y >= c.zones.ystart(x) && y < c.zones.yend(x))
-					coi.dimPixel(x + sa.x, y + sa.y);
-				
+		// dim the search area
+		//if ((Silly.debugInt("MARKUP") & (1 << h.id)) != 0) { 
+		if (Silly.debug("MARKUP") && Silly.debugInt("MARKUP") == h.id) { 
+			for (int y = 0; y < sa.height; y++) { 
+				int startX = leftSide ? sa.width - 1 : 0;
+				int endX = leftSide ? -1 : sa.width;
+				int step = leftSide ? -1 : 1;
+				for(int x = startX; x != endX; x  += step) { 
+					if (y >= c.zones.ystart(x) && y < c.zones.yend(x))
+						coi.dimPixel(x + sa.x, y + sa.y);
+					
+				}
 			}
-		}
-		// Draw canny lines on original image
-		for( Point p : c.results.l )  
-			coi.putPixel(p.x + sa.x, p.y + sa.y, -1);		
-	
+			// Draw canny lines on original image
+			for( Point p : c.results.l )  
+				coi.putPixel(p.x + sa.x, p.y + sa.y, -1);		
+		}	
 	}
 
 }
