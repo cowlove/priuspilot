@@ -300,7 +300,8 @@ public class Silly {
         }
         */
         
-		exitFrame += skipFrames;
+		if (exitFrame > 0) 
+			exitFrame += skipFrames;
         
         final FrameProcessor fp = new FrameProcessor(windw, windh,
         		outputFile, logFile, rescale, displayratio, serialDevice, swrc);

@@ -179,7 +179,7 @@ class PeriodicityDetector {
 	
 }
 class Focus { 
-	static final int minWeight = 8;
+	static final double minWeight = 185000;
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -187,16 +187,17 @@ class Focus {
 	double radZoneOffset = 0.50; // verticle center of the scan strip
 	double angZoneOffset = 0.50;
 	
-	public RunningLeastSquares angle = new RunningLeastSquares(1);
-	public RunningLeastSquares intercept = new RunningLeastSquares(1);
+	public RunningLeastSquares angle = new RunningLeastSquares(11);
+	public RunningLeastSquares intercept = new RunningLeastSquares(12);
 	
 	// TODO- instead of storing average focus as angle/intercept, 
 	// store it as angle/point and handle angle wraparound and singularities in axis intercepts
 	
 	double lastAngle, lastIntercept;
 	double lastRadius, lastOX, lastOY;
+	int detune = 0;
 	
-	void update(int weight, Point o, double r, double a, double i) {
+	void update(double weight, Point o, double r, double a, double i) {
 		if (weight > minWeight) { 
 			angle.add(count, a, weight);
 			lastAngle = a;
@@ -206,18 +207,23 @@ class Focus {
 			lastOY = o.y;
 			lastRadius = r;
 			count++;
+			detune = Math.max(0, detune - 1);
 		} else { 
-			clear();
+			if (detune++ >= angle.count) 
+				clear(); // TODO make gradual 
 		}  
-		if (angle.count == angle.size && angle.totalWeight() < minWeight * 2 * angle.size) { 
+		if (angle.count == angle.size && angle.totalWeight() < minWeight * 2 * angle.size && detune++ > angle.count) { 
 			clear();
 		} 
+		if (detune >= angle.count) { 
+			clear();
+		}
 		
 	}
 	
 	
 	public int getQuality() {
-		return (int)angle.totalWeight();
+		return (int)angle.totalWeight() * (angle.count - detune) / angle.size;
 	}
 	boolean full() { 
 		return angle.count == angle.size;
@@ -228,13 +234,13 @@ class Focus {
 	void clear() { 
 		angle.clear();
 		intercept.clear();
-		count = 0;
+		count = detune = 0;
 	}
 	double getAngWidth() { 
-		return maxAngWidth - (maxAngWidth - minAngWidth) / angle.size * angle.count;
+		return maxAngWidth - (maxAngWidth - minAngWidth) / angle.size * (angle.count - detune);
 	}
 	int getSzWidth() {
-		return maxSzWidth - (maxSzWidth - minSzWidth) * angle.count / angle.size;
+		return maxSzWidth - (maxSzWidth - minSzWidth) * (angle.count - detune) / angle.size;
 	}
 	double getAngle() {
 		return angle.count > 0 ? angle.averageY() : defaultAngle;
@@ -598,7 +604,7 @@ class TargetFinderLines extends TargetFinder {
 		double i = h.bestYIntercept();
 		double a = h.bestAngle();
 		//if (a < 90 && i > 0) i = -i;
-		focus.update((int)Math.round(h.maxhough), h.origin, h.bestRadius(), (h.bestAngle() + 90) % 360, h.bestYIntercept());
+		focus.update(h.maxhough, h.origin, h.bestRadius(), (h.bestAngle() + 90) % 360, h.bestYIntercept());
 		a = focus.getAngle();
 	
 		// reset if lock is too close to the horizon

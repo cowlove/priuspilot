@@ -158,7 +158,7 @@ class FrameProcessor {
         //td = new TemplateDetectCannyCorrelation(w, h);
         //td = new TemplateDetectRGB(w, h);
         
-        int minSz = 65; // min/max radius
+        int minSz = 35; // min/max radius
         int maxSz = 100;
         int houghSize = 91;
         if (Silly.debug("HOUGH_SIZE"))
@@ -1004,12 +1004,12 @@ class FrameProcessor {
 
 
             }
-            //displayPid(pidLL, Color.yellow);
-            if (false && (displayMode & 0x8) != 0) {
-            	displayPid(pidLL, Color.yellow);
-               	displayPid(pidLV, Color.green);
-               	displayPid(pidPV, Color.blue);
-               	displayPid(pidRL, Color.white);
+            if ((displayMode & 0x8) != 0) {
+				displayPid(pidLL, Color.yellow);
+            	//displayPid(pidLL, Color.yellow);
+               	//displayPid(pidLV, Color.green);
+               	//displayPid(pidPV, Color.blue);
+               	//displayPid(pidRL, Color.white);
             }
             	
             if ((displayMode & 0x10) != 0) {
