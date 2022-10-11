@@ -496,7 +496,7 @@ public class Silly {
 	       		}
        	 	} while(n > 0 || repeat);
         }
-    	System.out.printf("%s frames %d-%d ", filename, skipFrames, count);
+    	System.out.printf("%s frames %05d-%05d ", filename, skipFrames, count);
     	fp.printFinalDebugStats();
     	fp.close();
        	System.exit(0);
