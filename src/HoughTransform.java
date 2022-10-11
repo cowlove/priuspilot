@@ -32,7 +32,7 @@ class HoughTransform {
 	float [] corHough = null;
 	
 	// obsoleted, rewrote this as applyCorrelationRad below
-	void applyCorrelationAngle(double minA, double maxA, boolean leftSide) { 
+	void applyCorrelationAngleNO(double minA, double maxA, boolean leftSide) { 
 		maxhough = 0;
 		float [] nh = null, bestNh = null;
 		

@@ -7,7 +7,7 @@ export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/librt.so"
 
 CP=$SRC/priuspilot.jar:$LIB/Joystick.jar:$LIB/jna-3.2.4.jar:/home/jim/workspace/priuspilot/bin:$LIB/Jama-1.0.2.jar:$LIB/mbrola.jar:$LIB/freetts-jsapi10.jar:$LIB/jsapi.jar:$LIB/freetts.jar
 	
-make -C $SRC
+make -C $SRC && \
 java -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP Silly  -frameinterval 0   /dev/video2 -displayratio 1 -debug DEBUG_SERIALNO $@
 
 #java -da -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=8888,suspend=n -classpath /home/jim/workspace/WebCamCap/bin/:$CP Silly $@

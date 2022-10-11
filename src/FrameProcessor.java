@@ -158,25 +158,32 @@ class FrameProcessor {
         //td = new TemplateDetectCannyCorrelation(w, h);
         //td = new TemplateDetectRGB(w, h);
         
-        int minSz = 35; // min/max radius
+        int minSz = 30; // min/max radius
         int maxSz = 100;
         int houghSize = 91;
         if (Silly.debug("HOUGH_SIZE"))
         	houghSize = Silly.debugInt("HOUGH_SIZE");
-        tfl = new TargetFinderLines(w, h, null, true, 45, houghSize, minSz, maxSz, 15, 45);
-        tfr = new TargetFinderLines(w, h, null, false, 45, houghSize, minSz, maxSz, 15, 45);
+        tfl = new TargetFinderLines(w, h, null, true, 45, houghSize, minSz, maxSz, 12, 45);
+        tfr = new TargetFinderLines(w, h, null, false, 45, houghSize, minSz, maxSz, 12, 45);
         tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45);
         tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45);
     
+		tfl.toeIn = tfr.toeIn = 0;
+
     	caR = new CurvatureAnalyzer(false, w, h); 
     	caL = new CurvatureAnalyzer(true, w, h); 
 
         tfparams.add(tfl.param);
         tfparams.add(tfr.param);	
         
-        tfl.useLuminanceCheck = tfr.useLuminanceCheck = true;
+        tfl.useLuminanceCheck = tfr.useLuminanceCheck = true;  
         tflo.useLuminanceCheck = tfro.useLuminanceCheck = false;
         
+		if (false) { 
+	        tfl.useLuminanceCheck = tfr.useLuminanceCheck = false;  
+			tfl.focus.minWeight = tfr.focus.minWeight = 20000;
+		}
+
         if (Silly.debug("GK_RAD"))
         	tfl.param.gaussianKernelRadius = tfr.param.gaussianKernelRadius =
         	(float)Silly.debugDouble("GK_RAD");

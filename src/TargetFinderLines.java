@@ -179,7 +179,7 @@ class PeriodicityDetector {
 	
 }
 class Focus { 
-	static final double minWeight = 185000;
+	double minWeight = 185000; // TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -187,8 +187,8 @@ class Focus {
 	double radZoneOffset = 0.50; // verticle center of the scan strip
 	double angZoneOffset = 0.50;
 	
-	public RunningLeastSquares angle = new RunningLeastSquares(11);
-	public RunningLeastSquares intercept = new RunningLeastSquares(12);
+	public RunningLeastSquares angle = new RunningLeastSquares(8);
+	public RunningLeastSquares intercept = new RunningLeastSquares(8);
 	
 	// TODO- instead of storing average focus as angle/intercept, 
 	// store it as angle/point and handle angle wraparound and singularities in axis intercepts
@@ -292,10 +292,11 @@ class AverageLine {
 	//
 }
 
+
 @SuppressWarnings("unused")
 class TargetFinderLines extends TargetFinder { 
 	boolean leftSide = false;
-	final double toeIn = 0; // TODO -broken? 
+	double toeIn = 0; // TODO -broken?   
 	int rawPeakHough = 0;
 	TargetFinderRoadColor tfrc = null;
 	HslHistogram hhist = null;
@@ -351,7 +352,7 @@ class TargetFinderLines extends TargetFinder {
 			focus.defaultAngle = 90 - defAngle;
 		}
 		h = new HoughTransform(houghAngSz, houghRadSz);
-		h.blurRadius = 0.060;
+		h.blurRadius = 0.075;
 		if (Silly.debug("HOUGH_BLUR"))
 			h.blurRadius = Silly.debugDouble("HOUGH_BLUR");
 
@@ -383,7 +384,7 @@ class TargetFinderLines extends TargetFinder {
 	int rcHslThresh = 30;
 	int rcHueMaxDiff = 44;
 	
-	int cannyMaxPoints = 900, cannyMinPoints = 500;
+	int cannyMaxPoints = 200, cannyMinPoints = 100;
 	@Override 
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
 		c.zones.height = sa.height;
@@ -403,29 +404,28 @@ class TargetFinderLines extends TargetFinder {
 		double angMin = ((ang - 90) % 360) - focus.getAngWidth() * (1 - angOffset);
 		h.setAngleRange(angMin, angMax);
 		
+		// TODO - scan zones width is measured at the left side of the scan zone, 
+		// or the wide part of the L zone and the narrow part of the RH zone
+		// makes it stupidy hard to calculate  
 		int szWidth = focus.getSzWidth();
 		double toe = leftSide ? toeIn : -toeIn;
+		//toe = 0;
 		double sr = Math.abs(Math.cos(Math.toRadians(ang)));
 		double szVert = sr != 0 ? ((double)szWidth / sr) : szWidth;
+		if (leftSide) {
+			try { 
+				szVert += Math.abs(
+					Math.tan(Math.toRadians(ang - toe)) - 
+					Math.tan(Math.toRadians(ang + toe)))
+					* sa.width;
+			} catch(Exception e) {}
+		}
 		c.zones.lsz.b1 = (int)(intercept - szVert * focus.radZoneOffset); 
 		c.zones.lsz.b2 = (int)(intercept + szVert * (1 - focus.radZoneOffset));
 		c.zones.lsz.m1 = Math.tan(Math.toRadians(ang + toe)); 
 		c.zones.lsz.m2 = Math.tan(Math.toRadians(ang - toe));
 		c.zones.midX = sa.width;
-		if (leftSide) {
-			// on right side, origins b1 and b2 are on the narrow side of the grid, 
-			// narrow them them according to the toe-in angle.
-			double vDist = Math.tan(Math.toRadians(ang)) * sa.width;
-			double toeDist = vDist * 
-				(Math.sin(Math.toRadians(ang + toeIn)) / Math.sin(Math.toRadians(ang)) - 1);
-			//toeDist = 25; // todo -figure out toeDist
-			c.zones.lsz.b1 -= toeDist;
-			c.zones.lsz.b2 += toeDist;
-			//if (h.id == 1)
-			//	System.out.printf("%.1f %.1f\n", szVert, toeDist);
-		}
 		
-		szWidth = focus.getSzWidth();
 
 		// Pick origin for hough transform- the intercept of the scanzone with lower edge or 
 		// far side edge of sa rectangle. 
@@ -463,13 +463,12 @@ class TargetFinderLines extends TargetFinder {
         // auto-tune canny thresholds to try and keep a reasonable number of edge points
         // TODO- normalize the point count to the scan area
         
-        if (c.results.l.size() > cannyMaxPoints && param.threshold1 < 13)
+        if (c.results.l.size() > cannyMaxPoints && param.threshold1 < 35)
         	param.threshold1 = param.threshold2 += 1;
-        if (c.results.l.size() < cannyMinPoints && param.threshold1 > 4)
+        if (c.results.l.size() < cannyMinPoints && param.threshold1 > 2)
         	param.threshold1 = param.threshold2 -= 1;
         
-        //if (h.id == 0) 
-        //	System.out.printf("threshold1 = %d\n", (int)param.threshold1);
+        //if (h.id == 0) System.out.printf("points = %05d, threshold1 = %d\n", (int)c.results.l.size(), (int)param.threshold1);
         
         lumPoints.clear();
         h.clear();
@@ -604,6 +603,8 @@ class TargetFinderLines extends TargetFinder {
 		double i = h.bestYIntercept();
 		double a = h.bestAngle();
 		//if (a < 90 && i > 0) i = -i;
+		//if (h.id == 0) System.out.printf("weight %f\n", h.maxhough);
+
 		focus.update(h.maxhough, h.origin, h.bestRadius(), (h.bestAngle() + 90) % 360, h.bestYIntercept());
 		a = focus.getAngle();
 	
@@ -897,12 +898,7 @@ class TargetFinderLines extends TargetFinder {
 			getAngle(), getOffsetX(), h.getAngSpread()), (midLine.x + sa.x + txtOffset) * rescaleDisplay, 
 			(midLine.y + sa.y + txtOffset) * rescaleDisplay);
 		
-		//if (focus.getQuality() > Focus.minWeight) {
-			//drawLine(g2, r, x1, focus.getAngWidth() * focus.angZoneOffset);
-			drawLine(g2, r, x1, 0);
-			//drawLine(g2, r, x1, -focus.getAngWidth() * (1 - focus.angZoneOffset));
-        	//System.out.printf("ang %.2f\n", tfl.focus.angle.calculate());
-		//}
+		drawLine(g2, r, x1, 0);
 
 		final int oDot = 3;
 		g2.draw(new Rectangle((sa.x + h.origin.x - oDot) * rescaleDisplay,
@@ -931,7 +927,7 @@ class TargetFinderLines extends TargetFinder {
 		Point p = linePairIntercept(l1, l2);
 		int rad = 5;
 		Rectangle r = l1.vanLimits;
-		if (l1.focus.getQuality() > Focus.minWeight && l2.focus.getQuality() > Focus.minWeight) {
+		if (l1.focus.getQuality() > l1.focus.minWeight && l2.focus.getQuality() > l2.focus.minWeight) {
 			r = new Rectangle((p.x - rad) * l1.rescaleDisplay, (p.y - rad) * l1.rescaleDisplay, 
 			(rad * 2 + 1) * l1.rescaleDisplay, 
 			(rad * 2 + 1) * l1.rescaleDisplay);
