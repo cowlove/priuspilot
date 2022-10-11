@@ -1086,7 +1086,7 @@ class FrameProcessor {
         lastFrameTime = time;
 
         if ((Silly.debug("SHOW_FPS")) && count % intTimer.av.size == 0) {
-        	System.out.printf("%.3f FPS\n", fps);
+        	System.out.printf("Frame %05d FPS %.1f\n", count, fps);
         }
         if (pendingKeyCode != 0) { 
         	int key = pendingKeyCode;
@@ -1238,7 +1238,7 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("Avg fr=%.2f, RMS errs: HL=%.5f, HR=%.5f, VP=%.5f\n", 1000.0/avgMs, pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr());
+ 	  	System.out.printf("RMS errs: LL=%.5f, RL=%.5f, VP=%.5f\n", pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr());
     }
      
 

@@ -11,7 +11,6 @@ class HoughTransform {
 	// TODO - handle angMin-angMax range that crosses 360 degrees. 
 	static int countC = 0;
 	int id = countC++;
-	
 	Point origin = new Point(0, 0);
 	public double angMin, angMax;
 	public double radMin, radMax;

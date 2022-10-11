@@ -335,6 +335,7 @@ public class Silly {
     		dropFrames = false;
     	}
     	
+        int count = 0;        		
     	if (filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".gif"))  { 
     		// load in still image file, scale it to current size, use it as the image 
       		try {
@@ -359,7 +360,6 @@ public class Silly {
     	} else if (filename.endsWith(".gz") || !jni) {
             IntervalTimer intTimer = new IntervalTimer(30);
         	do {
-                int count = 0;        		
         		int picsize = height * width * 2;
         		if (rgb32) picsize = height * width * 4;
         		int PAGE_SIZE=4096;
@@ -440,7 +440,6 @@ public class Silly {
         	if (fp.writer != null) 
         		fp.writer.fc = fc; 
         	
-            int count = 0;
         	int n;
         	// BROKEN- when frames are dropped, this thread could read data into the buffer
         	// currently being used by the FrameProcessor thread.  Probably just allocate/free
@@ -497,7 +496,7 @@ public class Silly {
 	       		}
        	 	} while(n > 0 || repeat);
         }
-    	System.out.printf("%s: ", filename);
+    	System.out.printf("%s frames %d-%d ", filename, skipFrames, count);
     	fp.printFinalDebugStats();
     	fp.close();
        	System.exit(0);

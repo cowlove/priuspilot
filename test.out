@@ -1,8 +1,5 @@
-lanedumps/20221010.141245.yuv: Avg fr=82.58, RMS errs: HL=0.00293, HR=0.00103, VP=0.00157
-lanedumps/20221010.145903.yuv: Avg fr=71.33, RMS errs: HL=0.00553, HR=0.00175, VP=0.00452
-lanedumps/20221010.150916.yuv: Avg fr=74.40, RMS errs: HL=0.00477, HR=0.00344, VP=0.00388
-lanedumps/20221010.151339.yuv: Avg fr=71.28, RMS errs: HL=0.00510, HR=0.00161, VP=0.00322
-
-real	4m24.206s
-user	7m49.618s
-sys	0m3.810s
+lanedumps/20221010.141245.yuv frames 0-1029 RMS errs: LL=0.00290, RL=0.00106, VP=0.00167
+lanedumps/20221010.145903.yuv frames 0-4346 RMS errs: LL=0.00703, RL=0.00130, VP=0.00445
+lanedumps/20221010.150916.yuv frames 0-6423 RMS errs: LL=0.00467, RL=0.01060, VP=0.00372
+lanedumps/20221010.151339.yuv frames 0-6608 RMS errs: LL=0.00488, RL=0.00161, VP=0.00323
+lanedumps/20221010.151339.yuv frames 1900-2400 RMS errs: LL=0.00497, RL=0.00172, VP=0.00355
