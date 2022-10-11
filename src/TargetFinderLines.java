@@ -292,6 +292,27 @@ class AverageLine {
 	//
 }
 
+@SuppressWarnings("unused")
+class TargetFinderResearch extends TargetFinder { 
+	HoughTransform h = null;
+	double houghSize;
+
+	TargetFinderResearch(int w, int ht, Rectangle sa1, int houghSz) {  
+		super(w, ht);
+		houghSize = houghSz;
+		
+		param.name = "TFLines," + (left ? "left" : "right");
+		param.gaussianKernelRadius = 0.3f; // TODO- bug in canny stuff, artifacts show up above 1.0
+		param.threshold1 = param.threshold2 = 5;  // Range between 13 or 5 
+		
+		sa = new Rectangle(0,0,0,0);
+		sa.width = w;
+		sa.height = (int)(ht * .70);
+		sa.y = (int)(ht * .30);
+		sa.x = 0;
+	}
+}
+		
 
 @SuppressWarnings("unused")
 class TargetFinderLines extends TargetFinder { 
@@ -352,7 +373,7 @@ class TargetFinderLines extends TargetFinder {
 			focus.defaultAngle = 90 - defAngle;
 		}
 		h = new HoughTransform(houghAngSz, houghRadSz);
-		h.blurRadius = 0.075;
+		h.blurRadius = 0.06;
 		if (Silly.debug("HOUGH_BLUR"))
 			h.blurRadius = Silly.debugDouble("HOUGH_BLUR");
 
