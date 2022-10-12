@@ -5,7 +5,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-
 import math.RunningAverage;
 import math.RunningLeastSquares;
 import math.RunningQuadraticLeastSquares;
@@ -315,6 +314,7 @@ class TargetFinderExperimental extends TargetFinder {
 
 		h = new HoughTransform(houghSz, houghSz);
 	}
+
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
 		if (Silly.debug("EXP")) { 
 			//c.reset();
@@ -334,7 +334,7 @@ class TargetFinderExperimental extends TargetFinder {
 
 			h.clear();
 			h.setAngleRange(0,180);
-			h.setRadRange(-vanRec.width/3,vanRec.width/3);
+			h.setRadRange(-vanRec.width/3,vanRec.width/3	);
 			h.origin.x = vanRec.x + vanRec.width / 2;
 			h.origin.y = vanRec.y + vanRec.height / 2;
 
@@ -631,7 +631,7 @@ class TargetFinderLines extends TargetFinder {
 			pd.add(count, (int)h.maxhough);
 			int period = pd.getPeriod();
 			//if (h.id < 2) System.out.printf("id %d period %d\n", h.id, period);
-			ptHist.add((ArrayList<Point>)lumPoints.clone());
+			ptHist.add(new ArrayList<Point>(lumPoints));
 			if (ptHist.size() == histDelay) { 
 				if (period >= 4 && period < histDelay /*TODO - bounds/array checking*/) {
 					// Add points from about 1/3 of the way through the intermittent line

@@ -239,7 +239,7 @@ public class Silly {
                     if (key == 0 && temp[1].contentEquals("down"))
                     	key = 40;
                     
-                    keypressMap.put(new Integer(frame), new Integer(key));
+                    keypressMap.put(Integer.valueOf(frame), Integer.valueOf(key));
                 }
             }
             else if (a.compareTo("-click") == 0) {
@@ -248,7 +248,7 @@ public class Silly {
                     int frame = Integer.parseInt(temp[0]);
                     int x = Integer.parseInt(temp[1]);
                     int y = Integer.parseInt(temp[2]);
-                    keypressMap.put(new Integer(frame), new Point(x,y));
+                    keypressMap.put(Integer.valueOf(frame), new Point(x,y));
                 }
             }
             else if (a.compareTo("-window") == 0) {

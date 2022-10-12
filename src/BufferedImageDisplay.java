@@ -38,7 +38,7 @@ class MyCanvas extends JComponent {
     public void paint(Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
         g2.drawImage(image, 0, 0, this);
-        g2.finalize();
+        //g2.finalize();
     }
 }
 
@@ -75,19 +75,19 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 //		addButton("FASTER");
 //		addButton("SLOWER");
 
-		cb.addItem(new String("foo"));
-		cb.addItem(new String("bar"));
+		//cb.addItem(new String("foo"));
+		//cb.addItem(new String("bar"));
 		box.add(cb);
 		cb.addActionListener(this);
 		
 		add(box);
-		typingArea.requestDefaultFocus();
+		typingArea.requestFocus();
 	}
 	
 	@Override
 	public void actionPerformed(ActionEvent ae) {
 		fp.onButtonPressed(ae);
-		typingArea.requestDefaultFocus();
+		typingArea.requestFocus();
 	}
 	@Override
 	public void keyPressed(KeyEvent arg0) {
@@ -291,7 +291,7 @@ class BufferedImageDisplayWithInputs extends BufferedImageDisplay {
 		frame.addMouseMotionListener(panel);
 	    frame.setVisible(true);
 	    g2 = image.createGraphics();
-		panel.typingArea.requestDefaultFocus();
+		panel.typingArea.requestFocus();
     }
     void addKeyListener(KeyListener l) { 
     	frame.addKeyListener(l);
@@ -301,7 +301,7 @@ class BufferedImageDisplayWithInputs extends BufferedImageDisplay {
         super.redraw();
         if (takeFocus) {
         	frame.setVisible(true);
-        	canv.requestDefaultFocus();
+        	canv.requestFocus();
         }
         textrow = 0;
     }

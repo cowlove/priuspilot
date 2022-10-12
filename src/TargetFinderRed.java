@@ -115,7 +115,7 @@ class TargetFinderRed extends TargetFinder {
         int [] tmpRed = red.clone();
         NonmaxSuppression ns = new NonmaxSuppression(redSa.width, redSa.height);
         ns.suppressNonmax(tmpRed, 10, 0.10f/*threshold*/, points);
-        ArrayList<Point> allPoints = (ArrayList<Point>)points.clone();
+        ArrayList<Point> allPoints = new ArrayList<Point>(points);
         final int ddSecondImageOffset = redSa.width + 10;
         if (dd != null) { 
 	        dd.clearBackground(Color.lightGray);
