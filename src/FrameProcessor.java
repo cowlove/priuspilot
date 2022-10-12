@@ -125,6 +125,7 @@ class FrameProcessor {
        
     TargetFinderLines tfl, tfr, tfro, tflo;
     TargetFinderRoadColor tfrc;
+	TargetFinderExperimental tfex; 
     Rectangle tfrcRect;
     FinderParameters tfparam;
     ArrayList<FinderParameters> tfparams = new ArrayList<FinderParameters>();
@@ -167,7 +168,9 @@ class FrameProcessor {
         tfr = new TargetFinderLines(w, h, null, false, 45, houghSize, minSz, maxSz, 12, 45);
         tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45);
         tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45);
-    
+		tfex = new TargetFinderExperimental(w, h, null, 100);
+
+
 		tfl.toeIn = tfr.toeIn = 0;
 
     	caR = new CurvatureAnalyzer(false, w, h); 
@@ -640,12 +643,15 @@ class FrameProcessor {
 	   			Rectangle(inputZeroPoint.zeroPoint.vanX - vanRectW / 2, 
 	   					inputZeroPoint.zeroPoint.vanY - vanRectH / 2, vanRectW, vanRectH);
 	   		tfrc.sa.x = inputZeroPoint.zeroPoint.vanX - tfrc.sa.width / 2;
-	   		
+
+			tfex.setVanRect(new Rectangle(inputZeroPoint.zeroPoint.vanX - vanRectW / 2, 
+	   					inputZeroPoint.zeroPoint.vanY - vanRectH / 2, vanRectW, vanRectH));
+
 	   		tfl.useLaneWidthFilter = tfr.useLaneWidthFilter = true;
 	
 	   		vpL = new int[tfl.vanLimits.width * tfl.vanLimits.height / vpScale / vpScale];
 	   		vpR = new int[vpL.length];
-	   		
+		
 	   		// do the left side in a separate thread
 	   		Thread t1 = new Thread(new Runnable() { public void run() { 
 	   			tfl.findNearest(coi, null, 0, 0);
@@ -698,13 +704,19 @@ class FrameProcessor {
 			if (gk.max > 15) {	
 				persVanX = (((double)houghVan.ax.calculate()  - inputZeroPoint.zeroPoint.vanX) / width) * pixelWidthPrescale;
 			}
-	   		
+
+			tfex.findNearest(coi, null, 0, 0);
+
 			tfl.markup(coi);
 			tfr.markup(coi);
 			tflo.markup(coi);
 			tfro.markup(coi);
 			caL.markup(coi);
 			caR.markup(coi);
+			tfex.markup(coi, rescale);
+			//setLineColorAndWidth(Color.lightGray, 2);
+			//display.g2.draw(scaleRect(tfex.vanRec, rescale));
+
 			
 	   		if (Silly.debug("DEBUG_VAN")) {
 				// flip chart to make it easier to read

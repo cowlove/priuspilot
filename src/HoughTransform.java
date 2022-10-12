@@ -236,7 +236,35 @@ class HoughTransform {
 		
 		return dist;
 	}
+
+	boolean isLocalMax(int a, int r, int kern) { 
+		double v = hough[a + r * angSz];
+			for (int da = -kern; da <= +kern; da++)  {
+				if (da == 0 || a + da < 0 || a + da >= angSz) 
+					continue; 
+				for (int dr = -kern; dr <= +kern; dr++)  { 
+					if (dr == 0 || r + dr < 0 || r + dr >= radSz) 
+						continue;
+				if (hough[a + da + (r + dr) * angSz] > v)
+					return false;
 	
+			}
+		}
+		return true;	
+	}
+
+	ArrayList<Point> localMaxes(int kern) { 
+		ArrayList<Point> pts = new ArrayList<Point>();
+ 		for(int a = 0; a < angSz; a++) { 
+			for(int r = 0; r < radSz; r++) {
+				if (isLocalMax(a, r, kern))
+					pts.add(new Point(a, r));
+			}
+		}
+		return pts; 
+	}
+
+
 
 	// used to project strong lines into external rectangle, as in the vanishing point calc
 	void projectIntoRect(int []s, Rectangle rec, int scale) {
@@ -257,6 +285,7 @@ class HoughTransform {
 		//	int a = p.x, r = p.y;  // OPTION A
 		
 		int hStep = 3;
+		
  		for(int a = hStep / 2; a < angSz; a += hStep) {   // OPTION B
 			float ang2Tan = ang2TanLookup[a];
 			float ang2TanInv = 1f / ang2Tan;
@@ -265,9 +294,21 @@ class HoughTransform {
 				for(int da = a - hStep / 2; da <= a + hStep / 2; da++) { 
 					for (int dr = r - hStep / 2; dr <= r + hStep / 2; dr++) {
 						if (dr > 0 && dr < radSz && da > 0 && da < angSz)
-							weight += hough[da + dr * angSz];
+							//if (hough[da + dr * angSz] == maxhough) 
+								weight += hough[da + dr * angSz];
 					}
 				}
+/*		
+		if (true) { 
+			for (Point p : localMaxes(10)) {
+				int a = p.x;
+				int r = p.y;
+				double weight = hough[a + r * angSz];
+				float ang2Tan = ang2TanLookup[a];
+				float ang2TanInv = 1f / ang2Tan;
+*/
+
+
 				weight = weight * angSz * radSz / 100 / 100;
 				
 				float ang = (float)(angMin + (angMax - angMin) / angSz * a);
