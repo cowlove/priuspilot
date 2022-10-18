@@ -3,7 +3,7 @@ SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
 LIB="$SCRIPT_DIR/../pplib"
 SRC="$SCRIPT_DIR/../src/"
 export LD_LIBRARY_PATH="$LIB"
-export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/librt.so" 
+#export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/librt.so" 
 
 CP=$SRC/priuspilot.jar:$LIB/Joystick.jar:$LIB/jna-3.2.4.jar:/home/jim/workspace/priuspilot/bin:$LIB/Jama-1.0.2.jar:$LIB/mbrola.jar:$LIB/freetts-jsapi10.jar:$LIB/jsapi.jar:$LIB/freetts.jar
 	

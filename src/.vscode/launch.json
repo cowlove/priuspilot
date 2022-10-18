@@ -14,6 +14,14 @@
         },
         {
             "type": "java",
+            "name": "Launch PRIUSPILOT 640x480",
+            "request": "launch",
+            "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
+            "mainClass": "Silly",
+            "args": ["/host/lanedumps/20221016.120744.yuv", "-size", "640x480", "-exit",  "500" ]
+        },
+        {
+            "type": "java",
             "name": "Launch Current File",
             "request": "launch",
             "mainClass": "${file}"

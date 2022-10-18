@@ -55,7 +55,6 @@
  *
  ******************************************************************************/
 
-import java.util.Objects;
 
 class StdOut { 
 	static public int println(String s) { return 0; }

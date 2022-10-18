@@ -363,7 +363,7 @@ public class Silly {
         		int picsize = height * width * 2;
         		if (rgb32) picsize = height * width * 4;
         		int PAGE_SIZE=4096;
-           		picsize = (((picsize + PAGE_SIZE - 1) & (~(PAGE_SIZE - 1)))) - 8;
+           		picsize = (((picsize + PAGE_SIZE - 1) & (~(PAGE_SIZE - 1))));
                 		
 	        	ByteBuffer timebb = ByteBuffer.allocate(8);
 	        	IntBuffer ib = timebb.asIntBuffer();
@@ -389,9 +389,11 @@ public class Silly {
 	        				needed -= got;
 	        				offset += got;
 	        			}
+						for (int n = 0; n < 8; n++) // fake the 8 bytes consumed by the timestamp 
+							bb.put((byte)0x0);
 	        				
-	        			needed = picsize;
-	        			offset = 0;
+	        			needed = picsize - 8;
+	        			offset = 8;
 	        			while(needed > 0) { 
 	        				int got = gis.read(bb.array(), offset, needed);
 	        				//System.out.println("Read " + got + " bytes, needed " + needed);
@@ -400,7 +402,9 @@ public class Silly {
 	        			}
 	        		} else {
 	        			fis.getChannel().read(timebb);  
-	        			fis.getChannel().read(bb); // TODO -off by 8 bytes
+						for (int n = 0; n < 8; n++) // fake the 8 bytes consumed by the timestamp 
+							bb.put((byte)0x0);
+		    			fis.getChannel().read(bb); 
 	        		}
 	        		
 	        		if (!faketime) { 
