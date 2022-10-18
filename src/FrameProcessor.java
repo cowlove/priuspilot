@@ -14,18 +14,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 
-//import math.JamaLeastSquaresFit;
-//import math.RunningAverage;
-//import math.RunningLeastSquaresSine;
-//import math.RunningQuadraticLeastSquares;
-//import math.FFT;
-//import math.Complex;
-
-
-//import com.centralnexus.input.*;
-
-
-
 class HistoryArray { 
 	double []values;
 	HistoryArray(int size) {
@@ -261,14 +249,11 @@ class FrameProcessor {
         tdStartX = w / 2;
         tdStartY = h / 3;
         
-        inputZeroPoint.zeroPoint.vanX = (int)(w * 0.5);
-        inputZeroPoint.zeroPoint.vanY = (int)(h * 0.3); // set to 39 and run pp /host/lanedumps/20171118.155503.yuv to crash pidLV
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", (int)(w * 0.5));
+        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", (int)(h * 0.3));
         inputZeroPoint.zeroPoint.rLane = 330 * w/360;
         inputZeroPoint.zeroPoint.lLane = 0;
         
-		if (Silly.debug("VANX")) inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX");
-		if (Silly.debug("VANY")) inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY");
-
         cmdBus.start();
     }
     

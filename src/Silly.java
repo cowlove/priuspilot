@@ -362,7 +362,7 @@ public class Silly {
         	do {
         		int picsize = height * width * 2;
         		if (rgb32) picsize = height * width * 4;
-        		int PAGE_SIZE=4096;
+        		final int PAGE_SIZE=4096;
            		picsize = (((picsize + PAGE_SIZE - 1) & (~(PAGE_SIZE - 1))));
                 		
 	        	ByteBuffer timebb = ByteBuffer.allocate(8);
@@ -371,7 +371,7 @@ public class Silly {
 	        	long time = 0;
 	        	FileInputStream fis = new FileInputStream(new File(filename));
 	        	GZIPInputStream gis = null;
-	        	if (filename.endsWith(".gz"))
+	        	if (filename.endsWith(".gz"))  
 	        		gis = new GZIPInputStream(fis);
 	        	ByteBuffer bb = ByteBuffer.allocate(picsize);
 	        	while(fis.available() > 0) {
@@ -564,6 +564,14 @@ public class Silly {
 	public static int debugInt(String s) { 
 		String v = debugOpts.get(s);
 		return Integer.parseInt(v);
+	}
+	public static int debugInt(String s, int def) { 
+		try {
+			String v = debugOpts.get(s);
+			return Integer.parseInt(v);
+		} catch(Exception e) { 
+			return def;
+		}
 	}
 	public static double debugDouble(String s) { 
 		String v = debugOpts.get(s);
