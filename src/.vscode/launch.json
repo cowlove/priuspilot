@@ -10,7 +10,7 @@
             "request": "launch",
             "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
             "mainClass": "Silly",
-            "args": ["/host/lanedumps/20221016.123614.yuv"]
+            "args": ["/home/jim/src/priuspilot/lanedumps/20221010.151339.yuv", "-skip", "1900", "-exit",  "500" ]
         },
         {
             "type": "java",
