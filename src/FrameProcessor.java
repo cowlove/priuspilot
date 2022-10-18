@@ -251,9 +251,13 @@ class FrameProcessor {
         
         inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", (int)(w * 0.5));
         inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", (int)(h * 0.3));
-        inputZeroPoint.zeroPoint.rLane = 330 * w/360;
+        inputZeroPoint.zeroPoint.rLane = 330 * w/320;
         inputZeroPoint.zeroPoint.lLane = 0;
         
+		inputZeroPoint.zeroPoint.vanX = 160;
+		inputZeroPoint.zeroPoint.vanY = 72; // set to 39 and run pp /host/lanedumps/20171118.155503.yuv to crash pidLV
+		inputZeroPoint.zeroPoint.rLane = 330;
+		
         cmdBus.start();
     }
     
@@ -623,7 +627,7 @@ class FrameProcessor {
 		   		tfrc.hh.draw(1);
 	   		}
 	   		
-	   		final int vanRectW = 128 * width / 360;
+	   		final int vanRectW = 128 * width / 320;
 	   		final int vanRectH = 32 * height / 240;
 			final int vpScale = 1;
 			   		
