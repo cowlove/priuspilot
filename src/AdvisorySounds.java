@@ -1,5 +1,5 @@
 
-import java.io.*;
+//import java.io.*;
 import javax.sound.midi.*;
 
 //import sun.audio.*;
@@ -28,8 +28,8 @@ class Tone {
 
     private static void play(SourceDataLine line, Note note, int ms) {
         ms = Math.min(ms, Note.SECONDS * 1000);
-        int length = Note.SAMPLE_RATE * ms / 1000;
-        int count = line.write(note.data(), 0, length);
+        //int length = Note.SAMPLE_RATE * ms / 1000;
+        //int count = line.write(note.data(), 0, length);
     }
 }
 
