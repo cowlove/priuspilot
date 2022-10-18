@@ -1,0 +1,18 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "/home/jim/src/priuspilot/pplib/Joystick.jar",
+        "/home/jim/src/priuspilot/pplib/Jama-1.0.2.jar",
+        "/home/jim/src/priuspilot/pplib/cmudict04.jar",
+        "/home/jim/src/priuspilot/pplib/cmulex.jar",
+        "/home/jim/src/priuspilot/pplib/cmu_time_awb.jar",
+        "/home/jim/src/priuspilot/pplib/cmutimelex.jar",
+        "/home/jim/src/priuspilot/pplib/cmu_us_kal.jar",
+        "/home/jim/src/priuspilot/pplib/en_us.jar",
+        "/home/jim/src/priuspilot/pplib/freetts.jar",
+        "/home/jim/src/priuspilot/pplib/freetts-jsapi10.jar",
+        "/home/jim/src/priuspilot/pplib/jna-3.2.4.jar",
+        "/home/jim/src/priuspilot/pplib/jsapi.jar",
+        "/home/jim/src/priuspilot/pplib/mbrola.jar"
+    ]
+}

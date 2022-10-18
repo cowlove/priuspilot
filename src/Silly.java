@@ -36,8 +36,8 @@ import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
-import math.RunningAverage;
-import math.RunningLeastSquares;
+//import math.RunningAverage;
+//import math.RunningLeastSquares;
 /*
 import org.gstreamer.Bus;
 import org.gstreamer.Element;

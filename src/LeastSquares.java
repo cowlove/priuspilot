@@ -1,4 +1,4 @@
-package math;
+//package math;
 
 public class LeastSquares { 
 	public double X = 0, Y = 0, XX = 0, XY = 0;

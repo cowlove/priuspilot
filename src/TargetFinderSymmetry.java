@@ -3,12 +3,12 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 
 
-import math.Average;
-import math.RunningAverage;
-import math.RunningLeastSquares;
-import math.JamaLeastSquaresFit;
-import math.Geometry;
-import math.Geometry.*;
+//import math.Average;
+//import math.RunningAverage;
+//import math.RunningLeastSquares;
+//import math.JamaLeastSquaresFit;
+//import math.Geometry;
+//import math.Geometry.*;
 
 
 class TargetFinderSymmetry extends TargetFinder {

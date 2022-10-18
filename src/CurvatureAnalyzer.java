@@ -4,8 +4,8 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import math.RunningAverage;
-import math.RunningQuadraticLeastSquares;
+//import math.RunningAverage;
+//import math.RunningQuadraticLeastSquares;
 
 
 public class CurvatureAnalyzer {

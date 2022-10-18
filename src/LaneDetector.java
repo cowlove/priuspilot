@@ -3,8 +3,8 @@
 import java.awt.Color;
 import java.awt.Graphics2D;
 
-import math.*;
-import math.Geometry.*;
+//import math.*;
+//import math.Geometry.*;
 
 
 public class LaneDetector {
@@ -29,7 +29,7 @@ public class LaneDetector {
     public int fullFocusDelay = 15;
     public double fullFocus = 0.20;
     public int fullFocusAttack = 4;   // factor of attack/decay time for focus
-    public Point startingVanish = new Geometry().new Point(0.5, 0.15);
+    public Geometry.Point startingVanish = new Geometry().new Point(0.5, 0.15);
     public double vanishErr = 0.30;
     public double vanishFullFocus = 0.15;
     public double colorThresholdPercent;  // take whitest % of the pixels as colorThreshold
@@ -40,7 +40,7 @@ public class LaneDetector {
      // output variables
     public LaneData left;
     public LaneData right;
-    public Point currentVanish = new Geometry().new Point(startingVanish.x, startingVanish.y);
+    public Geometry.Point currentVanish = new Geometry().new Point(startingVanish.x, startingVanish.y);
     private int width, height;
     
     public LaneDetector(int w, int h) {
@@ -156,7 +156,7 @@ public class LaneDetector {
         ;
         // set up scanZone showing region to scan for next iteration.
         int handed = (int) (targSlope / Math.abs(targSlope));
-        Point vp = new Geometry().new Point((int) (width * currentVanish.x),
+        Geometry.Point vp = new Geometry().new Point((int) (width * currentVanish.x),
                 (int) (height * currentVanish.y));
         double verr = vanishErr * ld.afSlope.curFocus * width;
         double botSlope, topSlope;
@@ -171,7 +171,7 @@ public class LaneDetector {
         	sz = zones.rsz;
         }
         
-        Line l = Geometry.lineFromSlopePointDistance(topSlope, vp,-verr * handed);
+        Geometry.Line l = Geometry.lineFromSlopePointDistance(topSlope, vp,-verr * handed);
         sz.m1 = l.m;
         sz.b1 = (int)l.b;
         l = Geometry.lineFromSlopePointDistance(botSlope, vp,verr * handed);

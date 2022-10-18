@@ -1,6 +1,6 @@
-import math.*;
+//import math.*;
 
-class Average {
+class AverageNO {
 	double sum;
 	long count;
 	void add(double d) { if (!Double.isNaN(d)) { sum += d; count++; } } 
@@ -83,7 +83,7 @@ public class PidControl {
     			pref, defaultValue.calculate(), pref, quality, pref, drms) + err.toString(pref);
     }
     double getAvgRmsErr() {
-    	return avgRmsErr.average();
+    	return avgRmsErr.calculate();
     }
     void setGains(double gp, double gi, double gd, double gj, double gl) { 
     	gain.p.loGain = gp;

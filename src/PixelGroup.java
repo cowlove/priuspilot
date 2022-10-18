@@ -8,12 +8,12 @@ import java.awt.Graphics2D;
 import java.util.Arrays;
 
 
-import math.Average;
-import math.RunningAverage;
-import math.RunningLeastSquares;
-import math.JamaLeastSquaresFit;
-import math.Geometry;
-import math.Geometry.*;
+//import math.Average;
+//import math.RunningAverage;
+//import math.RunningLeastSquares;
+//import math.JamaLeastSquaresFit;
+//import math.Geometry;
+//import math.Geometry.*;
 
 //plot a 2d histogram of segments on a slope/intercept axis.  Turned out not too useful 
 class HistGrid {
@@ -37,7 +37,7 @@ class HistGrid {
     }
     int histGridSmear = 5;
     int histGridMaxX, histGridMaxY, histGridMax;
-    LinePair scanZone;
+    Geometry.LinePair scanZone;
 
     void markHistGridMax() {
         for (int i = 0; i < segCount; i++) {
@@ -128,7 +128,7 @@ class PixelGroup {
     boolean goodSegment = false;
     int color = Color.red.getRGB();
     Average avgSlope = new Average(), avgIntercept = new Average();
-    LinePair scanZone = null;   
+    Geometry.LinePair scanZone = null;   
     static final private int DONE_MASK = 0xff000000;
 
     // canny following and thresholding now done here.  Ugh.  These
@@ -182,7 +182,7 @@ class PixelGroup {
         vanishX = (int) (width * vx);
         vanishY = (int) (height * vy);
         vanishErr = (int) (width * verr);
-        Point vp = new Geometry().new Point(vanishX, vanishY);
+        Geometry.Point vp = new Geometry().new Point(vanishX, vanishY);
 
         scanZone = new Geometry().new LinePair(Geometry.lineFromSlopePointDistance(minSlope, vp, -vanishErr),
                 Geometry.lineFromSlopePointDistance(maxSlope, vp, vanishErr));

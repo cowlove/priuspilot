@@ -1,6 +1,6 @@
 
 
-import math.RunningAverage;
+//import math.RunningAverage;
 
 public class AutoFocusParameter {
 

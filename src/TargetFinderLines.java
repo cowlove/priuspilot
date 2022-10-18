@@ -5,9 +5,9 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import math.RunningAverage;
-import math.RunningLeastSquares;
-import math.RunningQuadraticLeastSquares;
+//import math.RunningAverage;
+//import math.RunningLeastSquares;
+//import math.RunningQuadraticLeastSquares;
 
 
 class Hist2D {
@@ -733,7 +733,7 @@ class TargetFinderLines extends TargetFinder {
 			hsl2d.clear();
 			hsl2d2.clear();
 			
-			math.LeastSquares ls = new math.LeastSquares();
+			LeastSquares ls = new LeastSquares();
 			
 			int runLen = 4;
 			HslRunningAverage ravg1 = new HslRunningAverage(runLen);

@@ -3,7 +3,7 @@ CFLAGS=-I /usr/lib/jvm/java-11-openjdk-amd64/include/linux -I /usr/lib/jvm/java-
 JARS=../pplib
 
 
-JAVASRC=AdvisorySounds.java AutoFocusParameter.java BufferedImageDisplay.java CannyEdgeDetector.java CannyEdgeDetectorOriginal.java CurvatureAnalyzer.java FrameCaptureJNI.java FrameGrabberThread.java FrameProcessor.java FrameProcessorTunableParameters.java GaussianKernel.java GnuplotWrapper.java HoughTransform.java ImageFileWriter.java IntervalTimer.java JavaStreamingAudioPlayerX.java JoystickControl.java LabJackJNI.java LaneDetector.java LazyHslConvert.java Logfile.java NonmaxSuppression.java OriginalImage.java Pauser.java PidControl.java PixelGroup.java PriusVoice.java RemoteTcpCommandSocket.java RunningAveragePoint.java ScanZonePair.java SerialCommandBus.java Silly.java SteeringLogic.java SteeringTestPulseGenerator.java SteeringWheelResolverCam.java TargetFinder.java TargetFinderLines.java TargetFinderRectangle2.java TargetFinderRectangle.java TargetFinderRed.java TargetFinderRoadColor.java TargetFinderRoundAndRed.java TargetFinderSymmetry.java TemplateDetectRGB.java Tracker.java TunableParameterList.java math/Average.java math/Complex.java math/FFT.java math/Geometry.java math/JamaLeastSquaresFit.java math/LeastSquares.java math/RunningAverage.java math/RunningLeastSquares.java math/RunningLeastSquaresSine.java math/RunningQuadraticLeastSquares.java math/Snippet.java 
+JAVASRC=AdvisorySounds.java AutoFocusParameter.java BufferedImageDisplay.java CannyEdgeDetector.java CannyEdgeDetectorOriginal.java CurvatureAnalyzer.java FrameCaptureJNI.java FrameGrabberThread.java FrameProcessor.java FrameProcessorTunableParameters.java GaussianKernel.java GnuplotWrapper.java HoughTransform.java ImageFileWriter.java IntervalTimer.java JavaStreamingAudioPlayerX.java JoystickControl.java LabJackJNI.java LaneDetector.java LazyHslConvert.java Logfile.java NonmaxSuppression.java OriginalImage.java Pauser.java PidControl.java PixelGroup.java PriusVoice.java RemoteTcpCommandSocket.java RunningAveragePoint.java ScanZonePair.java SerialCommandBus.java Silly.java SteeringLogic.java SteeringTestPulseGenerator.java SteeringWheelResolverCam.java TargetFinder.java TargetFinderLines.java TargetFinderRectangle2.java TargetFinderRectangle.java TargetFinderRed.java TargetFinderRoadColor.java TargetFinderRoundAndRed.java TargetFinderSymmetry.java TemplateDetectRGB.java Tracker.java TunableParameterList.java Average.java Complex.java FFT.java Geometry.java JamaLeastSquaresFit.java LeastSquares.java RunningAverage.java RunningLeastSquares.java RunningLeastSquaresSine.java RunningQuadraticLeastSquares.java Snippet.java 
 JAVAOBJ=$(JAVASRC:%.java=./bin/%.class)
 
 DEPEND_OBJS     := $(JAVASRC:.java=.u)
@@ -43,12 +43,12 @@ $(TARGET): $(OBJ)
 
 
 clean:
-	rm -f *.o  core $(TARGET) ./*.class ./math/*.class priuspilot.jar 
+	rm -f *.o  core $(TARGET) ./*.class priuspilot.jar 
 	rm -rf ./bin/
 
 priuspilot.jar:   $(JAVASRC)
-	javac -d ./bin/ -classpath $(CP) *.java math/*.java
-	cd ./bin/ && jar cf ../$@ *.class */*.class
+	javac -d ./bin/ -classpath $(CP) *.java 
+	cd ./bin/ && jar cf ../$@ *.class 
 
 start:	
 

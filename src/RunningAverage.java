@@ -1,4 +1,4 @@
-package math;
+//package math;
 
 public class RunningAverage extends Average { 
 	public double [] values;

@@ -1,4 +1,4 @@
-package math;
+//package math;
 
 /******************************************************************************
  *  Compilation:  javac FFT.java

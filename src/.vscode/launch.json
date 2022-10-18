@@ -1,0 +1,43 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch PRIUSPILOT",
+            "request": "launch",
+            "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
+            "mainClass": "Silly",
+            "args": ["/host/lanedumps/20221016.123614.yuv"]
+        },
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch Silly",
+            "request": "launch",
+            "mainClass": "Silly",
+            "projectName": "src_5c1085f5"
+        },
+        {
+            "type": "java",
+            "name": "Launch Complex",
+            "request": "launch",
+            "mainClass": "math.Complex",
+            "projectName": "src_5c1085f5"
+        },
+        {
+            "type": "java",
+            "name": "Launch FFT",
+            "request": "launch",
+            "mainClass": "math.FFT",
+            "projectName": "src_5c1085f5"
+        }
+    ]
+}
