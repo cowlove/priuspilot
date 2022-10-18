@@ -266,6 +266,9 @@ class FrameProcessor {
         inputZeroPoint.zeroPoint.rLane = 330;
         inputZeroPoint.zeroPoint.lLane = 0;
         
+		if (Silly.debug("VANX")) inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX");
+		if (Silly.debug("VANY")) inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY");
+
         cmdBus.start();
     }
     
