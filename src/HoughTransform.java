@@ -239,21 +239,37 @@ class HoughTransform {
 
 	boolean isLocalMax(int a, int r, int kern) { 
 		double v = hough[a + r * angSz];
-			for (int da = -kern; da <= +kern; da++)  {
-				if (da == 0 || a + da < 0 || a + da >= angSz) 
-					continue; 
+		for (int da = -kern; da <= +kern; da++)  {
+			if (a + da >= 0 && a + da < angSz) {  
 				for (int dr = -kern; dr <= +kern; dr++)  { 
-					if (dr == 0 || r + dr < 0 || r + dr >= radSz) 
-						continue;
-				if (hough[a + da + (r + dr) * angSz] > v)
-					return false;
-	
+					if (r + dr >= 0 && r + dr < radSz) {  
+						if (hough[a + da + (r + dr) * angSz] > v)
+							return false;
+					}
+				}
 			}
 		}
 		return true;	
 	}
 
-	ArrayList<Point> localMaxes(int kern) { 
+	void suppressNonmax(int kern, int count) { 
+		ArrayList<Point> maxes = localMaxes(kern, count);
+		if (id == 2) { 
+			for (Point p : maxes) {
+				System.out.printf("(%03d,%03d) ", p.x, p.y);
+			} 
+			System.out.printf("%d\n", kern);
+		}
+		for(int a = 0; a < angSz; a++) { 
+			for(int r = 0; r < radSz; r++) {
+				if (!maxes.contains(new Point(a,r))) {
+					hough[a + r * angSz] = 0;
+				}
+			}
+		}
+	}
+
+	ArrayList<Point> localMaxes(int kern, int count) { 
 		ArrayList<Point> pts = new ArrayList<Point>();
  		for(int a = 0; a < angSz; a++) { 
 			for(int r = 0; r < radSz; r++) {
@@ -261,7 +277,20 @@ class HoughTransform {
 					pts.add(new Point(a, r));
 			}
 		}
-		return pts; 
+		ArrayList<Point> rval = new ArrayList<Point>();
+		while(count-- > 0 && pts.size() > 0) {
+			Point loopMax = null;
+			for (Point p : pts) { 
+				if (loopMax == null || hough[p.x + p.y * angSz] > hough[loopMax.x + loopMax.y * angSz]) { 
+					loopMax = p;
+				}
+			}
+			if (loopMax != null) {
+				rval.add(loopMax);
+				pts.remove(loopMax);
+			}
+		}
+		return rval; 
 	}
 
 
@@ -437,7 +466,7 @@ class HoughTransform {
 	}
 	ArrayList<Point> x;
 	
-	void suppressNonmax(int dist, float thresh, ArrayList<Point> pts) { 
+	void suppressNonmaxNO(int dist, float thresh, ArrayList<Point> pts) { 
 		NonmaxSuppression ns = new NonmaxSuppression(angSz, radSz);
 		ns.suppressNonmaxTODO(hough, dist, thresh, pts);
 		maxhough = ns.max;

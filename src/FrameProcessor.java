@@ -147,13 +147,13 @@ class FrameProcessor {
         //td = new TemplateDetectCannyCorrelation(w, h);
         //td = new TemplateDetectRGB(w, h);
         
-        int minSz = 30; // min/max radius
+        int minSz = 45; // min/max radius
         int maxSz = 100;
         int houghSize = 91;
         if (Silly.debug("HOUGH_SIZE"))
         	houghSize = Silly.debugInt("HOUGH_SIZE");
-        tfl = new TargetFinderLines(w, h, null, true, 45, houghSize, minSz, maxSz, 12, 45);
-        tfr = new TargetFinderLines(w, h, null, false, 45, houghSize, minSz, maxSz, 12, 45);
+        tfl = new TargetFinderLines(w, h, null, true, 55, houghSize, minSz, maxSz, 10, 45);
+        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, 10, 45);
         tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45);
         tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
@@ -630,6 +630,7 @@ class FrameProcessor {
 	   		tflo.vanLimits = tfro.vanLimits = tfl.vanLimits = tfr.vanLimits = new
 	   			Rectangle(inputZeroPoint.zeroPoint.vanX - vanRectW / 2, 
 	   					inputZeroPoint.zeroPoint.vanY - vanRectH / 2, vanRectW, vanRectH);
+			
 	   		tfrc.sa.x = inputZeroPoint.zeroPoint.vanX - tfrc.sa.width / 2;
 
 			tfex.setVanRect(new Rectangle(inputZeroPoint.zeroPoint.vanX - vanRectW / 2, 
@@ -758,10 +759,9 @@ class FrameProcessor {
 					
 			final int laneMinQuality = 20;
 	
-			if (tfl.focus.getQuality() > laneMinQuality) 	        		
-	    		lpos = (double)(tfl.getInstantaneousXDouble(height) - inputZeroPoint.zeroPoint.lLane) / width * lanePosPrescale;
-			
-			
+			if (tfl.focus.getQuality() > laneMinQuality)	
+				lpos = (double)(tfl.getInstantaneousXDouble(height) - inputZeroPoint.zeroPoint.lLane) / width * lanePosPrescale;
+
 			
 			
 			if (tfr.focus.getQuality() > laneMinQuality) 	        		

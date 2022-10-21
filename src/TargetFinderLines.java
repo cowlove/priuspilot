@@ -179,6 +179,7 @@ class PeriodicityDetector {
 }
 class Focus { 
 	double minWeight = 185000; // TODO needs to be normalized, values change with useLuminance, etc
+	//double minWeight = 9000; // TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -195,8 +196,15 @@ class Focus {
 	double lastAngle, lastIntercept;
 	double lastRadius, lastOX, lastOY;
 	int detune = 0;
-	
+	int id;
+	static int nextId = 0;
+	Focus() { 
+		id = nextId++;
+	}
 	void update(double weight, Point o, double r, double a, double i) {
+		if (id == 0) { 
+			//System.out.printf("%04d %f/%f\n", count, weight, minWeight);
+		}
 		if (weight > minWeight) { 
 			angle.add(count, a, weight);
 			lastAngle = a;
@@ -217,7 +225,6 @@ class Focus {
 		if (detune >= angle.count) { 
 			clear();
 		}
-		
 	}
 	
 	
@@ -291,100 +298,11 @@ class AverageLine {
 	//
 }
 
-@SuppressWarnings("unused")
-class TargetFinderExperimental extends TargetFinder { 
-	HoughTransform h = null;
-	Rectangle vanRec;
-	GnuplotWrapper gp = new GnuplotWrapper();
-	GnuplotWrapper gp2 = new GnuplotWrapper();
-
-	TargetFinderExperimental(int w, int ht, Rectangle sa1, int houghSz) {  
-		super(w, ht);
-		houghSz = 180;
-		
-		param.name = "TFResearch";
-		param.gaussianKernelRadius = 0.3f; // TODO- bug in canny stuff, artifacts show up above 1.0
-		param.threshold1 = param.threshold2 = 5;  // Range between 13 or 5 
-		
-		sa = new Rectangle(0,0,0,0);
-		sa.width = w;
-		sa.height = ht;
-		sa.y = 0;
-		sa.x = 0;
-
-		h = new HoughTransform(houghSz, houghSz);
-	}
-
-	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
-		if (Silly.debug("EXP")) { 
-			//c.reset();
-			c.zones.height = sa.height;
-			c.zones.clear();
-
-			setCanny(param);
-
-			c.zones.lsz.b1 = -sa.height;
-			c.zones.lsz.b2 = +sa.height;
-			c.zones.lsz.m1 = 1;
-			c.zones.lsz.m2 = 1;
-			c.zones.midX = sa.width;
-
-			c.processData(oi, sa);
-			canny = c.getData();
-
-			h.clear();
-			h.setAngleRange(0,180);
-			h.setRadRange(-vanRec.width/3,vanRec.width/3	);
-			h.origin.x = vanRec.x + vanRec.width / 2;
-			h.origin.y = vanRec.y + vanRec.height / 2;
-
-			if (true) { 	
-				for (int x = 0; x < sa.width; x++) { 
-					for(int y = 0; y < sa.height; y++) {
-						float wt =  c.results.gradResults[y*sa.width+x]; 
-						h.add(x, y, wt);
-					}
-				}
-			} else { 
-				for( Point p : c.results.l ) {
-					h.add(p.x, p.y, 1);
-				}
-			}
-			int[] vp = new int[vanRec.width * vanRec.height];
-			h.projectIntoRect(vp, vanRec, 1);
-
-			if (true) { 
-				gp.startNew();
-				gp.add3DGrid(vp, vanRec.width, vanRec.height);
-				gp.draw();
-			}
-			if (true) { 
-				gp2.startNew();
-				gp2.add3DGrid(h.hough, h.angSz, h.radSz);
-				gp2.draw();
-			}
-		}	
-
-		return null;
-	}
-
-	public void markup(OriginalImage coi, int rescale) {
-		if (Silly.debug("MARKUP_EXP") && Silly.debug("EXP")) { 
-			for( Point p : c.results.l )  
-				coi.putPixel(p.x + sa.x, p.y + sa.y, -1);		
-		}	
-
-	}
-	public void setVanRect(Rectangle r) { 
-		vanRec = r;
-	}
-}
-		
 
 @SuppressWarnings("unused")
 class TargetFinderLines extends TargetFinder { 
 	boolean leftSide = false;
-	double toeIn = 0; // TODO -broken?   
+	double toeIn = 10; // TODO -broken?   
 	int rawPeakHough = 0;
 	TargetFinderRoadColor tfrc = null;
 	HslHistogram hhist = null;
@@ -426,10 +344,10 @@ class TargetFinderLines extends TargetFinder {
 		sa = sa1;
 		if (sa == null) { 
 			sa = new Rectangle(0,0,0,0);
-			sa.width = w / 2;
+			sa.width = (int)(w * 0.5);
 			sa.height = (int)(ht * .70);
 			sa.y = (int)(ht * .30);
-			sa.x = leftSide ? 0 : sa.width;
+			sa.x = leftSide ? 0 : w - sa.width;
 		}
 		
 		if (leftSide) { 
@@ -447,7 +365,7 @@ class TargetFinderLines extends TargetFinder {
 		h2 = new HoughTransform(houghAngSz, houghRadSz);
 		h2.blurRadius = h.blurRadius;	
 
-		vanLimits = new Rectangle(w / 3, (int)(ht * 5 / 24), w / 8, ht / 9);
+		//vanLimits = new Rectangle(w / 3, (int)(ht * 5 / 24), w / 8, ht / 9);
 	}
 	
 	int count = 0;
@@ -471,6 +389,7 @@ class TargetFinderLines extends TargetFinder {
 	
 	int rcHslThresh = 30;
 	int rcHueMaxDiff = 44;
+	
 	
 	int cannyMaxPoints = 200, cannyMinPoints = 100;
 	@Override 
@@ -675,9 +594,10 @@ class TargetFinderLines extends TargetFinder {
 		if (Silly.debug("DEBUG_LINES") && Silly.debugInt("DEBUG_LINES") == h.id) {
 			gp.startNew();
 			gp.title = String.format("Hough Transform Line %d", h.id);
+			//h.suppressNonmax(20, 5);
 			gp.add3DGrid(h.hough, h.angSz, h.radSz);
 			gp.draw();
-			if (h.corHough != null) { 
+			if (false && h.corHough != null) { 
 				gp2.startNew();
 				gp2.title = "corHough";
 				gp2.add3DGrid(h.corHough, h.angSz, h.radSz);
@@ -842,11 +762,12 @@ class TargetFinderLines extends TargetFinder {
 
 	private float getLuminance(OriginalImage oi, Rectangle sa, int x, int y) {
 		float lum=0;
+
 		// ???? The odd shape of this kernel lowered test results, don't understand why 
 		for(int dx = -2; dx <= 2; dx++) { 
-			for (int dy = 0; dy <= 1; dy++) { 
-			//for(int dy = -kernSize; dy <= kernSize; dy++) { 			
+			for (int dy = -0; dy <= 1; dy++) { 
 				if (x + dx >= 0 && x + dx < sa.width && dy + y >= 0 && dy + y < sa.height) {  
+					//lum = Math.max(lum, oi.getPixelLum(x + dx + sa.x, y + dy + sa.y));
 					lum += oi.getPixelLum(x + dx + sa.x, y + dy + sa.y);
 				}
 			}
@@ -996,6 +917,8 @@ class TargetFinderLines extends TargetFinder {
 	}
 	
 	boolean insideVanRect(Point p) { 
+		if (vanLimits == null) 
+			return true;
 		return p.x >= vanLimits.x && p.x < vanLimits.x + vanLimits.width &&
 		p.y >= vanLimits.y && p.y < vanLimits.y + vanLimits.height;
 	}
