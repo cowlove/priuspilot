@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo -n set pwm=$1 | socat - udp-sendto:255.255.255.255:1234,broadcast
+
