@@ -10,6 +10,7 @@ public class FrameCaptureJNI {
 	public native void renameCurrentCaptureFile(int id, String filename);
 	public native void discardFrame(int id, String filename);
 	public native void setCaptureFile(int id, String filename);
+	public native void setLogData(int id, long steer, long timestamp);
 
 	public void configure(String dev, int resWidth, int resHeight, int windX, int windY, int windWidth, int
 			windHeight, boolean flip, String captureFile, int captureFileSize, int captureFileCount, 
@@ -19,6 +20,7 @@ public class FrameCaptureJNI {
 	}
 	public int grabFrame(ByteBuffer ib) { return grabFrame(id, ib); } 
 	public long getFrameTimestamp() { return getFrameTimestamp(id); } 
+	public void setLogData(long steer, long ts) { setLogData(id, steer, ts); }
 	public void close() { close(id); } 
 	public void renameCurrentCaptureFile(String filename) { renameCurrentCaptureFile(id, filename); } 
 	public void discardFrame(String filename) { discardFrame(id, filename); }

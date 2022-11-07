@@ -7,6 +7,9 @@ import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -249,10 +252,10 @@ class FrameProcessor {
         tdStartX = w / 2;
         tdStartY = h / 3;
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", (int)(w * 0.5));
-        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", (int)(h * 0.3));
-        inputZeroPoint.zeroPoint.rLane = 334 * w/320;
-        inputZeroPoint.zeroPoint.lLane = 4;
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", (int)(w * 0.55));
+        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", (int)(h * 0.18));
+        inputZeroPoint.zeroPoint.rLane = 356 * w/320;
+        inputZeroPoint.zeroPoint.lLane = -12;
         
         cmdBus.start();
     }
@@ -443,9 +446,9 @@ class FrameProcessor {
     	ardDebugInterval = level;
     	cmdBus.writeCmd('d', level);
     }
-    
     synchronized void setSteering(double x) { 
     	x += servoTrim;
+
     	x += joystick.trim;
         x = x * epsSteeringGain;
         
@@ -455,6 +458,24 @@ class FrameProcessor {
             
     	int st = (int)(x * 128 / 2.5);
     	
+		try {
+			final int lo = 300, hi = 1700;
+			int pwm = (int)(x / 1.2 *  (hi - lo) / 2  + (hi + lo) / 2);
+			pwm = Math.min(hi, Math.max(lo, pwm));
+			DatagramSocket sendSocket = new DatagramSocket();
+			sendSocket.setBroadcast(true);
+			String cmd = String.format("set pwm=%d", pwm);
+			byte[] data = cmd.getBytes();
+			//System.out.println(cmd);
+			DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName("255.255.255.255"), 1234);
+			sendSocket.send(packet); 
+			sendSocket.close();
+		} catch(Exception e) {
+			System.out.printf("ouch\n");
+		}
+
+
+
     	cmdBus.writeCmd('s', st);
     	if (count % 30 == 0) { 
 	    	cmdBus.writeCmd('t', steerOverrideTorque);
@@ -926,7 +947,6 @@ class FrameProcessor {
         steer += steeringTestPulse.currentPulse();
         
         //if (!noSteering) 
-        	steer = steering.steer(time, steer);
         
         steer = joystick.steer(steer);
 
@@ -938,7 +958,8 @@ class FrameProcessor {
 	        if (steer > 0) steer += steeringDeadband;
         } 
 
-        setSteering(steer);
+		if (!noSteering) 
+	        setSteering(steer);
 	    
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
 	    avgFrameDelay.add(frameResponseMs);

@@ -1,7 +1,7 @@
 #!/bin/bash
 TMP=/tmp/test.out
 rm $TMP
-FLAGS="-debug SHOW_FPS -displayratio 0"
+FLAGS="-nosteer -debug SHOW_FPS -displayratio 0"
 
 time(
 ./scripts/pp $FLAGS lanedumps/20221010.151339.yuv -skip 1900 -exit 500   | tee -a $TMP 

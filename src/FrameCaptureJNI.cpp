@@ -81,6 +81,10 @@ struct config {
 	int maxFrameMs; /* max ms per frame before switching to night mode */
 	int rawRecordSkip; /* skip rate for dumping/recording raw frame data to disk */
 	//struct aiocbp aio;
+	struct {
+		long timestamp;
+		long steer;
+	} logData; 
 } *configs[10];
 
 
@@ -97,6 +101,13 @@ config *getCameraObject(int camIndex) {
 		bzero(configs[camIndex], sizeof(config));
 	}
 	return configs[camIndex];
+}
+
+void setLogData(int id, long steer, long timestamp) { 
+	config *c = getCameraObject(id);
+	c->logData.steer = steer;
+	c->logData.timestamp = timestamp; 
+
 }
 
 JNIEXPORT void JNICALL Java_FrameCaptureJNI_configure
@@ -219,7 +230,9 @@ extern "C" void process_image(config *conf, const unsigned char *in, unsigned ch
 			//fsync(conf->captureFd);
 			*/
 
-			memcpy((void *)in, (void *)&conf->frameTimestamp, 8);
+			memcpy((void *)in, (void *)&conf->frameTimestamp, 8); // stash the timestamp in the first bytes of the image
+			memcpy((void *)(in + 8), (void *)&conf->logData, sizeof(conf->logData)); // and the logged steering data 
+
 			asynch_write(conf->captureFd, in, PAGE_ROUND(conf->windHeight * conf->windWidth * 2));
 			//if (write(conf->captureFd, in, AGE_ROUND(conf->windHeight * conf->windWidth * 2))
 			//	perror("write()");

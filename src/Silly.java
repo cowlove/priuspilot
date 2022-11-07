@@ -149,8 +149,8 @@ public class Silly {
         int volume = 10;
         int frameInterval = 0; // minimum interval between captured frames
         boolean jni = false;
-        boolean nightMode = false, faketime = false, useSystemClock = true;
-        boolean cannyDebug = false;
+        boolean nightMode = false, faketime = false, useSystemClock = true, noSteer = false;
+        boolean cannyDebug = false, realtime = false;
         boolean flipVideo = false;  // warning- not flipping is currently broken, see FrameCaptureJNI.cpp, flip loops is 
         // same as copyout loop 
         HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
@@ -167,6 +167,7 @@ public class Silly {
             else if (a.compareTo("-rgb32") == 0) rgb32 = true;
             else if (a.compareTo("-cannyDebug") == 0) cannyDebug = true;
             else if (a.compareTo("-jni") == 0) jni = true;
+            else if (a.compareTo("-nosteer") == 0) noSteer = true;
             else if (a.compareTo("-fps") == 0) framerate = Integer.parseInt(args[++i]);
             else if (a.compareTo("-rescale") == 0) rescale = Integer.parseInt(args[++i]);
             else if (a.compareTo("-skip") == 0) skipFrames = Integer.parseInt(args[++i]);
@@ -183,7 +184,9 @@ public class Silly {
             else if (a.compareTo("-flip") == 0) flipVideo = true;
             else if (a.compareTo("-night") == 0) nightMode = true;
             else if (a.compareTo("-faketime") == 0) faketime = true;
+            else if (a.compareTo("-realtime") == 0) realtime = true;
             else if (a.compareTo("-systemclock") == 0) useSystemClock = !useSystemClock;
+			
                                         
             else if (a.compareTo("-ct") == 0) colorThreshold = Double.parseDouble(args[++i]);
             else if (a.compareTo("-size") == 0) {
@@ -315,6 +318,7 @@ public class Silly {
         fp.zoom = width / windw;
         fp.keypresses = keypressMap;
         fp.clicks = clickMap;        
+		fp.noSteering = noSteer;
         if (displayMode > 0) fp.displayMode = displayMode;
 
 
@@ -376,7 +380,6 @@ public class Silly {
 	        	ByteBuffer bb = ByteBuffer.allocate(picsize);
 	        	while(fis.available() > 0) {
 		        	//ByteBuffer bb = ByteBuffer.allocate(picsize);
-	        		intTimer.start();
 	        		timebb.rewind();
 	        		ib.rewind();
 	        		bb.rewind();
@@ -425,7 +428,11 @@ public class Silly {
 	        	
 	        		// broken, bb contains t(the first 8-byte timestamp
 	        		//ft.post(false, time, new OriginalImage(finalbb, width)); //TODO need to pass time
-        			//System.out.printf("%dms\n", (int)intTimer.tick());
+        			int ms = (int)intTimer.tick();
+					if (realtime && ms < 30 && fp.skipFrames  <= 0) {
+						//System.out.printf("Sleeping %d ms\n", 30 - ms);
+						Thread.sleep(30 - ms);
+					}
 	        		fp.processFrame(time, new OriginalImage(finalbb, width, height));
         			//System.out.printf("%dms\n", (int)intTimer.tick());
 	        		count++;

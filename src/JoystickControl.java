@@ -85,15 +85,17 @@ class JoystickControl {
 	    					joystick.getR(), joystick.getU(), joystick.getV(),
 	    					joystick.getPOV());
 	    		}
-	           	if ((buttons & 0x10) != 0)  // L1 - engage right joystick
+				if (false && (buttons & (0x40 | 0x80)) == 0)
+					steer = 0;
+				if ((buttons & 0x10) != 0)  // L1 - engage right joystick
 	           		steer = joystick.getX() * lowGain;
-	           	if ((buttons & R1) != 0)  // R1 - engage right joystick
-	           		steer = joystick.getR() * lowGain;
-	           	if ((buttons & 0x20) != 0)  // L1 - engage right joystick
-	           		steer = joystick.getX() * hiGain;
-	           	if ((buttons & R2) != 0)  // R1 - engage right joystick
-	           		steer = joystick.getR() * hiGain;
-	           	
+	           	if ((buttons & 0x20) != 0)  // R1 - engage right joystick
+	           		steer = joystick.getZ() * lowGain;
+	           	//if ((buttons & 0x40) != 0)  // L1 - engage right joystick
+	           	//	steer = joystick.getX() * hiGain;
+	           	//if ((buttons & 0x80) != 0)  // R1 - engage right joystick
+	           	//	steer = joystick.getZ() * hiGain;
+
 	           	if (false && isArmed()) { 
 	           		steer = joystick.getX() * lowGain;
 	           		if (Math.abs(joystick.getX()) >= 1.0)
@@ -122,7 +124,7 @@ class JoystickControl {
 	       			System.out.printf("Gain %.3f/%.3f\n", lowGain, hiGain);
 	           	}
 	    
-		    	if ((buttons & (L1 | L2 | R1 | R2)) != 0) { 
+		    	if (false && (buttons & (L1 | L2 | R1 | R2)) != 0) { // DONT UNDERSTAND THIS  
 		           	double trimStep = 0.001;
 		           	if (joystick.getY() < -0.1) {
 		           		trim -= trimStep;
