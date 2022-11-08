@@ -77,10 +77,10 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//	new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.ierrorThreshold += i; }} );
 		//add("PID ierrLimit", 'O', .01, 
 		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.ierrorLimit += i; }} );
-		add("PID manualLaneTrim", 'M', .01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.manualTrim += i; }} );
-		//add("FP servoTrim", 'M', .01, 
-		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.servoTrim += i; }} );
+		//add("PID manualLaneTrim", 'M', .01, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.manualTrim += i; }} );
+		add("FP servoTrim", 'M', .01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.servoTrim += i; }} );
 		add("FP select finder param group", 'X', 1, 
 					new TunableParameter.Adjust() { public double adjust(double i) { 
 						fp.tfparamIndex += i;
@@ -109,21 +109,21 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("PID gain.p.hiGain", 'O', .02, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return (fp.selectedPid.gain.p.hiGain += i); }} );
-		add("ca.growSegmentSize", '7', .01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.caR.growSegmentSize = (fp.caL.growSegmentSize += i); }} );
+		//add("ca.growSegmentSize", '7', .01, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { 
+		//			return fp.caR.growSegmentSize = (fp.caL.growSegmentSize += i); }} );
 		//add("ca.maxGrowGap", '8', 1, 
 		//		new TunableParameter.Adjust() { public double adjust(double i) { 
 		//			return fp.caR.maxGrowGap = (fp.caL.maxGrowGap += i); }} );
 		//add("ca.maxGrowError", '9', 0.1, 
 		//		new TunableParameter.Adjust() { public double adjust(double i) { 
 		//			return fp.caR.maxGrowError = (fp.caL.maxGrowError += i); }} );
-		add("detector.gaussianRadius", '0', 0.1, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.tfparam.gaussianKernelRadius = (fp.tfparam.gaussianKernelRadius += i); }} );
-		add("tfl.h.blurRadius", '-', .005, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.tfl.h.blurRadius = fp.tflo.h.blurRadius = fp.tfro.h.blurRadius = (fp.tfr.h.blurRadius += i); }} );
+		//add("detector.gaussianRadius", '0', 0.1, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { 
+		//			return fp.tfparam.gaussianKernelRadius = (fp.tfparam.gaussianKernelRadius += i); }} );
+		//add("tfl.h.blurRadius", '-', .005, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { 
+		//			return fp.tfl.h.blurRadius = fp.tflo.h.blurRadius = fp.tfro.h.blurRadius = (fp.tfr.h.blurRadius += i); }} );
 
 		// Available  - shift (16) ctrl (17) alt (18) windows (524) 
 		
@@ -251,8 +251,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 					return fp.ardDebugInterval;
 				}});
 
-		selectParam('X');
-		
+		selectParam('X');		
+	}
+	void printUnusedKeys() { 
 		System.out.printf("Unused hot keys: ");
 		for(int k = 'A'; k <= 'Z'; k++) { 
 			if (findParam(k) == null) 
@@ -274,7 +275,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		}
 		
 		System.out.printf("\n");
-
 	}
 	final FrameProcessor fp;	
 }

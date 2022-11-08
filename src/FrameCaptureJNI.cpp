@@ -88,7 +88,7 @@ struct config {
 } *configs[10];
 
 
-void v4l2mmap_open(config *, const char *, int, int);
+void v4l2mmap_open(config *);
 void v4l2mmap_close(config *);
 int v4l2mmap_poll(config *);
 void v4l2mmap_wait_frame(config *, unsigned char *);
@@ -392,7 +392,7 @@ JNIEXPORT jint JNICALL Java_FrameCaptureJNI_grabFrame
 	}
 		
     if (conf->fd < 0) {
-		v4l2mmap_open(conf, conf->filename, conf->resWidth, conf->resHeight);
+		v4l2mmap_open(conf);
 		//openvid(conf->filename, conf->resWidth, conf->resHeight);
 		if (conf->fd > 0) {
 			conf->live = 1;
@@ -733,8 +733,9 @@ read_frame                      (config *conf, unsigned char *arg)
 		CLEAR (buf);
 		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory = V4L2_MEMORY_MMAP;
+		int errors = 0;
 
-		if (-1 == xioctl (conf->fd, VIDIOC_DQBUF, &buf)) {
+		while(-1 == xioctl (conf->fd, VIDIOC_DQBUF, &buf)) {
 				perror("VIDIOC_DQBUF");
 				switch (errno) {
 				case EAGAIN:
@@ -746,7 +747,13 @@ read_frame                      (config *conf, unsigned char *arg)
 						/* fall through */
 
 				default:
-						errno_exit ("VIDIOC_DQBUF");
+					perror("VIDIOC_DQBUF()");
+					usleep(50000);
+					if (errors++ > 30) {
+						errno_exit("VIDIOC_DQBUF()");
+					}
+					//v4l2mmap_close(conf);
+					//v4l2mmap_open(conf);
 				}
 		}
 
@@ -835,7 +842,7 @@ stop_capturing                  (config *conf)
 		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 		if (-1 == xioctl (conf->fd, VIDIOC_STREAMOFF, &type))
-				errno_exit ("VIDIOC_STREAMOFF");
+				perror ("VIDIOC_STREAMOFF");
 
 }
 
@@ -872,8 +879,9 @@ uninit_device                   (config *conf)
 
 		for (i = 0; i < n_buffers; ++i)
 			if (-1 == munmap (conf->buffers[i].start, conf->buffers[i].length))
-					errno_exit ("munmap");
-        free (conf->buffers);
+					perror ("munmap");
+        //free (conf->buffers);
+		conf->buffers = NULL;
 }
 
 static void
@@ -961,7 +969,7 @@ init_mmap                       (config *conf)
 }
 
 static void
-init_device                     (config *conf, int w, int h)
+init_device                     (config *conf)
 {
         struct v4l2_capability cap;
         struct v4l2_cropcap cropcap;
@@ -1039,12 +1047,12 @@ init_device                     (config *conf, int w, int h)
         CLEAR (fmt);
 
         fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        fmt.fmt.pix.width       = w; 
-        fmt.fmt.pix.height      = h;
+        fmt.fmt.pix.width       = conf->resWidth; 
+        fmt.fmt.pix.height      = conf->resHeight;
         fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
         fmt.fmt.pix.field       = V4L2_FIELD_ANY;
 
-		printf ("opening video at %dx%d\n", w, h);
+		printf ("opening video at %dx%d\n", conf->resWidth, conf->resHeight);
 		if (-1 == xioctl (conf->fd, VIDIOC_S_FMT, &fmt)) 
 			perror("VIDIOC_S_FMT");
 
@@ -1097,14 +1105,16 @@ open_device                     (config *conf)
 }
 
 
-void v4l2mmap_open(config *conf, const char *f, int w, int h) { 
+void v4l2mmap_open(config *conf) { 
 	open_device (conf);
-	init_device (conf, w, h);
+	init_device (conf);
 	start_capturing (conf);
 }
    
 void v4l2mmap_close(config *conf) { 
+	printf("v4l2_mmap_close()");
 	stop_capturing (conf);
+	printf("stop cap done");
 	uninit_device (conf);
 	close_device (conf);
 }	 

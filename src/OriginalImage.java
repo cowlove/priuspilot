@@ -73,7 +73,7 @@ public class OriginalImage {
 	public int width, height;
 	private ByteBuffer pixels;
 	
-	void yuv422torgb24(byte []in, byte []out) {
+	static void yuv422torgb24(byte []in, byte []out) {
 		// This seems to work best so fr
 		int Y1 = (int)in[0] & 0xff;
 		int V = (int)in[1] & 0xff;
@@ -111,7 +111,7 @@ public class OriginalImage {
 		out[5] = (byte)B;	
 	}
 
-	int clamp(int x) { 
+	static int clamp(int x) { 
 		if (x < 0) return 0;
 		if (x > 255) return 255; 
 		return x;

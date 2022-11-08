@@ -24,7 +24,7 @@ public class PidControl {
         }
         double p, i, d, j,  l;
         public String toString(String pref) { 
-        	return String.format("%sp=%.2f, %si=%.2f, %sd=%.2f, %sj=%.2f, %sl=%.2f", 
+        	return String.format("%sp %.3f %si %.3f %sd %.3f %sj %.3f %sl %.3f", 
         			pref, p, pref, i, pref, d, pref, j, pref, l); 
         }
     }
@@ -93,12 +93,11 @@ public class PidControl {
       	gain.l.loGain = gl;
     }
     PID err = new PID(); 
-    PID period = new PID(0.05, 5, .8, .3, 3.0);  // TODO - change from explicit frame counts to a time period
+    PID period = new PID(0.05, 5, 0.5, 0.3, 1.2);  // TODO - change from explicit frame counts to a time period
     PID gainX = new PID(2.5, 0.000, 1.2, 0, 0.0);
     GainControl gain = new GainControl();
     double finalGain = 1.85;
-    double manualTrim = -0.03; 
-    int derrDegree = 3;
+    int derrDegree = 2;
     int fadeCountMin = (int)Math.floor(period.d * EXPECTED_FPS * 0.2); 
     int fadeCountMax = (int)Math.floor(period.d * EXPECTED_FPS * 0.6);
     double qualityFadeGain = 4.0;
@@ -108,7 +107,7 @@ public class PidControl {
     
     // these values are set in reset() method
     double i;
-    RunningQuadraticLeastSquares dd, d, p;
+    RunningQuadraticLeastSquares dd, d, p, l;
 	   
     RunningAverage defaultValue = new RunningAverage(150);
     long starttime = 0;
@@ -119,6 +118,7 @@ public class PidControl {
         i = 0f;
         dd = new RunningQuadraticLeastSquares(derrDegree, (int)(period.j * 2 * EXPECTED_FPS), period.j);
         d = new RunningQuadraticLeastSquares(derrDegree, (int)(period.d * 2 * EXPECTED_FPS), period.d);
+		l = new RunningQuadraticLeastSquares(1, (int)(period.l * 2 * EXPECTED_FPS), period.l);
         defaultValue.clear();
         starttime = 0;
     }
@@ -152,8 +152,8 @@ public class PidControl {
         	d.removeAged(n);
         	dd.removeAged(n);
         	p.removeAged(n);
+			l.removeAged(n);
         } else {         
-	        val += manualTrim;
 	        d.add(n, val);
 	        dd.add(n, val);
 	        p.add(n, val);
@@ -166,8 +166,10 @@ public class PidControl {
         avgRmsErr.add(drms);
         
         if (d.size() < fadeCountMin || Double.isNaN(drms) || 
-        		drms > qualityFadeThreshold * (qualityFadeGain + 1))
+        		drms > qualityFadeThreshold * (qualityFadeGain + 1)) {
         	quality = 0;
+			System.out.printf("%s %f %d %f\n", description, drms, d.size(), val);
+		}
         else if (drms < qualityFadeThreshold)  
         	quality = 1.0;
         else   
@@ -181,13 +183,15 @@ public class PidControl {
         err.d = gain.d.getCorrection(d.slope(n, 1));
         err.j = gain.j.getCorrection(d.slope(n, 2));
 	    err.i = gain.i.getCorrection(i);
+		err.l = gain.l.getCorrection(l.calculate());
 	           
 	    corr = -(err.p + err.d + err.i + err.l) * finalGain * quality + 
 	    	0 * (1 - quality);
 	    defaultValue.add(corr);
 	    if (Double.isNaN(corr))
 	    	corr = 0.0;
-	    return corr;
+		l.add(n, corr);
+		return corr;
     }
 
     void copySettings(PidControl pid) { 
@@ -196,7 +200,6 @@ public class PidControl {
     	finalGain = pid.finalGain;
     	this.qualityFadeThreshold =  pid.qualityFadeThreshold;
     	this.qualityFadeGain = pid.qualityFadeGain;
-    	this.manualTrim = pid.manualTrim;    	
     }
 }
  

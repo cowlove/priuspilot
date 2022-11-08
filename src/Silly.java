@@ -8,10 +8,12 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Stroke;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.awt.BasicStroke;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.Writer;
@@ -126,10 +128,11 @@ public class Silly {
 	public static final int DEBUG_SHOW_TF = 8;
 	public static final int DEBUG_SERIAL = 16;
 	public static final int DEBUG_LINES = 32;
-	public static final int DEBUG_MARKUP = 64;
+	public static fstainal int DEBUG_MARKUP = 64;
 	public static final int DEBUG_COPY_IMAGE = 128; 
 	*/
 	
+	static CarSim sim = null;
 	static FrameCaptureJNI fc;
 	static FrameCaptureJNI swCam;
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -339,8 +342,23 @@ public class Silly {
     		dropFrames = false;
     	}
     	
-        int count = 0;        		
-    	if (filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".gif"))  { 
+        int count = 0;    
+		IntervalTimer intTimer = new IntervalTimer(30);
+		if (filename.equals("SIM")) { 
+			long ms = 0;
+			sim = new CarSim(width, height);
+
+			while(true) { 
+				ByteBuffer bb = sim.getFrame(ms); 
+				int x = (int)intTimer.tick();
+				if (realtime && x < 35) {
+					Thread.sleep(35 - x);
+				}
+				fp.processFrame(ms, new OriginalImage(bb, width, height));
+				ms += 30;
+			}
+
+		} else if (filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".gif"))  { 
     		// load in still image file, scale it to current size, use it as the image 
       		try {
       	  		File in = new File(String.format(filename));
@@ -362,7 +380,6 @@ public class Silly {
 
       		}
     	} else if (filename.endsWith(".gz") || !jni) {
-            IntervalTimer intTimer = new IntervalTimer(30);
         	do {
         		int picsize = height * width * 2;
         		if (rgb32) picsize = height * width * 4;
