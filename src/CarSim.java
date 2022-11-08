@@ -63,7 +63,7 @@ class CarSim {
         }
         delayAng.addLast(ang);
         if (delayAng.size() > 15) { 
-            pos += delayAng.removeFirst() * 0.45;
+            pos += delayAng.removeFirst() * 0.25;
         }
 
         ang = clamp(ang, 60);

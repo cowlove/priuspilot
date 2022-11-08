@@ -627,7 +627,7 @@ class FrameProcessor {
 		persVanX = Double.NaN;
 
 		time = t;
-    	if (skipFrames > 0 && skipFrames-- > 0)
+    	if (skipFrames > 0 && count < skipFrames)
     		return;
 
     	profTimer.start();
@@ -1168,8 +1168,8 @@ class FrameProcessor {
     		}
     	} while(repeatFrame > 0 && repeatFrame == count); 
     	
-    	if (keypresses != null && keypresses.get((int)count) != null) { 
-    		keyPressed((Integer)keypresses.get((int)count));
+    	if (keypresses != null && keypresses.get((int)count - skipFrames ) != null) { 
+    		keyPressed((Integer)keypresses.get((int)count - skipFrames));
     	}
     	if (clicks != null && clicks.get((int)count) != null) { 
     		Point p = clicks.get((int)count);

@@ -348,7 +348,7 @@ public class Silly {
 			long ms = 0;
 			sim = new CarSim(width, height);
 
-			while(true) { 
+			while(exitFrame == 0 || --exitFrame > 0) { 
 				ByteBuffer bb = sim.getFrame(ms); 
 				int x = (int)intTimer.tick();
 				if (realtime && x < 35) {

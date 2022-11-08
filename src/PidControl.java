@@ -168,7 +168,6 @@ public class PidControl {
         if (d.size() < fadeCountMin || Double.isNaN(drms) || 
         		drms > qualityFadeThreshold * (qualityFadeGain + 1)) {
         	quality = 0;
-			System.out.printf("%s %f %d %f\n", description, drms, d.size(), val);
 		}
         else if (drms < qualityFadeThreshold)  
         	quality = 1.0;
