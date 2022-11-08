@@ -1171,8 +1171,8 @@ class FrameProcessor {
     	if (keypresses != null && keypresses.get((int)count - skipFrames ) != null) { 
     		keyPressed((Integer)keypresses.get((int)count - skipFrames));
     	}
-    	if (clicks != null && clicks.get((int)count) != null) { 
-    		Point p = clicks.get((int)count);
+    	if (clicks != null && clicks.get((int)count - skipFrames) != null) { 
+    		Point p = clicks.get((int)count - skipFrames);
     		this.onMouseClick(p.x, p.y, 1);
     	}
     	//if (exitFrame > 0 && count == exitFrame)
