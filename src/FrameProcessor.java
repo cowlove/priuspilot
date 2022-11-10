@@ -992,7 +992,7 @@ class FrameProcessor {
         	cmdBus.writeCmd('a', 1);        	
         }
  
-        if (joystick.getButtonPressed(joystick.BUTTON_REC)) 
+        if (joystick.getButtonPressed(9)) 
         	restartOutputFiles();
 		if (joystick.getButtonPressed(14))  
 			steeringTestPulse.startPulse(-1);
@@ -1026,11 +1026,13 @@ class FrameProcessor {
 		}
 		
 
+		/*
 		for (int bn = 0; bn < 19; bn++) {
 			if (joystick.getButtonPressed(bn)) { 
 				System.out.printf("Button %02d pressed\n", bn);
 			}
 		}
+		*/
 		
 
         if (displayRatio > 0 && (count % displayRatio) == 0) {
