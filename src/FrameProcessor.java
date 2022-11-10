@@ -992,10 +992,47 @@ class FrameProcessor {
         	cmdBus.writeCmd('a', 1);        	
         }
  
-        if (joystick.getRecordButtonPressed()) {
+        if (joystick.getButtonPressed(joystick.BUTTON_REC)) 
         	restartOutputFiles();
-        }
-        
+		if (joystick.getButtonPressed(14))  
+			steeringTestPulse.startPulse(-1);
+		if (joystick.getButtonPressed(15))  
+			steeringTestPulse.startPulse(1);
+		if (joystick.getButtonPressed(8))  
+			inputZeroPoint.setAutoZero(); 
+		if (joystick.getButtonPressed(10))  {
+			tp.adjustParam('M', -1);
+			tp.printParam('M');
+		}
+		if (joystick.getButtonPressed(11)) {
+			tp.adjustParam('M', +1);
+			tp.printParam('M');
+		} 
+		if (joystick.getButtonPressed(0)) { 
+			tp.adjustParam(-1);
+			tp.printCurrent();
+		}
+		if (joystick.getButtonPressed(2)) { 
+			tp.adjustParam(1);
+			tp.printCurrent();
+		}
+		if (joystick.getButtonPressed(3)) { 
+			tp.selectNext(1);
+			tp.printCurrent();
+		}
+		if (joystick.getButtonPressed(1)) { 
+			tp.selectNext(-1);
+			tp.printCurrent();
+		}
+		
+
+		for (int bn = 0; bn < 19; bn++) {
+			if (joystick.getButtonPressed(bn)) { 
+				System.out.printf("Button %02d pressed\n", bn);
+			}
+		}
+		
+
         if (displayRatio > 0 && (count % displayRatio) == 0) {
         	writeCompositeImage(display.image, coi, rescale, (displayMode & 0x4) != 0,
         			(displayMode & 32) != 0);

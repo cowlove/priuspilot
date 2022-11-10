@@ -1,4 +1,3 @@
-#include <jni.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -17,7 +16,38 @@
 #include <string.h>
 
 
+#ifdef USE_MAIN
+#define JNIEnv FakeJNIEnv
+#define jobject FakeJobject
+#define jstring const char *
+class FakeJobject {
+	public:
+};
+
+#define JNIEXPORT
+#define JNICALL
+
+typedef bool jboolean;
+typedef double jdouble;
+typedef int jint;
+typedef long jlong;
+typedef int * jintArray;
+
+class FakeJNIEnv { 
+	public:
+	void *bufAddr = 0;
+//	const char *GetStringUTFChars(FakeJobject, jboolean *) { return ""; }
+	const char *GetStringUTFChars(jstring s, jboolean *) { return s; }
+//	void ReleaseStringUTFChars(FakeJobject, const char *) {}
+	void ReleaseStringUTFChars(jstring, const char *) {}
+	void *GetDirectBufferAddress(jobject) { return bufAddr; } 
+
+};
+
+#else 
+#include <jni.h>
 #include "FrameCaptureJNI.h"
+#endif
 
 #define PAGE_SIZE 4096
 #define PAGE_ROUND(n) ((n + PAGE_SIZE - 1) & (~(PAGE_SIZE - 1)))
@@ -35,6 +65,7 @@
 
 
 // create java headers with javac FrameCaptureJNI.java, javah FrameCaptureJNI
+
 
 
 
@@ -85,6 +116,7 @@ struct config {
 		long timestamp;
 		long steer;
 	} logData; 
+	int fakeErr = 0;
 } *configs[10];
 
 
@@ -735,7 +767,7 @@ read_frame                      (config *conf, unsigned char *arg)
 		buf.memory = V4L2_MEMORY_MMAP;
 		int errors = 0;
 
-		while(-1 == xioctl (conf->fd, VIDIOC_DQBUF, &buf)) {
+		while(conf->fakeErr || -1 == xioctl (conf->fd, VIDIOC_DQBUF, &buf)) {
 				perror("VIDIOC_DQBUF");
 				switch (errno) {
 				case EAGAIN:
@@ -750,10 +782,10 @@ read_frame                      (config *conf, unsigned char *arg)
 					perror("VIDIOC_DQBUF()");
 					usleep(50000);
 					if (errors++ > 30) {
-						errno_exit("VIDIOC_DQBUF()");
+						v4l2mmap_close(conf);
+						v4l2mmap_open(conf);
+//						errno_exit("VIDIOC_DQBUF()");
 					}
-					//v4l2mmap_close(conf);
-					//v4l2mmap_open(conf);
 				}
 		}
 
@@ -962,8 +994,8 @@ init_mmap                       (config *conf)
 
                 if (MAP_FAILED == conf->buffers[n_buffers].start)
                         errno_exit ("mmap");
-                printf("buf length p=0x%x, start=0x%x %d byte\n", 
-                (int)p, (int)conf->buffers[n_buffers].start, buf.length);
+                printf("buf length p=0x%lx, start=0x%lx %d byte\n", 
+                (long)p, (long)conf->buffers[n_buffers].start, buf.length);
         }
         //printf ("init_mmap() done\n");
 }
@@ -1109,6 +1141,7 @@ void v4l2mmap_open(config *conf) {
 	open_device (conf);
 	init_device (conf);
 	start_capturing (conf);
+	conf->fakeErr = 0;
 }
    
 void v4l2mmap_close(config *conf) { 
@@ -1120,14 +1153,42 @@ void v4l2mmap_close(config *conf) {
 }	 
 
 
-/*
-main() {
-	int w = 320; 
-	int h = 240; 
-	openvid("/dev/video0", w, h);
-	char *b2 = (char *)malloc(w * h * 4);
-    int n = read(fd, b2, w * h * 4);
-    fprintf(stderr, "Got %d\n", n);
+#ifdef USE_MAIN
+int main() {
+	int windw = 320; 
+	int windh = 240; 
+	int windx = 0;
+	int windy = 0;
+	const char * filename = "/dev/video0";
+	int width = windw;
+	int height = windh;
+	int flipVideo = 0;
+	const char * capFile = "/tmp/cap.yuv";
+	int capSize = 1000000;
+	int capCount = 10;
+	int useSystemClock = 1;
+	JNIEnv env;
+	int id = 0;
+	jobject o;
+	
+	Java_FrameCaptureJNI_configure(&env, o, id, filename, width, height, windx, windy, windw, windh, 
+        			flipVideo, capFile, capSize, capCount, 80/*max ms per frame*/,
+        			0 /*raw record skip interval*/);
 
+	jobject ibuf;	
+	env.bufAddr = malloc(width * height * 2);
+	for (int n = 0; n < 10; n++) 
+		Java_FrameCaptureJNI_grabFrame(&env, o, id, ibuf);
+
+	config *conf = getCameraObject(id);
+	conf->fakeErr = 1;
+	
+	//v4l2mmap_close(conf);
+	//v4l2mmap_open(conf);
+	for (int n = 0; n < 10; n++) 
+		Java_FrameCaptureJNI_grabFrame(&env, o, id, ibuf);
+
+        
 }
-*/
+//main() {}
+#endif

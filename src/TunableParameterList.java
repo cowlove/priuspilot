@@ -44,9 +44,20 @@ class TunableParameterList {
 	int current;
 	
 	void selectParam(int c) { current = c; }
-        TunableParameter currentParam() {
-            return findParam(current);
-        }
+    TunableParameter currentParam() {
+        return findParam(current);
+    }
+	void selectNext(int dir) { 
+		TunableParameter p = currentParam();
+		if (p == null) { 
+			p = ps.get(0);
+		} 
+		int i = ps.indexOf(p);
+		i += dir;
+		if (i < 0) i = ps.size() - 1;
+		if (i >= ps.size()) i = 0;
+		current = ps.get(i).key;
+	}
 	TunableParameter findParam(int c) {
 		Iterator<TunableParameter> it = ps.iterator();
 		while(it.hasNext()) { 
@@ -57,7 +68,10 @@ class TunableParameterList {
 		return null;
 	}
 	void adjustParam(int dir) { 
-		TunableParameter p = currentParam();
+		adjustParam(current, dir);
+	}
+	void adjustParam(int pk, int dir) { 
+		TunableParameter p = findParam(pk);
 		if (p != null) 
 			p.adjust(dir);
 	}
@@ -68,8 +82,11 @@ class TunableParameterList {
 			System.out.println(p.asString());
 		}		
 	}
-	void printCurrent() {
-		TunableParameter p = currentParam();
+	void printCurrent() { 
+		printParam(current);
+	}
+	void printParam(int pk) {
+		TunableParameter p = findParam(pk);;
 		if (p != null) 
 			System.out.println(p.asString());
 		

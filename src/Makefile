@@ -41,6 +41,8 @@ all: libFrameCaptureJNI.so priuspilot.jar
 $(TARGET): $(OBJ)
 	g++ -lrt -shared -o $@ $^ $(CFLAGS) $(LIBS)
 
+main: 	FrameCaptureJNI.cpp
+	g++ -g -o $@ $<  -DUSE_MAIN
 
 clean:
 	rm -f *.o  core $(TARGET) ./*.class priuspilot.jar 

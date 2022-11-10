@@ -1,8 +1,7 @@
 
 class FrameProcessorTunableParameters extends TunableParameterList { 
 	void add(String s, char k, double inc, TunableParameter.Adjust a) { 
-		add(s,k,inc,a, null);
-		
+		add(s,k,inc,a, null);		
 	}
 	void add(String s, char k, double inc, TunableParameter.Adjust a, 
 			TunableParameter.Print p) { 

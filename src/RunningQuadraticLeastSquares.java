@@ -146,7 +146,6 @@ public class RunningQuadraticLeastSquares {
 		double f = (a*a*S40 + (b*b + 2*a*c)*S20 + c*c*S00 + S02 + 2*a*b*S30 + 2*b*c*S10 - 2*a*S21 - 2*b*S11 - 2*c*S01)/S00;
 		rmsErr = f > 0 ? Math.sqrt(f) : 0;
 		
-		
 		coefficients[2] = a; coefficients[1] = b; coefficients[0] = c;
 		
 		solved = true;

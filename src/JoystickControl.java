@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import javax.speech.recognition.FinalResult;
 
 import com.centralnexus.input.Joystick;
 
@@ -21,6 +22,9 @@ class ButtonDebounce {
 	boolean lastState= true;
 	int minTime = 200;
 	
+	public ButtonDebounce() { 
+		minTime = 100;
+	}
 	public ButtonDebounce(int i) {
 		minTime = i;
 	}
@@ -45,6 +49,9 @@ class JoystickControl {
 	double trim = 0.0;
 	JoystickControl() { 
 		Joystick j = null;
+		buttonDebounce = new ButtonDebounce[18];
+		for (int i = 0; i < 18; i++) 
+			buttonDebounce[i] = new ButtonDebounce();
 		int n = 0;
 		try { 
 			while((j = Joystick.createInstance(n++)) != null)
@@ -54,77 +61,75 @@ class JoystickControl {
 	    System.out.printf("%d joysticks found\n", joysticks.size());
 	}
 	boolean joystickPresent() { return joysticks.size() > 0; }
-	int buttons = 0;
+	int buttonBits = 0;
+
+	
 	boolean getExit() { 
 		final int EXIT_CODE = L1 | L2 | R1 | R2;
-		return (buttons & EXIT_CODE) == EXIT_CODE; 
+		return (buttonBits & EXIT_CODE) == EXIT_CODE; 
 	}
-	static final int L2 = 0x10, R2 = 0x20, L1 = 0x0, R1 =0x0;
+	
+	static final int L2 = 0x10, R2 = 0x20, L1 = 0x40, R1 =0x80;
 	static final int BUTTON_TRIANGLE = 0x8, BUTTON_EX = 0x2, BUTTON_SQUARE = 0x1, BUTTON_CIR = 0x4;
 	static final int BUTTON_START=0x80, BUTTON_BACK=0x40;
 	
+	static final int BUTTON_REC = 0x200;
+
 	
-	boolean armed = false;
+	
 	boolean isArmed() { 
-		if ((buttons & BUTTON_SQUARE) != 0)
-			armed = true;
-		else if ((buttons & BUTTON_EX) != 0)
-			armed = false;
-		return armed;
+		return false;
 	}
 	double steer(double in) {
 		double steer = in;
 		for (Joystick joystick : joysticks) { 
 	        if (joystick != null) {
 	        	joystick.poll();
-	        	buttons = joystick.getButtons();
-	    		if (Silly.debug("PRINT_JOYSTICK_BUTTONS") && buttons != 0x0){ 
-	        		System.out.printf("buttons 0x%x\n", buttons);
+	        	buttonBits = joystick.getButtons();
+	    		if (Silly.debug("PRINT_JOYSTICK_BUTTONS") && buttonBits != 0x0){ 
+	        		System.out.printf("buttons 0x%x\n", buttonBits);
 	    			System.out.printf("%f %f %f %f %f %f %f\n", joystick.getX(), 
 	    					joystick.getY(), joystick.getZ(), 
 	    					joystick.getR(), joystick.getU(), joystick.getV(),
 	    					joystick.getPOV());
 	    		}
-				if (false && (buttons & (0x40 | 0x80)) == 0)
-					steer = 0;
-				if ((buttons & 0x10) != 0)  // L1 - engage right joystick
+				//if (false && (buttonBits & (0x40 | 0x80)) == 0)
+				//	steer = 0;
+				if ((buttonBits & L1) != 0)  // L1 - engage right joystick
 	           		steer = joystick.getX() * lowGain;
-	           	if ((buttons & 0x20) != 0)  // R1 - engage right joystick
-	           		steer = joystick.getZ() * lowGain;
-	           	//if ((buttons & 0x40) != 0)  // L1 - engage right joystick
-	           	//	steer = joystick.getX() * hiGain;
-	           	//if ((buttons & 0x80) != 0)  // R1 - engage right joystick
-	           	//	steer = joystick.getZ() * hiGain;
+	           	//if ((buttonBits & R1) != 0)  // R1 - engage right joystick
+	           	//	steer = joystick.getZ() * lowGain;
 
+				/* 
 	           	if (false && isArmed()) { 
 	           		steer = joystick.getX() * lowGain;
 	           		if (Math.abs(joystick.getX()) >= 1.0)
 	           			steer += joystick.getZ() * lowGain * 0.5;
 	           	}
 	           	
-	           	if (false && (buttons & (R1 | R2 | L1 | L2)) != 0) { 
+	           	if (false && (buttonBits & (R1 | R2 | L1 | L2)) != 0) { 
 	           		System.out.printf("axis x=%.2f y=%.2f z=%.2f\n", 
 	           				joystick.getX(), joystick.getY(), joystick.getZ());
 	           		
 	           	}
 	           	// triangle and X buttons increase/decrease currently-used gain
-	           	if ((buttons & BUTTON_TRIANGLE) != 0) {
-	           	   	if (isArmed() || (buttons & (L1 | R1)) != 0)  
+	        	if ((buttonBits & BUTTON_TRIANGLE) != 0) {
+	           	   	if (isArmed() || (buttonBits & (L1 | R1)) != 0)  
 	               		lowGain += gainStep;
-	               	if ((buttons & (L2 | R2)) != 0)  
+	               	if ((buttonBits & (L2 | R2)) != 0)  
 	               		hiGain += gainStep;
 	       			System.out.printf("Gain %.3f/%.3f\n", lowGain, hiGain);
 	                       	
 	           	}           	
-	           	if ((buttons & BUTTON_CIR) != 0) {
-	           	   	if (isArmed() || (buttons & (L1 | R1)) != 0) 
+	           	if ((buttonBits & BUTTON_CIR) != 0) {
+	           	   	if (isArmed() || (buttonBits & (L1 | R1)) != 0) 
 	               		lowGain -= gainStep;
-	               	if ((buttons & (L2 | R2)) != 0)  
+	               	if ((buttonBits & (L2 | R2)) != 0)  
 	               		hiGain -= gainStep;        
 	       			System.out.printf("Gain %.3f/%.3f\n", lowGain, hiGain);
 	           	}
 	    
-		    	if (false && (buttons & (L1 | L2 | R1 | R2)) != 0) { // DONT UNDERSTAND THIS  
+		    	if (false && (buttonBits & (L1 | L2 | R1 | R2)) != 0) { // DONT UNDERSTAND THIS  
 		           	double trimStep = 0.001;
 		           	if (joystick.getY() < -0.1) {
 		           		trim -= trimStep;
@@ -138,22 +143,48 @@ class JoystickControl {
 		           	}
 	
 		    	}
+				*/
 	        }
 		}
 		return steer;
 	}
 	
-	
-	ButtonDebounce recButton = new ButtonDebounce(500);
-	public boolean getRecordButtonPressed() {
-		return recButton.pressed((buttons & BUTTON_START) != 0); 
+	ButtonDebounce buttonDebounce[];
+	public boolean getButtonPressed(int b) {
+		for (Joystick joystick : joysticks) { 
+	        if (joystick != null) {
+	        	joystick.poll();
+				if (b >= 0 && b < 10) 
+					return buttonDebounce[b].pressed((buttonBits & (0x1 << b)) != 0); 
+				else if (b == 10)  
+					return buttonDebounce[b].pressed(joystick.getU() == -1);
+				else if (b == 11)
+					return buttonDebounce[b].pressed(joystick.getU() == 1);
+				else if (b == 12)  
+					return buttonDebounce[b].pressed(joystick.getV() == 1);
+				else if (b == 13)
+					return buttonDebounce[b].pressed(joystick.getV() == -1);
+				else if (b == 14)  
+					return buttonDebounce[b].pressed(joystick.getZ() == -1);
+				else if (b == 15)
+					return buttonDebounce[b].pressed(joystick.getZ() == 1);
+				else if (b == 16)  
+					return buttonDebounce[b].pressed(joystick.getR() == 1);
+				else if (b == 17)
+					return buttonDebounce[b].pressed(joystick.getR() == -1);
+			}
+		}
+		return false;
 	}
+
+			
+		
 	
 	public double getThrottleChange() {
 		for (Joystick joystick : joysticks) { 
 			if (joystick != null) { 
 		      	joystick.poll();
-		    	buttons = joystick.getButtons();
+		    	buttonBits = joystick.getButtons();
 		    	//if ((buttons & (L1 | L2 | R1 | R2)) != 0)
 		    	//	return -joystick.getV();
 		 	}
