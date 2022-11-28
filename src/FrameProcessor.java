@@ -210,11 +210,14 @@ class FrameProcessor {
         steeringDitherPulse.magnitude = 0.0;
         
         pidRL.setGains(2.25, 0.04, 2.00, 0, 1);
+		pidRL.period.l = 0.6;
+		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
         pidRL.gain.i.max = 0.00; // I control has minor oscillating problems 
         pidRL.finalGain = 1.70;
         pidRL.qualityFadeThreshold = .0046;
         pidRL.qualityFadeGain = 2;
+		pidRL.reset();
         
         pidLL.copySettings(pidRL);
         
@@ -223,18 +226,21 @@ class FrameProcessor {
         
         //pidLV.setGains(2.0, 0, 0.40, 0, 0);
         pidLV.setGains(0,0,0,0,0);
-		pidLV.finalGain = .90;
+		pidLV.finalGain = 0;//.90;
         pidLV.qualityFadeThreshold = .084;
         pidLV.qualityFadeGain = 5;
 		
-        pidPV.copySettings(pidLV);
-        pidPV.setGains(2.0, 0, 0.40, 0, 0.8);
-    	pidPV.period.l = 0.6;
-	    pidPV.qualityFadeThreshold = 0.030;
+        //pidPV.copySettings(pidLV);
+        pidPV.setGains(2.0, 0, 0.60, 0, 0.8);
+		pidPV.finalGain = 1.80;
+    	pidPV.period.l = 0.4;
+		pidPV.delays.l.delay = 0.4;
+	    pidPV.qualityFadeThreshold = 0.050;
         pidPV.qualityFadeGain = 5;
 		//pidPV.fadeCountMin = pidPV.fadeCountMax = 0;
 		pidPV.reset();
-        
+        //pidLV.setGains(0,0,0,0,0);
+		
         pidCA.setGains(10.0, 0, 0, 0, 0);
         pidCA.finalGain = 0; //:1.55;
         pidCA.period = pidCA.new PID(1.2, 1, 1, 1, 1);
@@ -255,10 +261,10 @@ class FrameProcessor {
         tdStartX = w / 2;
         tdStartY = h / 3;
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", (int)(w * 0.55));
-        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", (int)(h * 0.18));
-        inputZeroPoint.zeroPoint.rLane = 356 * w/320;
-        inputZeroPoint.zeroPoint.lLane = -12;
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 183); 
+        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 10);
+        inputZeroPoint.zeroPoint.rLane = 432 * w/320;
+        inputZeroPoint.zeroPoint.lLane = 54;
         
         cmdBus.start();
     }
@@ -605,7 +611,7 @@ class FrameProcessor {
     long ccLastCorrectionTime = 0;
 	long ccMinCorrectionInterval = 400; // milliseconds
     int ccSetPoint = 15;
-	RunningAveragePoint houghVan = new RunningAveragePoint(5);
+	RunningAveragePoint houghVan = new RunningAveragePoint(1);
 	
     
     static Rectangle scaleRect(Rectangle r, int scale) {
@@ -619,6 +625,8 @@ class FrameProcessor {
 	OriginalImage coi = null;
 	double lpos = Double.NaN, rpos = Double.NaN;
 	double laneVanX = Double.NaN,persVanX = Double.NaN;
+
+	double steerOverride = Double.NaN;
 
 	synchronized void processFrameSync(long t, OriginalImage oi) throws IOException {
 		lpos = Double.NaN;
@@ -968,8 +976,11 @@ class FrameProcessor {
 	        if (steer > 0) steer += steeringDeadband;
         } 
 
+		
+		if (!Double.isNaN(steerOverride)) 
+			steer = steerOverride;
 		//if (!noSteering) 
-	        setSteering(steer);
+	    setSteering(steer);
 	    
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
 	    avgFrameDelay.add(frameResponseMs);

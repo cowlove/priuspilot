@@ -93,9 +93,9 @@ class JoystickControl {
 	    					joystick.getR(), joystick.getU(), joystick.getV(),
 	    					joystick.getPOV());
 	    		}
-				//if (false && (buttonBits & (0x40 | 0x80)) == 0)
-				//	steer = 0;
-				if ((buttonBits & (L1 | L2)) != 0)  // L1 - engage right joystick
+				if ((buttonBits & (L2 | R2)) == 0)
+					steer = 0;
+				if ((buttonBits & (L1 | R1)) != 0)  // L1 - engage right joystick
 	           		steer = joystick.getX() * lowGain;
 	           	//if ((buttonBits & R1) != 0)  // R1 - engage right joystick
 	           	//	steer = joystick.getZ() * lowGain;

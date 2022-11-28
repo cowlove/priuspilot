@@ -19,7 +19,9 @@ import java.io.FileWriter;
 import java.io.Writer;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -158,6 +160,7 @@ public class Silly {
         // same as copyout loop 
         HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
         HashMap<Object,Point> clickMap = new HashMap<Object,Point>();
+		String steerOverrideFilename = null;
         
         int targx = 0, targy = 0, targh = 0, targw = 0;
                 
@@ -274,6 +277,7 @@ public class Silly {
             }
             else if (a.compareTo("-template") == 0) {
             }
+            else if (a.compareTo("-steerOverrideFile") == 0) steerOverrideFilename = args[++i];
             else if (a.compareTo("-log") == 0) logFile = args[++i];
             else if (a.compareTo("-out") == 0) outputFile = args[++i];
             else if (a.compareTo("-chart") == 0) chartFile = args[++i];
@@ -344,6 +348,14 @@ public class Silly {
     	
         int count = 0;    
 		IntervalTimer intTimer = new IntervalTimer(30);
+
+		BufferedReader sof = null;
+		if (steerOverrideFilename != null) { 
+			try { 
+				sof = new BufferedReader(new FileReader(steerOverrideFilename));
+			} catch (Exception e) {}
+		}
+	
 		if (filename.equals("SIM")) { 
 			long ms = 0;
 			sim = new CarSim(width, height);
@@ -449,6 +461,10 @@ public class Silly {
 					if (realtime && ms < 30 && fp.skipFrames  <= 0) {
 						//System.out.printf("Sleeping %d ms\n", 30 - ms);
 						Thread.sleep(30 - ms);
+					}
+					if (sof != null) { 
+						String[] words = sof.readLine().split(" ");
+						fp.steerOverride = Double.parseDouble(words[1]);
 					}
 	        		fp.processFrame(time, new OriginalImage(finalbb, width, height));
         			//System.out.printf("%dms\n", (int)intTimer.tick());

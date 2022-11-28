@@ -749,7 +749,7 @@ class TargetFinderLines extends TargetFinder {
 	
 	public double getInstantaneousXDouble(int y) {
 	   	double m = Math.tan(Math.toRadians(focus.lastAngle));
-		double b = (int)Math.round(sa.y + focus.lastIntercept) - sa.x * m;
+		double b = (sa.y + focus.lastIntercept) - sa.x * m;
 		return (y - b) / m;
 		
 	}

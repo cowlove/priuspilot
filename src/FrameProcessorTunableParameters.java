@@ -27,8 +27,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("dither.period", 'L', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.duration += i; }} );
 
-		add("PID DD gain", 'F', 0.01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.j.loGain += i; }} );
 		add("PID P gain", 'P', 0.05, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
 		add("PID I gain", 'I', 0.001, 
