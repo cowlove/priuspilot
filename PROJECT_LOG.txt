@@ -7,3 +7,31 @@ Cleaned up the jar archive location, moved it to ~/pplib and ~/mbrola, changed s
 
 Need to document grub2 install problems with the imbedded pp machine- there was some reason why
 update-grub did not work, but I can't quite remember what it was now. 
+
+
+Changes needed to compile on rpi? 
+
+diff --git a/joystick/linux/Makefile b/joystick/linux/Makefile
+index 573b224..bad4d8a 100755
+--- a/joystick/linux/Makefile
++++ b/joystick/linux/Makefile
+@@ -63,7 +63,7 @@ TARGET=../lib/libjjstick.so
+ # Application-specific definitions  -- EDIT THESE
+ ##############################################################################
+ 
+-BASE_JVM = /usr/lib/jvm/java-11-openjdk-amd64/
++BASE_JVM = /usr/lib/jvm/java-11-openjdk-armhf/
+ INCS =-I. -I$(BASE_JVM)/include -I$(BASE_JVM)/include/linux
+ 
+ # other C and C++ common options
+diff --git a/src/Makefile b/src/Makefile
+index 0d0e88a..8861c90 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -1,5 +1,5 @@
+ 
+-CFLAGS=-I /usr/lib/jvm/java-11-openjdk-amd64/include/linux -I /usr/lib/jvm/java-11-openjdk-amd64/include/ -O3 -g -fpermissive -fPIC -shared 
++CFLAGS=-I /usr/lib/jvm/java-11-openjdk-*/include/linux -I /usr/lib/jvm/java-11-openjdk-*/include/ -O3 -g -fpermissive -fPIC -shared 
+ JARS=../pplib
+ 
+ 
