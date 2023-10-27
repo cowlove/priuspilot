@@ -5,6 +5,13 @@ SRC="$SCRIPT_DIR/../src/"
 export LD_LIBRARY_PATH="$LIB"
 #export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/librt.so" 
 
+IF=wlx0013ef802622
+#sudo ifconfig $IF down
+#sudo iwconfig $IF mode monitor
+#sudo ifconfig $IF up
+#sudo iwconfig $IF channel 6
+
+
 CP=$SRC/priuspilot.jar:$LIB/Joystick.jar:$LIB/jna-3.2.4.jar:/home/jim/workspace/priuspilot/bin:$LIB/Jama-1.0.2.jar:$LIB/mbrola.jar:$LIB/freetts-jsapi10.jar:$LIB/jsapi.jar:$LIB/freetts.jar
 	
 make -C $SRC && \
