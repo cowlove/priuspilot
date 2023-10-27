@@ -16,6 +16,51 @@
 #include <string.h>
 
 
+/* TODO: ESPNOW should def be its own JNI */
+#include "ESPNOW_manager.h"
+#include "ESPNOW_types.h"
+
+//static uint8_t my_mac[6] = {0xF8, 0x1A, 0x67, 0xb7, 0xEB, 0x0B};
+static uint8_t dest_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+//static uint8_t ESP_mac[6] = {0xB4,0xE6,0x2D,0xB5,0x9F,0x85};
+//static uint8_t ESP_mac[6] =  {0xAC,0x67,0xB2,0x36,0x8D,0xFC};
+
+static uint8_t my_mac[6] = {0x00,0x13,0xef,0x80,0x26,0x22};
+//00:13:ef:80:26:22
+ESPNOW_manager *handler;
+
+uint8_t payload[127];
+
+
+long usec()
+{
+        struct timeval tv;
+        gettimeofday (&tv, NULL);
+        return tv.tv_sec * 10000000 + tv.tv_usec;
+}
+
+void callback(uint8_t src_mac[6], uint8_t *data, int len) {
+        printf("%ld received\n", usec());
+        printf("callback() got %d bytes: ", len);
+        for(int n = 0; n < len; n++)  
+                printf("%02x", data[n]);
+        printf("\n");
+}
+
+void espnow_open() { 
+	printf("espnow_open() starting\n");
+	char *dev = (char *)"wlx0013ef802622";
+	printf("espnow_open() allocating handler\n");
+	handler = new ESPNOW_manager(dev, DATARATE_24Mbps, CHANNEL_freq_6, my_mac, dest_mac, false);
+	printf("espnow_open() handler allocated\n");
+	//handler->set_filter(ESP_mac, dest_mac);
+
+	//handler->set_recv_callback(&callback);
+	handler->start();
+	printf("espnow_open() complete\n");
+}
+
+
 #ifdef USE_MAIN
 #define JNIEnv FakeJNIEnv
 #define jobject FakeJobject
@@ -142,10 +187,18 @@ void setLogData(int id, long steer, long timestamp) {
 
 }
 
+JNIEXPORT void JNICALL Java_FrameCaptureJNI_espnowSend
+   (JNIEnv *env, jobject obj, jint cameraIndex, jstring msg) { 
+	jboolean iscopy;
+ 	const char *buf = (env)->GetStringUTFChars(msg, &iscopy);
+	int r = handler->send((unsigned char *)buf, strlen(buf));
+	//printf("espnow_send() %d send\n", r);    
+}
+
 JNIEXPORT void JNICALL Java_FrameCaptureJNI_configure
   (JNIEnv *env, jobject o, jint cameraIndex, jstring fname, jint resWidth, jint resHeight, jint windX, jint windY, 
 	jint windWidth, jint windHeight, jboolean flip, jstring capfname, jint capsize, 
-	jint capcount, jint maxms, jint recordSkip) {
+	jint capcount, jint maxms, jint recordSkip, jboolean useSystemClock) {
 
 		config *conf = getCameraObject(cameraIndex);
 		bzero(conf, sizeof(*conf));
@@ -174,6 +227,7 @@ JNIEXPORT void JNICALL Java_FrameCaptureJNI_configure
 		conf->captureFd = -1;
 		conf->fd = -1;
 		conf->obuf = NULL;
+		espnow_open();
   }
   
   
@@ -1135,7 +1189,6 @@ open_device                     (config *conf)
                 exit (EXIT_FAILURE);
         }
 }
-
 
 void v4l2mmap_open(config *conf) { 
 	open_device (conf);

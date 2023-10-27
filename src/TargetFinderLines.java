@@ -319,7 +319,7 @@ class TargetFinderLines extends TargetFinder {
 	final int histDelay = 20; //TODO -hardcoded array limits
 	boolean useLaneWidthFilter = false;
 	boolean usePeriodDetection = true;
-	boolean useLuminanceCheck = false;
+	boolean useLuminanceCheck = true;
 	int debugId = debugIdCount++;
 	static int debugIdCount = 0;
 	double sThresh = 0;
@@ -345,8 +345,8 @@ class TargetFinderLines extends TargetFinder {
 		if (sa == null) { 
 			sa = new Rectangle(0,0,0,0);
 			sa.width = (int)(w * 0.5);
-			sa.height = (int)(ht * .70);
-			sa.y = (int)(ht * .30);
+			sa.height = (int)(ht * .60);
+			sa.y = (int)(ht * .40);
 			sa.x = leftSide ? 0 : w - sa.width;
 		}
 		
@@ -391,7 +391,7 @@ class TargetFinderLines extends TargetFinder {
 	int rcHueMaxDiff = 44;
 	
 	
-	int cannyMaxPoints = 200, cannyMinPoints = 100;
+	int cannyMaxPoints = 1200, cannyMinPoints = 100;
 	@Override 
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
 		c.zones.height = sa.height;
@@ -470,7 +470,7 @@ class TargetFinderLines extends TargetFinder {
         // auto-tune canny thresholds to try and keep a reasonable number of edge points
         // TODO- normalize the point count to the scan area
         
-        if (c.results.l.size() > cannyMaxPoints && param.threshold1 < 35)
+        if (c.results.l.size() > cannyMaxPoints && param.threshold1 < 10)
         	param.threshold1 = param.threshold2 += 1;
         if (c.results.l.size() < cannyMinPoints && param.threshold1 > 2)
         	param.threshold1 = param.threshold2 -= 1;
@@ -494,7 +494,7 @@ class TargetFinderLines extends TargetFinder {
 		for (int y = 0; y < sa.height; y++) { 
 			for(int x = 0; x < sa.width; x++) {
         		double wt =  c.results.gradResults[y*sa.width+x];
-        		if (useLuminanceCheck) {
+	    		if (useLuminanceCheck) {
 					double rlum = (float)getLuminance(oi, sa, x, y) / maxLum; 
         			wt = wt * rlum * rlum;
 				}	
@@ -764,8 +764,8 @@ class TargetFinderLines extends TargetFinder {
 		float lum=0;
 
 		// ???? The odd shape of this kernel lowered test results, don't understand why 
-		for(int dx = -2; dx <= 2; dx++) { 
-			for (int dy = -0; dy <= 1; dy++) { 
+		for(int dx = -1; dx <= 1; dx++) { 
+			for (int dy = -1; dy <= 1; dy++) { 
 				if (x + dx >= 0 && x + dx < sa.width && dy + y >= 0 && dy + y < sa.height) {  
 					//lum = Math.max(lum, oi.getPixelLum(x + dx + sa.x, y + dy + sa.y));
 					lum += oi.getPixelLum(x + dx + sa.x, y + dy + sa.y);

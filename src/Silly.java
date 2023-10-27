@@ -153,6 +153,7 @@ public class Silly {
         int displayMode = 15;
         int volume = 10;
         int frameInterval = 0; // minimum interval between captured frames
+		String steerCmdHost = "255.255.255.255";
         boolean jni = false;
         boolean nightMode = false, faketime = false, useSystemClock = true, noSteer = false;
         boolean cannyDebug = false, realtime = false;
@@ -160,7 +161,6 @@ public class Silly {
         // same as copyout loop 
         HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
         HashMap<Object,Point> clickMap = new HashMap<Object,Point>();
-		String steerOverrideFilename = null;
         
         int targx = 0, targy = 0, targh = 0, targw = 0;
                 
@@ -177,6 +177,7 @@ public class Silly {
             else if (a.compareTo("-fps") == 0) framerate = Integer.parseInt(args[++i]);
             else if (a.compareTo("-rescale") == 0) rescale = Integer.parseInt(args[++i]);
             else if (a.compareTo("-skip") == 0) skipFrames = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-steeraddr") == 0) steerCmdHost = args[++i];
             else if (a.compareTo("-frames") == 0) frameCount = Integer.parseInt(args[++i]);
             else if (a.compareTo("-pause") == 0) pauseFrame = Integer.parseInt(args[++i]);
             else if (a.compareTo("-exit") == 0) exitFrame = Integer.parseInt(args[++i]);
@@ -277,7 +278,6 @@ public class Silly {
             }
             else if (a.compareTo("-template") == 0) {
             }
-            else if (a.compareTo("-steerOverrideFile") == 0) steerOverrideFilename = args[++i];
             else if (a.compareTo("-log") == 0) logFile = args[++i];
             else if (a.compareTo("-out") == 0) outputFile = args[++i];
             else if (a.compareTo("-chart") == 0) chartFile = args[++i];
@@ -326,6 +326,8 @@ public class Silly {
         fp.keypresses = keypressMap;
         fp.clicks = clickMap;        
 		fp.noSteering = noSteer;
+		fp.steerCmdHost = steerCmdHost;
+		
         if (displayMode > 0) fp.displayMode = displayMode;
 
 
@@ -348,13 +350,6 @@ public class Silly {
     	
         int count = 0;    
 		IntervalTimer intTimer = new IntervalTimer(30);
-
-		BufferedReader sof = null;
-		if (steerOverrideFilename != null) { 
-			try { 
-				sof = new BufferedReader(new FileReader(steerOverrideFilename));
-			} catch (Exception e) {}
-		}
 	
 		if (filename.equals("SIM")) { 
 			long ms = 0;
@@ -461,10 +456,6 @@ public class Silly {
 					if (realtime && ms < 30 && fp.skipFrames  <= 0) {
 						//System.out.printf("Sleeping %d ms\n", 30 - ms);
 						Thread.sleep(30 - ms);
-					}
-					if (sof != null) { 
-						String[] words = sof.readLine().split(" ");
-						fp.steerOverride = Double.parseDouble(words[1]);
 					}
 	        		fp.processFrame(time, new OriginalImage(finalbb, width, height));
         			//System.out.printf("%dms\n", (int)intTimer.tick());

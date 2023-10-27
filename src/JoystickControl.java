@@ -46,7 +46,6 @@ class JoystickControl {
 	double lowGain = 0.40;
 	double hiGain = 0.45;
 	double gainStep = 0.001;
-	double trim = 0.0;
 	JoystickControl() { 
 		Joystick j = null;
 		buttonDebounce = new ButtonDebounce[18];
@@ -93,12 +92,12 @@ class JoystickControl {
 	    					joystick.getR(), joystick.getU(), joystick.getV(),
 	    					joystick.getPOV());
 	    		}
-				if ((buttonBits & (L2 | R2)) == 0)
+				if ((buttonBits & (L2 | R2)) == 0) // TMPonly allow steer if buttons pressed 
 					steer = 0;
 				if ((buttonBits & (L1 | R1)) != 0)  // L1 - engage right joystick
 	           		steer = joystick.getX() * lowGain;
-	           	//if ((buttonBits & R1) != 0)  // R1 - engage right joystick
-	           	//	steer = joystick.getZ() * lowGain;
+	           	if ((buttonBits & R1) != 0)  // R1 - engage right joystick
+	           		steer = joystick.getZ() * lowGain;
 
 				/* 
 	           	if (false && isArmed()) { 
@@ -128,22 +127,7 @@ class JoystickControl {
 	               		hiGain -= gainStep;        
 	       			System.out.printf("Gain %.3f/%.3f\n", lowGain, hiGain);
 	           	}
-	    
-		    	if (false && (buttonBits & (L1 | L2 | R1 | R2)) != 0) { // DONT UNDERSTAND THIS  
-		           	double trimStep = 0.001;
-		           	if (joystick.getY() < -0.1) {
-		           		trim -= trimStep;
-		           		//System.out.print("LEFT BLINKER");
-		           		System.out.printf("trim %.3f\n", trim);
-		           	}
-		           	if (joystick.getY() > 0.1) { 
-		           		//System.out.print("RIGHT BLINKER");
-		           		trim += trimStep;
-		           		System.out.printf("trim %.3f\n", trim);
-		           	}
-	
-		    	}
-				*/
+	    		*/
 	        }
 		}
 		return steer;

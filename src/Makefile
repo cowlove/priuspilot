@@ -1,5 +1,5 @@
 
-CFLAGS=-I /usr/lib/jvm/java-11-openjdk-amd64/include/linux -I /usr/lib/jvm/java-11-openjdk-amd64/include/ -O3 -g -fpermissive -fPIC -shared 
+CFLAGS=-I /usr/lib/jvm/java-11-openjdk-amd64/include/linux -I /usr/lib/jvm/java-11-openjdk-amd64/include/ -I ESPNOW_lib/src/Includes/ -O3 -g -fpermissive -fPIC -shared 
 JARS=../pplib
 
 
@@ -38,8 +38,13 @@ all: libFrameCaptureJNI.so priuspilot.jar
 	javac $<
 	(javah -jni FrameCaptureJNI)
 	
-$(TARGET): $(OBJ)
-	g++ -lrt -shared -o $@ $^ $(CFLAGS) $(LIBS)
+ESPNOW_manager.o: ESPNOW_lib/src/ESPNOW_manager.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $^
+ESPNOW_types.o: ESPNOW_lib/src/ESPNOW_types.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $^
+
+$(TARGET): $(OBJ) ESPNOW_manager.o ESPNOW_types.o
+	g++ -lrt -shared -o $@ $^ $(CFLAGS) $(LIBS) 
 
 main: 	FrameCaptureJNI.cpp
 	g++ -g -o $@ $<  -DUSE_MAIN

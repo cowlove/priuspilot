@@ -109,7 +109,7 @@ class FrameProcessor {
     public PidControl selectedPid = pidLL;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
     
-    SteeringLogic steering = null;
+    SteeringLogicSimpleLimits steering = new SteeringLogicSimpleLimits();
     int width, height, displayRatio;
     FrameProcessorTunableParameters tp = new FrameProcessorTunableParameters(this);
     TargetFinder tf = null;
@@ -138,25 +138,23 @@ class FrameProcessor {
     		writer = new ImageFileWriter(outFile, Silly.fc);
         if (dumpFile != null) 
         	logfile = new Logfile(dumpFile);
-        steering = new SteeringLogic(swCam);
         
         width = w;
         height = h;
         this.rescale = rescale;
         this.displayRatio = displayRatio;
-        cmdBus = new SerialCommandBus(serialDevice, this);
         	
 		restartOutputFiles();
         //td = new TemplateDetectCannyCorrelation(w, h);
         //td = new TemplateDetectRGB(w, h);
         
-        int minSz = 45; // min/max radius
+        int minSz = Silly.debugInt("minSz", 45); // min/max radius
         int maxSz = 100;
-        int houghSize = 91;
-        if (Silly.debug("HOUGH_SIZE"))
-        	houghSize = Silly.debugInt("HOUGH_SIZE");
-        tfl = new TargetFinderLines(w, h, null, true, 55, houghSize, minSz, maxSz, 10, 45);
-        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, 10, 45);
+		int minAng = Silly.debugInt("minAng", 12);
+		int maxAng = 50;
+        int houghSize = Silly.debugInt("HOUGH_SIZE", 55);
+        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 46), houghSize, minSz, maxSz, minAng, maxAng);
+        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng);
         tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45);
         tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
@@ -188,8 +186,8 @@ class FrameProcessor {
         tfparam = tfparams.get(0);
 
         tfrc = new TargetFinderRoadColor(w, h);
-        tfrcRect = new Rectangle((int)(w * 0.47), (int)(h * 0.42), (int)(w * .12), 
-        		(int)(h * 0.36));
+        tfrcRect = new Rectangle((int)(w * 0.51), (int)(h * 0.55), (int)(w * .12), 
+        		(int)(h * 0.16));
         //new Rectangle((int)(w * 0.44), (int)(h * 0.35), 
         //		(int)(w * .12), (int)(h * .30));
         pids.add(pidLL);
@@ -198,8 +196,6 @@ class FrameProcessor {
         pids.add(pidLV);
         pids.add(pidCA);
         pids.add(ccPid);
-        //pids.add(steering.clc.pid);
-        //selectedPid = steering.clc.pid;
         
         steeringTestPulse.testType = steeringTestPulse.TEST_TYPE_SQUARE;
         steeringTestPulse.magnitude = 0.30;
@@ -261,12 +257,10 @@ class FrameProcessor {
         tdStartX = w / 2;
         tdStartY = h / 3;
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 183); 
-        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 10);
-        inputZeroPoint.zeroPoint.rLane = 432 * w/320;
-        inputZeroPoint.zeroPoint.lLane = 54;
-        
-        cmdBus.start();
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 154); 
+        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 95);
+        inputZeroPoint.zeroPoint.rLane = 358 * w/320;
+        inputZeroPoint.zeroPoint.lLane = -25 * w/320;
     }
     
     AdvisorySounds sounds = new AdvisorySounds();
@@ -430,12 +424,9 @@ class FrameProcessor {
     }
     
     JoystickControl joystick = new JoystickControl();
-    SerialCommandBus cmdBus = null;
     
-    double steeringDeadband = 0.00;
-    double epsSteeringGain = 2.5;	
+    double epsSteeringGain = 1.2;	
     double trq1 = 0, trq2 = 0;
-    int steerOverrideTorque = 300;
     
     long lastCruiseSet = 0; // time of last cruise control command in ms
     synchronized void setCruise(boolean up) {
@@ -444,57 +435,45 @@ class FrameProcessor {
     									  // to one per 1/4sec 
 	    	int val = up ? 40 : 25;
 	    	System.out.printf("setCruise(%s)\n", up ? "UP               " : "               DOWN");
-	    	if (this.arduinoArmed) {
-		    	cmdBus.writeCmd('c', val, 50);
-	    	}
 	    	lastCruiseSet = now;
     	}
     }
 
-    int ardDebugInterval = 500;  // 100th seconds
-    synchronized void setArduinoDebug(int level) { 
-    	ardDebugInterval = level;
-    	cmdBus.writeCmd('d', level);
-    }
+	String steerCmdHost = "255.255.255.255";
+
+    double maxSteer = .4; // wasn't 2.20 a bit excessive?! (WTF)
     synchronized void setSteering(double x) { 
-    	x += servoTrim;
 
 		if (Silly.sim != null) 
 			Silly.sim.setSteer(x);
 
-    	x += joystick.trim;
         x = x * epsSteeringGain;
-        
-        final double maxSteer = 2.2; // wasn't 2.20 a bit excessive?! (WTF)
-        x = Math.max(x, -maxSteer);
-        x = Math.min(x, maxSteer);
-            
-    	int st = (int)(x * 128 / 2.5);
-    	
-		try {
-			final int lo = 300, hi = 1700;
-			int pwm = (int)(x / 1.2 *  (hi - lo) / 2  + (hi + lo) / 2);
-			pwm = Math.min(hi, Math.max(lo, pwm));
-			DatagramSocket sendSocket = new DatagramSocket();
-			sendSocket.setBroadcast(true);
-			String cmd = String.format("set pwm=%d", pwm);
-			byte[] data = cmd.getBytes();
-			//System.out.println(cmd);
-			DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getByName("255.255.255.255"), 1234);
-			sendSocket.send(packet); 
-			sendSocket.close();
-		} catch(Exception e) {
-			System.out.printf("ouch\n");
+
+		String s = String.format("PPDEG %.3f %.3f", x, x);
+		if (Silly.fc != null) { 
+			Silly.fc.espnowSend(s);	
 		}
-
-
-
-    	cmdBus.writeCmd('s', st);
-    	if (count % 30 == 0) { 
-	    	cmdBus.writeCmd('t', steerOverrideTorque);
-	     	//cmdBus.requestAck();
-    	}
+		if (false) { 
+			try {
+				final int lo = 300, hi = 1700;
+				int pwm = (int)(x / 1.2 *  (hi - lo) / 2  + (hi + lo) / 2);
+				pwm = Math.min(hi, Math.max(lo, pwm));
+				DatagramSocket sendSocket = new DatagramSocket();
+				sendSocket.setBroadcast(true);
+				//String cmd = String.format("set pwm=%d", pwm); // old servo-based PWM
+				String cmd = String.format("PPDEG %f 0", x);
+				byte[] data = cmd.getBytes();
+				//System.out.println(cmd);
+				DatagramPacket packet = new DatagramPacket(data, data.length, 
+					InetAddress.getByName(steerCmdHost), 7788);
+				sendSocket.send(packet); 
+				sendSocket.close();
+			} catch(Exception e) {
+				System.out.printf("ouch\n");
+			}
+		}
     }
+	
 
     RunningAverage avgFrameDelay = new RunningAverage(100);
     // TODO- separate text window to display test stats
@@ -626,8 +605,6 @@ class FrameProcessor {
 	double lpos = Double.NaN, rpos = Double.NaN;
 	double laneVanX = Double.NaN,persVanX = Double.NaN;
 
-	double steerOverride = Double.NaN;
-
 	synchronized void processFrameSync(long t, OriginalImage oi) throws IOException {
 		lpos = Double.NaN;
 		rpos = Double.NaN;
@@ -691,7 +668,7 @@ class FrameProcessor {
 	   	   		r = (Rectangle)tflo.vanLimits.clone();
 	   	   		r.x -= tflo.sa.x;
 	   	   		r.y -= tflo.sa.y;
-	   			tflo.h2.projectIntoRect(vpL, r, vpScale);
+				tflo.h2.projectIntoRect(vpL, r, vpScale);
 	
 	   		} });
 	   		t1.start();
@@ -967,19 +944,7 @@ class FrameProcessor {
         //if (!noSteering) 
         
         steer = joystick.steer(steer);
-
-        
-        // TODO- deadband should probably be applied last
-        // TODO- deadband and other things should be moved into steering control code
-        if (steeringDeadband > 0 || (steeringDeadband < 0 && Math.abs(steer) > Math.abs(steeringDeadband))) { 
-	        if (steer < 0) steer -= steeringDeadband;
-	        if (steer > 0) steer += steeringDeadband;
-        } 
-
-		
-		if (!Double.isNaN(steerOverride)) 
-			steer = steerOverride;
-		//if (!noSteering) 
+		steer = steering.steer(time, steer);
 	    setSteering(steer);
 	    
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
@@ -994,15 +959,7 @@ class FrameProcessor {
     	
         if (joystick.getExit())  
         	this.keyPressed('Q');
-        
-        if (joystick.joystickPresent() && arduinoArmed && !joystick.isArmed()) {
-        	arduinoArmed = false;
-        	cmdBus.writeCmd('a', 0);
-        } else if (!arduinoArmed && joystick.isArmed()) {
-        	arduinoArmed = true;
-        	cmdBus.writeCmd('a', 1);        	
-        }
- 
+         
         if (joystick.getButtonPressed(9)) 
         	restartOutputFiles();
 		if (joystick.getButtonPressed(14))  
@@ -1104,7 +1061,6 @@ class FrameProcessor {
                 double yoff = 0.65;
 	            double yspace = 0.05;
     			final double bWidth = 0.06;
-	            display.rectangle(Color.blue, "FB", steering.lag.feedback + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.white, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 
@@ -1180,11 +1136,6 @@ class FrameProcessor {
         	int key = pendingKeyCode;
         	pendingKeyCode = 0;
         	keyPressedSync(key);
-        }
-        
-        if (false && cmdBus.ignitionOffCount > 5) {
-        	System.out.printf("Ignition seems off, exiting\n");
-        	System.exit(1);
         }
         this.notify();
     }
@@ -1371,8 +1322,6 @@ class FrameProcessor {
 			       				tfl.getInstantaneousAngle(), tfl.getInstantaneousX(height), tfr.getInstantaneousAngle(), tfr.getInstantaneousX(height));
 			       		s += String.format(", hVanX=%d, hVanY=%d", houghVan.calculate().x, houghVan.calculate().y);
 			       	}
-			       	s += ", serDebug = " + cmdBus.lastDebugString;
-			       	cmdBus.lastDebugString = "";
 	    	} else { 
 	    			s = new String(logSpec);
 	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");

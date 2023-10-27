@@ -76,8 +76,8 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.ierrorLimit += i; }} );
 		//add("PID manualLaneTrim", 'M', .01, 
 		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.manualTrim += i; }} );
-		add("FP servoTrim", 'M', .01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.servoTrim += i; }} );
+		add("FP fp.steering.trim", 'M', .01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steering.trim += i; }} );
 		add("FP select finder param group", 'X', 1, 
 					new TunableParameter.Adjust() { public double adjust(double i) { 
 						fp.tfparamIndex += i;
@@ -91,9 +91,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 						return fp.tfparamIndex;
 					}} );
 
-		add("fp.servoTrim", 'Y', .01, 
+		add("fp.steer.trim", 'Y', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.servoTrim += i; }} );
+					return fp.steering.trim += i; }} );
 		add("fp.epsSteeringGain", 'C', .1, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.epsSteeringGain += i; }} );
@@ -148,34 +148,18 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.displayMode = (fp.displayMode + (int)i) % 16 ; }} );
 
-		add("ST steer.maxSteer", (char)59, .025,
+		add("ST steer.maxSteer", (char)59, .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.maxSteer += i; }});
 
-		add("FP steer.maxSteerIncrease", '[', .005,
+		add("FP steer.maxChange", '[', .0001,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.maxSteerIncrease += i; }});
-		add("FP deadbsnd", ']', .01,
+					return fp.steering.maxChange += i; }});
+		add("FP steer.deadband", ']', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steeringDeadband += i; }});
+					return fp.steering.deadband += i; }});
 
 		
-		 add("FP steer.lag.threshold", '1', .01,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.lag.threshold += i; }});
-		add("FP steer.lag.gain", '2', .1,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.lag.gain += i; }});
-		
-		add("FP steer.lag.actuationTime", '3', .01,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.lag.actuationTime += i; }});
-		add("FP steer.lag.deadTime", '4', .01,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.lag.deadTime += i; }});
-		add("FP steer.lag.lagTime", '5', .01,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.lag.lagTime += i; }});
 
 /*		add("TF H.low", '1', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
@@ -227,9 +211,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("PID quality fade gain", 'S', .1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.selectedPid.qualityFadeGain += i; }});
-		add("FP steerOverrideTorque", '=', 10,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steerOverrideTorque += (int)i; }});
 		add("FP displayRatio", 'H', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.displayRatio = (int)Math.min(10, Math.max(0, fp.displayRatio + i)); }});
@@ -239,14 +220,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("TF fp.lineIntensityDelta", 'V', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.lineIntensityDelta += i; }});
-
-		add("FP serial debug interval (100th sec)", '\\', 25,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					fp.ardDebugInterval += i;
-					if (i != 0)
-						fp.setArduinoDebug(fp.ardDebugInterval);
-					return fp.ardDebugInterval;
-				}});
 
 		selectParam('X');		
 	}

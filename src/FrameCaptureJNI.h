@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     FrameCaptureJNI
  * Method:    configure
- * Signature: (ILjava/lang/String;IIIIIIZLjava/lang/String;IIII)V
+ * Signature: (ILjava/lang/String;IIIIIIZLjava/lang/String;IIIIZ)V
  */
 JNIEXPORT void JNICALL Java_FrameCaptureJNI_configure
-  (JNIEnv *, jobject, jint, jstring, jint, jint, jint, jint, jint, jint, jboolean, jstring, jint, jint, jint, jint);
+  (JNIEnv *, jobject, jint, jstring, jint, jint, jint, jint, jint, jint, jboolean, jstring, jint, jint, jint, jint, jboolean);
 
 /*
  * Class:     FrameCaptureJNI
@@ -61,6 +61,22 @@ JNIEXPORT void JNICALL Java_FrameCaptureJNI_discardFrame
  * Signature: (ILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_FrameCaptureJNI_setCaptureFile
+  (JNIEnv *, jobject, jint, jstring);
+
+/*
+ * Class:     FrameCaptureJNI
+ * Method:    setLogData
+ * Signature: (IJJ)V
+ */
+JNIEXPORT void JNICALL Java_FrameCaptureJNI_setLogData
+  (JNIEnv *, jobject, jint, jlong, jlong);
+
+/*
+ * Class:     FrameCaptureJNI
+ * Method:    espnowSend
+ * Signature: (ILjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_FrameCaptureJNI_espnowSend
   (JNIEnv *, jobject, jint, jstring);
 
 #ifdef __cplusplus

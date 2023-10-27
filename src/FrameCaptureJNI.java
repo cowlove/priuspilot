@@ -11,6 +11,7 @@ public class FrameCaptureJNI {
 	public native void discardFrame(int id, String filename);
 	public native void setCaptureFile(int id, String filename);
 	public native void setLogData(int id, long steer, long timestamp);
+	public native void espnowSend(int id, String msg); 
 
 	public void configure(String dev, int resWidth, int resHeight, int windX, int windY, int windWidth, int
 			windHeight, boolean flip, String captureFile, int captureFileSize, int captureFileCount, 
@@ -24,7 +25,8 @@ public class FrameCaptureJNI {
 	public void close() { close(id); } 
 	public void renameCurrentCaptureFile(String filename) { renameCurrentCaptureFile(id, filename); } 
 	public void discardFrame(String filename) { discardFrame(id, filename); }
-	public void setCaptureFile(String filename) { setCaptureFile(id, filename); } 
+	public void setCaptureFile(String filename) { setCaptureFile(id, filename); }
+	public void espnowSend(String msg) { espnowSend(id, msg); } 
 
 	int id;
 	static private int nextId = 0;
