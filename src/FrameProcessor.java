@@ -212,8 +212,7 @@ class FrameProcessor {
         pidRL.gain.p.hiGain = 1.52;
         pidRL.gain.i.max = 0.00; // I control has minor oscillating problems 
         pidRL.finalGain = 1.70;
-		pidRL.qualityPeriod = 6;
-        pidRL.qualityFadeThreshold = .015;
+        pidRL.qualityFadeThreshold = .01;
         pidRL.qualityFadeGain = 4;
  		pidRL.reset();
         
