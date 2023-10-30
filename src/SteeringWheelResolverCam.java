@@ -24,7 +24,7 @@ class SteeringWheelResolverCam implements Runnable {
 		bb = ByteBuffer.allocateDirect(width * height * 2);
 		if (debugDisplay)
 			dd = new BufferedImageDisplay(width, height, BufferedImage.TYPE_3BYTE_BGR);
-		tf = new TargetFinderLines(w, h, new Rectangle(0, 0, w, h - 10), true, 0, 180, w, w, 180, 180);
+		tf = new TargetFinderLines(w, h, new Rectangle(0, 0, w, h - 10), true, 0, 180, w, w, 180, 180, 0.60);
 		tf.vanLimits = null;
 		tf.focus.defaultIntercept = w / 2;
 		tf.minAng = 0;

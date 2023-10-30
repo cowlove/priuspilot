@@ -237,6 +237,8 @@ public class PidControl {
     	finalGain = pid.finalGain;
     	this.qualityFadeThreshold =  pid.qualityFadeThreshold;
     	this.qualityFadeGain = pid.qualityFadeGain;
+		this.fadeCountMax = pid.fadeCountMax;
+		this.fadeCountMin = pid.fadeCountMin;
     }
 }
  

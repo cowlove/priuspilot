@@ -148,15 +148,16 @@ class FrameProcessor {
         //td = new TemplateDetectCannyCorrelation(w, h);
         //td = new TemplateDetectRGB(w, h);
         
-        int minSz = Silly.debugInt("minSz", 45); // min/max radius
+        int minSz = Silly.debugInt("minSz", 24); // min/max radius
         int maxSz = 100;
 		int minAng = Silly.debugInt("minAng", 12);
-		int maxAng = 50;
+		int maxAng = Silly.debugInt("maxAng", 35);
         int houghSize = Silly.debugInt("HOUGH_SIZE", 55);
-        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 46), houghSize, minSz, maxSz, minAng, maxAng);
-        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng);
-        tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45);
-        tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45);
+		double vertPct = Silly.debugInt("SA_VERT_PERCENT",55) / 100.0;
+        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 46), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45, .60);
+        tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45, .60);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
 
 
@@ -213,7 +214,8 @@ class FrameProcessor {
         pidRL.finalGain = 1.70;
         pidRL.qualityFadeThreshold = .0046;
         pidRL.qualityFadeGain = 2;
-		pidRL.reset();
+	    pidRL.fadeCountMax = (int)Math.floor(pidRL.period.d * pidRL.EXPECTED_FPS * 1.0);
+ 		pidRL.reset();
         
         pidLL.copySettings(pidRL);
         
@@ -1050,8 +1052,8 @@ class FrameProcessor {
 
             }
             if ((displayMode & 0x8) != 0) {
-				displayPid(pidPV, Color.cyan);
-            	//displayPid(pidLL, Color.yellow);
+				//displayPid(pidPV, Color.cyan);
+            	displayPid(pidLL, Color.yellow);
                	//displayPid(pidLV, Color.green);
                	//displayPid(pidPV, Color.blue);
                	//displayPid(pidRL, Color.white);

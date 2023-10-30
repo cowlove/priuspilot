@@ -326,7 +326,7 @@ class TargetFinderLines extends TargetFinder {
 	HoughTransform h2;
 
 	TargetFinderLines(int w, int ht, Rectangle sa1, boolean left, int defAngle, int houghSz, 
-			int minSz, int maxSz, int minAng, int maxAng) {
+			int minSz, int maxSz, int minAng, int maxAng, double vertPct) {
 		super(w, ht);
 		houghAngSz = houghSz;
 		houghRadSz = houghSz;
@@ -345,8 +345,8 @@ class TargetFinderLines extends TargetFinder {
 		if (sa == null) { 
 			sa = new Rectangle(0,0,0,0);
 			sa.width = (int)(w * 0.5);
-			sa.height = (int)(ht * .60);
-			sa.y = (int)(ht * .40);
+			sa.height = (int)(ht * vertPct);
+			sa.y = (int)(ht - 1 - sa.height);
 			sa.x = leftSide ? 0 : w - sa.width;
 		}
 		
@@ -391,7 +391,7 @@ class TargetFinderLines extends TargetFinder {
 	int rcHueMaxDiff = 44;
 	
 	
-	int cannyMaxPoints = 1200, cannyMinPoints = 100;
+	int cannyMaxPoints = 400, cannyMinPoints = 100;
 	@Override 
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
 		c.zones.height = sa.height;
@@ -470,9 +470,9 @@ class TargetFinderLines extends TargetFinder {
         // auto-tune canny thresholds to try and keep a reasonable number of edge points
         // TODO- normalize the point count to the scan area
         
-        if (c.results.l.size() > cannyMaxPoints && param.threshold1 < 10)
+        if (c.results.l.size() > cannyMaxPoints && param.threshold1 < Silly.debugInt("CANNY_MAX_THR", 15))
         	param.threshold1 = param.threshold2 += 1;
-        if (c.results.l.size() < cannyMinPoints && param.threshold1 > 2)
+        if (c.results.l.size() < cannyMinPoints && param.threshold1 > 1)
         	param.threshold1 = param.threshold2 -= 1;
         
         //if (h.id == 0) System.out.printf("points = %05d, threshold1 = %d\n", (int)c.results.l.size(), (int)param.threshold1);
