@@ -55,6 +55,10 @@ public class PidControl {
 
 	}
     class GainChannel {
+		// loGain - normal gain
+		// hiGain - additional gain added in starting at loTrans for negative values
+		//     and hiTrans for positive value.  hiGain = 0.50 would add 50% additional
+		//     gain on top of whatever loGain is set to, starting at hiTrans
 		public void reset() {}
     	double loGain = 1, hiGain = 0;
     	Double loTrans = Double.NaN, hiTrans = Double.NaN, max = Double.NaN;
@@ -131,8 +135,7 @@ public class PidControl {
       	gain.l.loGain = gl;
     }
     PID err = new PID(); 
-    PID period = new PID(0.05, 5, 0.5, 0.3, 1.2);  // TODO - change from explicit frame counts to a time period
-	
+    PID period = new PID(0.05, 5, 0.5, 0.3, 1.2);  
 	PID delay = new PID(0, 0, 0, 0, 0);
     double finalGain = 1.85;
     int derrDegree = 2;
@@ -141,11 +144,11 @@ public class PidControl {
     double qualityFadeGain = 4.0;
     double qualityFadeThreshold = 0.10;
     double quality = 0.0;
-    
+    double qualityPeriod = 2.0;
     
     // these values are set in reset() method
     double i;
-    RunningQuadraticLeastSquares p, d, l;
+    RunningQuadraticLeastSquares p, d, l, q;
 	   
     RunningAverage defaultValue = new RunningAverage(150);
     long starttime = 0;
@@ -157,10 +160,12 @@ public class PidControl {
         //dd = new RunningQuadraticLeastSquares(derrDegree, (int)(period.j * 2 * EXPECTED_FPS), period.j);
         d = new RunningQuadraticLeastSquares(derrDegree, (int)(period.d * 2 * EXPECTED_FPS), period.d);
 		l = new RunningQuadraticLeastSquares(1, (int)(period.l * 2 * EXPECTED_FPS), period.l);
+		q = new RunningQuadraticLeastSquares(2, (int)(qualityPeriod * 2 * EXPECTED_FPS), qualityPeriod);
         defaultValue.clear();
         starttime = 0;
 		delays.reset();
 		gain.reset();
+		//System.out.printf("reset()\n");
     }
     
     String description;
@@ -175,6 +180,7 @@ public class PidControl {
     	d.rebase(-delta);
     	p.rebase(-delta);
 		l.rebase(-delta);
+		q.rebase(-delta);
     }
     
     double lastVal, drms;
@@ -192,18 +198,20 @@ public class PidControl {
         	d.removeAged(n);
         	p.removeAged(n);
 			l.removeAged(n);
+			q.removeAged(n);
         } else {         
 	        d.add(n, delays.d.get(n, val));
 	        p.add(n, delays.p.get(n, val));
+			q.add(n, val);
 	        i = gain.i.limitToMax(i + delays.i.get(i, val));
         }
         
         err.p = gain.p.getCorrection(p.calculate());
                 
-        drms = d.rmsError();
+        drms = q.rmsError();
         avgRmsErr.add(drms);
         
-        if (d.size() < fadeCountMin || Double.isNaN(drms) || 
+        if (q.size() < fadeCountMin || Double.isNaN(drms) || 
         		drms > qualityFadeThreshold * (qualityFadeGain + 1)) {
         	quality = 0;
 		}
@@ -214,8 +222,8 @@ public class PidControl {
      
         quality *= quality;
    
-       if (d.size() >= fadeCountMin && d.size() < fadeCountMax)  {
-        	quality *= (double)(d.size() - fadeCountMin) / (double)(fadeCountMax - fadeCountMin);
+       if (q.size() >= fadeCountMin && q.size() < fadeCountMax)  {
+        	quality *= (double)(q.size() - fadeCountMin) / (double)(fadeCountMax - fadeCountMin);
        }
         err.d = gain.d.getCorrection(d.slope(n, 1));
   	    err.i = gain.i.getCorrection(i);
@@ -237,6 +245,7 @@ public class PidControl {
     	finalGain = pid.finalGain;
     	this.qualityFadeThreshold =  pid.qualityFadeThreshold;
     	this.qualityFadeGain = pid.qualityFadeGain;
+		this.qualityPeriod = pid.qualityPeriod;
 		this.fadeCountMax = pid.fadeCountMax;
 		this.fadeCountMin = pid.fadeCountMin;
     }

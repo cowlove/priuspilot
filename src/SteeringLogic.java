@@ -152,11 +152,13 @@ class SteeringLogicSimpleLimits {
 		st = Math.min(lastSteer + maxDelta, Math.max(lastSteer - maxDelta, st));
 		st = Math.min(maxSteer, Math.max(-maxSteer, st));
 
-		//lastMs = ms;
-		//lastSteer = st;
+		totalAction += Math.abs(st - lastSteer);
+		lastMs = ms;
+		lastSteer = st;
 		//System.out.printf("%.4f\n", st);
 		return st;
 	}
+	double totalAction = 0.0;
 	void reset() {}
 };
 

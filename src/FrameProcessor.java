@@ -153,7 +153,7 @@ class FrameProcessor {
 		int minAng = Silly.debugInt("minAng", 12);
 		int maxAng = Silly.debugInt("maxAng", 35);
         int houghSize = Silly.debugInt("HOUGH_SIZE", 55);
-		double vertPct = Silly.debugInt("SA_VERT_PERCENT",55) / 100.0;
+		double vertPct = Silly.debugInt("SA_VERT_PERCENT",52) / 100.0;
         tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 46), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45, .60);
@@ -212,16 +212,18 @@ class FrameProcessor {
         pidRL.gain.p.hiGain = 1.52;
         pidRL.gain.i.max = 0.00; // I control has minor oscillating problems 
         pidRL.finalGain = 1.70;
-        pidRL.qualityFadeThreshold = .0046;
-        pidRL.qualityFadeGain = 2;
-	    pidRL.fadeCountMax = (int)Math.floor(pidRL.period.d * pidRL.EXPECTED_FPS * 1.0);
+		pidRL.qualityPeriod = 6;
+        pidRL.qualityFadeThreshold = .015;
+        pidRL.qualityFadeGain = 4;
  		pidRL.reset();
         
         pidLL.copySettings(pidRL);
         
         pidRL.gain.p.loTrans = -0.045;  // "bumper" points of increased gain for lane proximity
         pidLL.gain.p.hiTrans = +0.037;  // TODO - change when the tfl prescale constant changes
-        
+        pidLL.gain.p.loGain = 1.0;      // detune L P value, leave D high 
+		pidLL.gain.p.hiGain = 0;
+
         //pidLV.setGains(2.0, 0, 0.40, 0, 0);
         pidLV.setGains(0,0,0,0,0);
 		pidLV.finalGain = 0;//.90;
@@ -1274,12 +1276,13 @@ class FrameProcessor {
     }
     
     void displayPid(PidControl p, Color c) { 
-    	displayLs(p, p.d, c);
+    	displayLs(p, p.q, c);
     }
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("RMS errs: LL=%.5f, RL=%.5f, VP=%.5f\n", pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr());
+ 	  	System.out.printf("RMS errs: LL=%.5f, RL=%.5f, VP=%.5f, avgAction=%.5f\n", 
+			pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr(), steering.totalAction / count);
     }
      
 

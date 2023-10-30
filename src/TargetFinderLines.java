@@ -186,16 +186,16 @@ class Focus {
 	int defaultIntercept = 0;
 	double radZoneOffset = 0.50; // verticle center of the scan strip
 	double angZoneOffset = 0.50;
-	
-	public RunningLeastSquares angle = new RunningLeastSquares(8);
-	public RunningLeastSquares intercept = new RunningLeastSquares(8);
+	int averagePeriod = Silly.debugInt("SZ_PERIOD", 10);
+	public RunningLeastSquares angle = new RunningLeastSquares(averagePeriod);
+	public RunningLeastSquares intercept = new RunningLeastSquares(averagePeriod);
 	
 	// TODO- instead of storing average focus as angle/intercept, 
 	// store it as angle/point and handle angle wraparound and singularities in axis intercepts
 	
 	double lastAngle, lastIntercept;
 	double lastRadius, lastOX, lastOY;
-	int detune = 0;
+	double detune = 0;
 	int id;
 	static int nextId = 0;
 	Focus() { 
@@ -214,7 +214,7 @@ class Focus {
 			lastOY = o.y;
 			lastRadius = r;
 			count++;
-			detune = Math.max(0, detune - 1);
+			detune = Math.max(0.0, detune - Silly.debugDouble("TFL_DETUNE", .6));
 		} else { 
 			if (detune++ >= angle.count) 
 				clear(); // TODO make gradual 
@@ -229,7 +229,7 @@ class Focus {
 	
 	
 	public int getQuality() {
-		return (int)angle.totalWeight() * (angle.count - detune) / angle.size;
+		return (int)Math.floor(angle.totalWeight() * (angle.count - detune) / angle.size);
 	}
 	boolean full() { 
 		return angle.count == angle.size;
@@ -240,13 +240,14 @@ class Focus {
 	void clear() { 
 		angle.clear();
 		intercept.clear();
-		count = detune = 0;
+		count = 0;
+		detune = 0.0;
 	}
 	double getAngWidth() { 
-		return maxAngWidth - (maxAngWidth - minAngWidth) / angle.size * (angle.count - detune);
+		return maxAngWidth - (maxAngWidth - minAngWidth) / angle.size * Math.floor(angle.count - detune);
 	}
 	int getSzWidth() {
-		return maxSzWidth - (maxSzWidth - minSzWidth) * (angle.count - detune) / angle.size;
+		return maxSzWidth - (maxSzWidth - minSzWidth) * (int)Math.floor(angle.count - detune) / angle.size;
 	}
 	double getAngle() {
 		return angle.count > 0 ? angle.averageY() : defaultAngle;
@@ -391,7 +392,7 @@ class TargetFinderLines extends TargetFinder {
 	int rcHueMaxDiff = 44;
 	
 	
-	int cannyMaxPoints = 400, cannyMinPoints = 100;
+	int cannyMaxPoints = 800, cannyMinPoints = 400;
 	@Override 
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
 		c.zones.height = sa.height;
@@ -433,7 +434,6 @@ class TargetFinderLines extends TargetFinder {
 		c.zones.lsz.m2 = Math.tan(Math.toRadians(ang - toe));
 		c.zones.midX = sa.width;
 		
-
 		// Pick origin for hough transform- the intercept of the scanzone with lower edge or 
 		// far side edge of sa rectangle. 
 		/*
@@ -470,18 +470,36 @@ class TargetFinderLines extends TargetFinder {
         // auto-tune canny thresholds to try and keep a reasonable number of edge points
         // TODO- normalize the point count to the scan area
         
-        if (c.results.l.size() > cannyMaxPoints && param.threshold1 < Silly.debugInt("CANNY_MAX_THR", 15))
-        	param.threshold1 = param.threshold2 += 1;
-        if (c.results.l.size() < cannyMinPoints && param.threshold1 > 1)
-        	param.threshold1 = param.threshold2 -= 1;
-        
-        //if (h.id == 0) System.out.printf("points = %05d, threshold1 = %d\n", (int)c.results.l.size(), (int)param.threshold1);
-        
+		if (false) { 
+			if (c.results.l.size() > cannyMaxPoints && param.threshold1 
+				< Silly.debugInt("CANNY_MAX_THR", 15))
+				param.threshold1 = param.threshold2 += 1;
+			if (c.results.l.size() < cannyMinPoints && param.threshold1 > 1)
+				param.threshold1 = param.threshold2 -= 1;
+			
+			//if (h.id == 0) System.out.printf("points = %05d, threshold1 = %d\n", (int)c.results.l.size(), (int)param.threshold1);
+		}
         lumPoints.clear();
         h.clear();
         ArrayList<Point> nonLumPoints = new ArrayList<Point>();
 
-        
+
+		for (int y = 0; y < sa.height; y++) { 
+			int continuousHorizontalPixels = 0;
+			for(int x = 0; x < sa.width; x++) {
+				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
+					if (++continuousHorizontalPixels > 2) { 
+						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
+							c.results.gradResults[y*sa.width+dx] = 0;
+							//c.results.l.remove(new Point(dx,y));
+						}
+					}
+				} else {
+					continuousHorizontalPixels = 0;
+				}			
+			}
+		}
+
         // Add in pixels to hough array.  The relative weight of the pixels is
         // the product of the suppressed canny array, and the pixel luminosity,
         // averaged over a small block kernel and normalized to the horizontal line
@@ -492,7 +510,17 @@ class TargetFinderLines extends TargetFinder {
 			ar = new double[sa.height * sa.width];
 		double maxLum = 255;
 		for (int y = 0; y < sa.height; y++) { 
+			int continuousHorizontalPixels = 0;
 			for(int x = 0; x < sa.width; x++) {
+				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
+					if (++continuousHorizontalPixels > 5) { 
+						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
+							c.results.gradResults[y*sa.width+dx] = 0;
+						}
+					}
+				} else {
+					continuousHorizontalPixels = 0;
+				}			
         		double wt =  c.results.gradResults[y*sa.width+x];
 	    		if (useLuminanceCheck) {
 					double rlum = (float)getLuminance(oi, sa, x, y) / maxLum; 

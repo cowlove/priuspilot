@@ -595,7 +595,17 @@ public class Silly {
 	public static int debugInt(String s) { 
 		String v = debugOpts.get(s);
 		return Integer.parseInt(v);
+
 	}
+	public static double debugDouble(String s, double def) { 
+		try {
+			String v = debugOpts.get(s);
+			return Double.parseDouble(v);
+		} catch(Exception e) { 
+			return def;
+		}
+	}
+
 	public static int debugInt(String s, int def) { 
 		try {
 			String v = debugOpts.get(s);
