@@ -218,8 +218,8 @@ class FrameProcessor {
         
         pidLL.copySettings(pidRL);
         
-        pidRL.gain.p.loTrans = -0.045;  // "bumper" points of increased gain for lane proximity
-        pidLL.gain.p.hiTrans = +0.037;  // TODO - change when the tfl prescale constant changes
+        pidRL.gain.p.loTrans = -0.04;  // "bumper" points of increased gain for lane proximity
+        pidLL.gain.p.hiTrans = +0.04;  // TODO - change when the tfl prescale constant changes
         pidLL.gain.p.loGain = 1.0;      // detune L P value, leave D high 
 		pidLL.gain.p.hiGain = 0;
 
