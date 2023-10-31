@@ -739,21 +739,22 @@ class FrameProcessor {
 				gp.draw();
 		  	}
 			
-	   		// Propagate config changes from the selected lane pid to the other lane pid
-	   		// Except for hi/lo gain transition points
-	   		double d1 = pidLL.gain.p.loTrans;
-	 		double d2 = pidLL.gain.p.hiTrans;
-	 		double d3 = pidRL.gain.p.loTrans;
-	 		double d4 = pidRL.gain.p.hiTrans;   		
-			if (selectedPid == pidLL) 
-				pidRL.copySettings(pidLL);
-			else
-				pidLL.copySettings(pidRL);
-	   		pidLL.gain.p.loTrans = d1;
-	 		pidLL.gain.p.hiTrans = d2;
-	 		pidRL.gain.p.loTrans = d3;
-	 		pidRL.gain.p.hiTrans = d4;	
-			
+			if (false) { 
+				// Propagate config changes from the selected lane pid to the other lane pid
+				// Except for hi/lo gain transition points
+				double d1 = pidLL.gain.p.loTrans;
+				double d2 = pidLL.gain.p.hiTrans;
+				double d3 = pidRL.gain.p.loTrans;
+				double d4 = pidRL.gain.p.hiTrans;   		
+				if (selectedPid == pidLL) 
+					pidRL.copySettings(pidLL);
+				else
+					pidLL.copySettings(pidRL);
+				pidLL.gain.p.loTrans = d1;
+				pidLL.gain.p.hiTrans = d2;
+				pidRL.gain.p.loTrans = d3;
+				pidRL.gain.p.hiTrans = d4;	
+			}			
 	   		
 			// Two detected left lines equal, or perhaps reversed?  Reset
 			if (tflo.getAngle() - tfl.getAngle() < 2) {
