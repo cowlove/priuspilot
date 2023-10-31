@@ -47,12 +47,11 @@ public class PidControl {
 		public void reset() {
 			delayList.clear();
 		}
-		public DelayChannel cloneX() { 
+		public DelayChannel clone() { 
 			DelayChannel n = new DelayChannel();
 			n.delay = delay;
 			return n; 
 		}
-
 	}
     class GainChannel {
 		// loGain - normal gain
@@ -61,7 +60,7 @@ public class PidControl {
 		//     gain on top of whatever loGain is set to, starting at hiTrans
 		public void reset() {}
     	double loGain = 1, hiGain = 0;
-    	Double loTrans = Double.NaN, hiTrans = Double.NaN, max = Double.NaN;
+    	double loTrans = Double.NaN, hiTrans = Double.NaN, max = Double.NaN;
     	double limitToMax(double v) { 
     		if (Double.isNaN(max))
     			return v;
@@ -100,7 +99,7 @@ public class PidControl {
 		void reset() { p.reset(); i.reset(); d.reset(); l.reset(); }
 		public GainControl clone() { 
 			GainControl n =  new GainControl();
-			n.p = p; n.i = i; n.d = d; n.l = l;
+			n.p = p.clone(); n.i = i.clone(); n.d = d.clone(); n.l = l.clone();
 			return n;
 		}
     }
@@ -113,7 +112,7 @@ public class PidControl {
 		}
 		public DelayControl clone() { 
 			DelayControl n =  new DelayControl();
-			n.p = p; n.i = i; n.d = d; n.l = l;
+			n.p = p.clone(); n.i = i.clone(); n.d = d.clone(); n.l = l.clone();
 			return n;
 		}
     }

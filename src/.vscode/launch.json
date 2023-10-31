@@ -10,7 +10,7 @@
             "request": "launch",
             "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
             "mainClass": "Silly",
-            "args": ["SIM", "-key", "15,127" ]
+            "args": ["/home/jim/src/priuspilot/lanedumps/I5S-dapples.yuv" ]
         },
         {
             "type": "java",

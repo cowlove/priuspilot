@@ -204,7 +204,7 @@ class FrameProcessor {
         steeringTestPulse.count = 0;
         steeringTestPulse.offset = -0.00;
        
-        steeringDitherPulse.magnitude = 0.0;
+        steeringDitherPulse.magnitude = 0.05;
         
         pidRL.setGains(2.25, 0.04, 2.00, 0, 1);
 		pidRL.period.l = 0.6;
