@@ -206,7 +206,7 @@ class FrameProcessor {
        
         steeringDitherPulse.magnitude = 0.05;
         
-        pidRL.setGains(2.25, 0.04, 2.00, 0, 1);
+        pidRL.setGains(3.20, 0.04, 2.00, 0, 1);
 		pidRL.period.l = 0.6;
 		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
@@ -220,7 +220,7 @@ class FrameProcessor {
         
         pidRL.gain.p.loTrans = -0.04;  // "bumper" points of increased gain for lane proximity
         pidLL.gain.p.hiTrans = +0.04;  // TODO - change when the tfl prescale constant changes
-        pidLL.gain.p.loGain = 0.5;      // detune L P value, leave D high 
+        pidLL.gain.p.loGain = 0.50;      // detune L P value, leave D high 
 		pidLL.gain.p.hiGain = 0;
 
         //pidLV.setGains(2.0, 0, 0.40, 0, 0);
@@ -262,7 +262,7 @@ class FrameProcessor {
         
         inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 154); 
         inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 95);
-        inputZeroPoint.zeroPoint.rLane = 358 * w/320;
+        inputZeroPoint.zeroPoint.rLane = 400 * w/320;
         inputZeroPoint.zeroPoint.lLane = -25 * w/320;
     }
     
