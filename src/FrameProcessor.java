@@ -264,10 +264,10 @@ class FrameProcessor {
         tdStartX = w / 2;
         tdStartY = h / 3;
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 154); 
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 152); 
         inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 95);
-        inputZeroPoint.zeroPoint.rLane = 400 * w/320;
-        inputZeroPoint.zeroPoint.lLane = -25 * w/320;
+        inputZeroPoint.zeroPoint.rLane = 330 * w/320;
+        inputZeroPoint.zeroPoint.lLane = 0 * w/320;
 
 		trimCheat = new GPSTrimCheat(400);
 		trimCheat.addFile("/host/lanedumps/20231103.154529.log");
