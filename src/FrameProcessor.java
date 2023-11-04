@@ -108,6 +108,7 @@ class FrameProcessor {
     //LabJackJNI labjack = new LabJackJNI();
     public PidControl selectedPid = pidLL;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
+	GPSTrimCheat trimCheat = null;
     
     SteeringLogicSimpleLimits steering = new SteeringLogicSimpleLimits();
     int width, height, displayRatio;
@@ -129,6 +130,8 @@ class FrameProcessor {
     double []ch = null;
 
 	GnuplotWrapper gp = new GnuplotWrapper();
+
+	SerialCommandBus gps = new SerialCommandBus("/dev/ttyUSB0", this);
 
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
     		int displayRatio, String serialDevice, String swCam) throws IOException {
@@ -220,7 +223,8 @@ class FrameProcessor {
         
         pidRL.gain.p.loTrans = -0.04;  // "bumper" points of increased gain for lane proximity
         pidLL.gain.p.hiTrans = +0.04;  // TODO - change when the tfl prescale constant changes
-        pidLL.gain.p.loGain = 0.50;      // detune L P value, leave D high 
+        pidLL.gain.p.loGain = 0.50;      // detune L P value, leave D high
+		pidLL.gain.i.max = 0.0; 
 		pidLL.gain.p.hiGain = 0;
 
         //pidLV.setGains(2.0, 0, 0.40, 0, 0);
@@ -264,8 +268,17 @@ class FrameProcessor {
         inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 95);
         inputZeroPoint.zeroPoint.rLane = 400 * w/320;
         inputZeroPoint.zeroPoint.lLane = -25 * w/320;
+
+		trimCheat = new GPSTrimCheat(400);
+		trimCheat.addFile("/host/lanedumps/20231103.154529.log");
+		trimCheat.addFile("/host/lanedumps/20231103.154931.log");
+		//gps.startFake("/host/lanedumps/20231103.154529.log");
+		//gps.start();
+		gps.startFake("/host/lanedumps/20231103.154931.log");
+
     }
     
+
     AdvisorySounds sounds = new AdvisorySounds();
     ImageFileWriter writer = null;
     int rescale = 1;
@@ -934,19 +947,15 @@ class FrameProcessor {
 			corr = pred;
 		}
 
-        if (!noProcessing && !noSteering) 
+        if (!noSteering) 
         	steer = corr;    
         else
             steer = 0;
         
-        //temp disabled for steering gain investigations 	
-        //if (Math.abs(steer) < .25 && arduinoArmed)
-        steer += steeringDitherPulse.currentPulse();
-
+        //steer += steeringDitherPulse.currentPulse();
         steer += steeringTestPulse.currentPulse();
-        
-        //if (!noSteering) 
-        
+		gps.update(time);
+		trimCheat.get(gps.lat, gps.lon, gps.hdg);
         steer = joystick.steer(steer);
 		steer = steering.steer(time, steer);
 	    setSteering(steer);
@@ -966,33 +975,33 @@ class FrameProcessor {
          
         if (joystick.getButtonPressed(9)) 
         	restartOutputFiles();
-		if (joystick.getButtonPressed(14))  
+		if (joystick.getButtonPressed(0))  
 			steeringTestPulse.startPulse(-1);
-		if (joystick.getButtonPressed(15))  
+		if (joystick.getButtonPressed(2))  
 			steeringTestPulse.startPulse(1);
 		if (joystick.getButtonPressed(8))  
 			inputZeroPoint.setAutoZero(); 
-		if (joystick.getButtonPressed(10))  {
-			tp.adjustParam('M', -1);
-			tp.printParam('M');
-		}
-		if (joystick.getButtonPressed(11)) {
+		if (joystick.getButtonPressed(1))  {
 			tp.adjustParam('M', +1);
 			tp.printParam('M');
+		}
+		if (joystick.getButtonPressed(3)) {
+			tp.adjustParam('M', -1);
+			tp.printParam('M');
 		} 
-		if (joystick.getButtonPressed(0)) { 
+		if (joystick.getButtonPressed(10)) { 
 			tp.adjustParam(-1);
 			tp.printCurrent();
 		}
-		if (joystick.getButtonPressed(2)) { 
+		if (joystick.getButtonPressed(11)) { 
 			tp.adjustParam(1);
 			tp.printCurrent();
 		}
-		if (joystick.getButtonPressed(3)) { 
+		if (joystick.getButtonPressed(12)) { 
 			tp.selectNext(1);
 			tp.printCurrent();
 		}
-		if (joystick.getButtonPressed(1)) { 
+		if (joystick.getButtonPressed(13)) { 
 			tp.selectNext(-1);
 			tp.printCurrent();
 		}
@@ -1330,7 +1339,7 @@ class FrameProcessor {
 	    	} else { 
 	    			s = new String(logSpec);
 	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");
-	    			s = s.replace("%TEST1", "%time %steer %corr %tfl %tfr %pvx");
+	    			s = s.replace("%TEST1", "%time %steer %corr %tfl %tfr %pvx %lat %lon %hdg %speed %gpstrim %strim %gpstcount");
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 	    			s = s.replace("%frame", String.format("%d", count));
 	    			s = s.replace("%time", String.format("%d", (int)(time - logFileStartTime)));
@@ -1359,7 +1368,15 @@ class FrameProcessor {
 	    	    			
 	    			s = s.replace("%steer", String.format("%.4f", steer));
 	    			s = s.replace("%corr", String.format("%.4f", corr));
-	    	    	s = s.replace("~", " ");
+	    			s = s.replace("%lat", String.format("%+13.8f", gps.lat));
+	    			s = s.replace("%lon", String.format("%+13.8f", gps.lon));
+	    			s = s.replace("%hdg", String.format("%5.1f", gps.hdg));
+	    			s = s.replace("%speed", String.format("%5.1f", gps.speed));
+	    			s = s.replace("%strim", String.format("%.5f", steering.trim));
+	    			s = s.replace("%gpstrim", String.format("%.5f", trimCheat.trim));
+	    			s = s.replace("%gpstcount", String.format("%f", trimCheat.count));
+
+					s = s.replace("~", " ");
 	    			
 	    	}
 	       	logfile.write(s);

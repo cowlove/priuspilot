@@ -50,6 +50,7 @@ void callback(uint8_t src_mac[6], uint8_t *data, int len) {
 void espnow_open() { 
 	printf("espnow_open() starting\n");
 	char *dev = (char *)"wlx0013ef802622";
+	//char *dev = (char *)"wlp1s0";
 	printf("espnow_open() allocating handler\n");
 	handler = new ESPNOW_manager(dev, DATARATE_24Mbps, CHANNEL_freq_6, my_mac, dest_mac, false);
 	printf("espnow_open() handler allocated\n");
