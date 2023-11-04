@@ -155,6 +155,9 @@ public class Silly {
         int frameInterval = 0; // minimum interval between captured frames
 		String steerCmdHost = "255.255.255.255";
         boolean jni = false;
+		boolean gps = false;
+		String fakeGps = null;
+		ArrayList<String> trimCheatFiles = new ArrayList<String>();
         boolean nightMode = false, faketime = false, useSystemClock = true, noSteer = false;
         boolean cannyDebug = false, realtime = false;
         boolean flipVideo = false;  // warning- not flipping is currently broken, see FrameCaptureJNI.cpp, flip loops is 
@@ -170,6 +173,9 @@ public class Silly {
             else if (a.compareTo("-displayratio") == 0) displayratio = Integer.parseInt(args[++i]);
             else if (a.compareTo("-volume") == 0) volume = Integer.parseInt(args[++i]);
             else if (a.compareTo("-repeat") == 0) repeat = true;
+            else if (a.compareTo("-gps") == 0) gps = true;
+			else if (a.compareTo("-fakeGps") == 0) fakeGps = args[++i];
+			else if (a.compareTo("-trimCheat") == 0) trimCheatFiles.add(args[++i]);
             else if (a.compareTo("-rgb32") == 0) rgb32 = true;
             else if (a.compareTo("-cannyDebug") == 0) cannyDebug = true;
             else if (a.compareTo("-jni") == 0) jni = true;
@@ -327,6 +333,11 @@ public class Silly {
         fp.clicks = clickMap;        
 		fp.noSteering = noSteer;
 		fp.steerCmdHost = steerCmdHost;
+		if (gps) fp.gps.start();
+		else if (fakeGps != null) fp.gps.startFake(fakeGps);
+		for(String f : trimCheatFiles) { 
+			fp.trimCheat.addFile(f);
+		}
 		
         if (displayMode > 0) fp.displayMode = displayMode;
 

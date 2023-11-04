@@ -116,6 +116,11 @@ public class PidControl {
 			return n;
 		}
     }
+	void swapGains(PidControl p) { 
+		GainControl g = p.gain.clone();
+		p.gain = gain.clone();
+		gain = g;
+	}
 
 	GainControl gain = new GainControl();
 	DelayControl delays = new DelayControl();
@@ -237,7 +242,7 @@ public class PidControl {
 		return corr;
     }
 
-    void copySettings(PidControl pid) {  // seems to do a shallow copy of gains? 
+    void copySettings(PidControl pid) {  
     	gain = pid.gain.clone();
 		delays = pid.delays.clone();
     	period = pid.period.clone();

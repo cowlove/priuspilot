@@ -15,7 +15,7 @@ IF=wlx0013ef802622
 CP=$SRC/priuspilot.jar:$LIB/Joystick.jar:$LIB/jna-3.2.4.jar:/home/jim/workspace/priuspilot/bin:$LIB/Jama-1.0.2.jar:$LIB/mbrola.jar:$LIB/freetts-jsapi10.jar:$LIB/jsapi.jar:$LIB/freetts.jar
 	
 make -C $SRC && \
-java -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP Silly  -frameinterval 0   /dev/video2 -displayratio 1 -debug DEBUG_SERIALNO $@
+java -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP Silly -displaymode 63 -frameinterval 0   /dev/video2 -displayratio 1 -debug DEBUG_SERIALNO -trimCheat /host/lanedumps/20231103.154931.log -trimCheat /host/lanedumps/20231103.154529.log $@
 
 #java -da -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=8888,suspend=n -classpath /home/jim/workspace/WebCamCap/bin/:$CP Silly $@
 

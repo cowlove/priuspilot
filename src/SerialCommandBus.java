@@ -75,6 +75,7 @@ class SerialCommandBus {
 				lon = Double.parseDouble(words[7]);
 				hdg = Double.parseDouble(words[8]);
 				double t = Double.parseDouble(words[0]);
+				updates++;
 				if (t > ms - startMs) 
 					break;				
 			} catch(Exception e) { 

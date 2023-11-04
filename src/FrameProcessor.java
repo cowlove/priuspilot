@@ -133,6 +133,8 @@ class FrameProcessor {
 
 	SerialCommandBus gps = new SerialCommandBus("/dev/ttyUSB0", this);
 
+	boolean laneGainsSwapped = false;
+	
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
     		int displayRatio, String serialDevice, String swCam) throws IOException {
         if (displayRatio > 0) 
@@ -218,13 +220,12 @@ class FrameProcessor {
         pidRL.qualityFadeThreshold = .01;
         pidRL.qualityFadeGain = 4;
  		pidRL.reset();
+        pidRL.gain.p.loTrans = -0.04;  // "bumper" points of increased gain for lane proximity
+        pidRL.gain.p.hiTrans = +0.04;  // TODO - change when the tfl prescale constant changes
         
         pidLL.copySettings(pidRL);
         
-        pidRL.gain.p.loTrans = -0.04;  // "bumper" points of increased gain for lane proximity
-        pidLL.gain.p.hiTrans = +0.04;  // TODO - change when the tfl prescale constant changes
         pidLL.gain.p.loGain = 0.50;      // detune L P value, leave D high
-		pidLL.gain.i.max = 0.0; 
 		pidLL.gain.p.hiGain = 0;
 
         //pidLV.setGains(2.0, 0, 0.40, 0, 0);
@@ -269,14 +270,8 @@ class FrameProcessor {
         inputZeroPoint.zeroPoint.rLane = 330 * w/320;
         inputZeroPoint.zeroPoint.lLane = 0 * w/320;
 
-		// TODO add trim cheat and gps fake files to command line
 		trimCheat = new GPSTrimCheat(400);
-		trimCheat.addFile("/host/lanedumps/20231103.154529.log");
-		trimCheat.addFile("/host/lanedumps/20231103.154931.log");
-		//gps.startFake("/host/lanedumps/20231103.154529.log");
-		//gps.startFake("/host/lanedumps/20231103.154931.log");
-		gps.start();
-
+		//gps.start();
     }
     
 
@@ -499,6 +494,7 @@ class FrameProcessor {
         display.writeText("LTIME: " + String.format("%d",  time - logFileStartTime));
         display.writeText("FPS: " + String.format("%.1f", fps));
         display.writeText("DROPPED: " + framesDropped);
+        display.writeText("GPS    : " + gps.updates);
         //display.writeText("L   : " + String.format("%.2f", pid.la.calculate()));
         //display.writeText("R   : " + String.format("%.2f", pid.ra.calculate()));
         //display.writeText("M   :" + String.format("%.2f", pid.mid));
@@ -639,6 +635,19 @@ class FrameProcessor {
    		if (Silly.debug("COPY_IMAGE"))
    			coi = oi.deepCopy();
    		
+		if ((joystick.buttonBits & 0x10) == 0x10) { 
+			if (laneGainsSwapped == false) { 
+				laneGainsSwapped = true;
+				pidLL.swapGains(pidRL);
+			}
+		} else {
+			if (laneGainsSwapped == true) { 
+				laneGainsSwapped = false;
+				pidLL.swapGains(pidRL);
+			}
+
+		}
+
    		if (!noProcessing) { 
 	   		tfrc.findAll(coi, tfrcRect);
 	   		tflo.minLineIntensity = tfro.minLineIntensity = tfl.minLineIntensity = tfr.minLineIntensity = 
@@ -1075,6 +1084,7 @@ class FrameProcessor {
                 double yoff = 0.65;
 	            double yspace = 0.05;
     			final double bWidth = 0.06;
+	   	        display.rectangle(Color.yellow, String.format("%d", (int)trimCheat.count), trimCheat.trim + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.white, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 
@@ -1114,8 +1124,7 @@ class FrameProcessor {
             	//display.image.getWritableTile(0,0).setDataElements(tfTarget.x, tfTarget.y, tf.cimage.getData());
             	//display.image.getWritableTile(0,0).setDataElements(tfTarget.x, tfTarget.y, tfTarget.width, tfTarget.height, 
             	//	pic);
-            	display.g2.setColor(Color.red);
-       
+            	display.g2.setColor(Color.red);  
             	//display.g2.draw(tfResult);
             }
             display.redraw(keepFocus);
@@ -1136,7 +1145,6 @@ class FrameProcessor {
 	        
 	        if ((ms - avgMs) > avgMs * 5) {
 	        	long now = Calendar.getInstance().getTimeInMillis();
-	       
 	        	System.out.println(String.format("%d.03%d", now / 1000, now % 1000) + ": untimely frame #" + count + " took " + ms + " ms, average is " + avgMs + " profTimer is "
 	        		   + pms);
 	        }
@@ -1340,7 +1348,7 @@ class FrameProcessor {
 	    	} else { 
 	    			s = new String(logSpec);
 	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");
-	    			s = s.replace("%TEST1", "%time %steer %corr %tfl %tfr %pvx %lat %lon %hdg %speed %gpstrim %strim %gpstcount");
+	    			s = s.replace("%TEST1", "%time %steer %corr %tfl %tfr %pvx %lat %lon %hdg %speed %gpstrim %strim %buttons");
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 	    			s = s.replace("%frame", String.format("%d", count));
 	    			s = s.replace("%time", String.format("%d", (int)(time - logFileStartTime)));
@@ -1375,7 +1383,8 @@ class FrameProcessor {
 	    			s = s.replace("%speed", String.format("%5.1f", gps.speed));
 	    			s = s.replace("%strim", String.format("%.5f", steering.trim));
 	    			s = s.replace("%gpstrim", String.format("%.5f", trimCheat.trim));
-	    			s = s.replace("%gpstcount", String.format("%f", trimCheat.count));
+	    			s = s.replace("%gpstcount", String.format("%d", (int)trimCheat.count));
+					s = s.replace("%buttons", String.format("%d", joystick.buttonBits));
 
 					s = s.replace("~", " ");
 	    			
