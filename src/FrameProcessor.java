@@ -269,12 +269,13 @@ class FrameProcessor {
         inputZeroPoint.zeroPoint.rLane = 330 * w/320;
         inputZeroPoint.zeroPoint.lLane = 0 * w/320;
 
+		// TODO add trim cheat and gps fake files to command line
 		trimCheat = new GPSTrimCheat(400);
 		trimCheat.addFile("/host/lanedumps/20231103.154529.log");
 		trimCheat.addFile("/host/lanedumps/20231103.154931.log");
 		//gps.startFake("/host/lanedumps/20231103.154529.log");
-		//gps.start();
-		gps.startFake("/host/lanedumps/20231103.154931.log");
+		//gps.startFake("/host/lanedumps/20231103.154931.log");
+		gps.start();
 
     }
     
@@ -955,7 +956,7 @@ class FrameProcessor {
         //steer += steeringDitherPulse.currentPulse();
         steer += steeringTestPulse.currentPulse();
 		gps.update(time);
-		trimCheat.get(gps.lat, gps.lon, gps.hdg);
+		steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
         steer = joystick.steer(steer);
 		steer = steering.steer(time, steer);
 	    setSteering(steer);
