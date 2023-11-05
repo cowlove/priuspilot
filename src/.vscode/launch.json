@@ -6,6 +6,14 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Launch PRIUSPILOT SIM",
+            "request": "launch",
+            "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
+            "mainClass": "Silly",
+            "args": ["/home/jim/src/priuspilot/lanedumps/I5S-dapples.yuv" ]
+        },
+        {
+            "type": "java",
             "name": "Launch PRIUSPILOT",
             "request": "launch",
             "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},

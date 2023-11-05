@@ -1,4 +1,3 @@
-#include <jni.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -17,7 +16,84 @@
 #include <string.h>
 
 
+/* TODO: ESPNOW should def be its own JNI */
+#include "ESPNOW_manager.h"
+#include "ESPNOW_types.h"
+
+//static uint8_t my_mac[6] = {0xF8, 0x1A, 0x67, 0xb7, 0xEB, 0x0B};
+static uint8_t dest_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+//static uint8_t ESP_mac[6] = {0xB4,0xE6,0x2D,0xB5,0x9F,0x85};
+//static uint8_t ESP_mac[6] =  {0xAC,0x67,0xB2,0x36,0x8D,0xFC};
+
+static uint8_t my_mac[6] = {0x00,0x13,0xef,0x80,0x26,0x22};
+//00:13:ef:80:26:22
+ESPNOW_manager *handler;
+
+uint8_t payload[127];
+
+
+long usec()
+{
+        struct timeval tv;
+        gettimeofday (&tv, NULL);
+        return tv.tv_sec * 10000000 + tv.tv_usec;
+}
+
+void callback(uint8_t src_mac[6], uint8_t *data, int len) {
+        printf("%ld received\n", usec());
+        printf("callback() got %d bytes: ", len);
+        for(int n = 0; n < len; n++)  
+                printf("%02x", data[n]);
+        printf("\n");
+}
+
+void espnow_open() { 
+	printf("espnow_open() starting\n");
+	char *dev = (char *)"wlx0013ef802622";
+	//char *dev = (char *)"wlp1s0";
+	printf("espnow_open() allocating handler\n");
+	handler = new ESPNOW_manager(dev, DATARATE_24Mbps, CHANNEL_freq_6, my_mac, dest_mac, false);
+	printf("espnow_open() handler allocated\n");
+	//handler->set_filter(ESP_mac, dest_mac);
+
+	//handler->set_recv_callback(&callback);
+	handler->start();
+	printf("espnow_open() complete\n");
+}
+
+
+#ifdef USE_MAIN
+#define JNIEnv FakeJNIEnv
+#define jobject FakeJobject
+#define jstring const char *
+class FakeJobject {
+	public:
+};
+
+#define JNIEXPORT
+#define JNICALL
+
+typedef bool jboolean;
+typedef double jdouble;
+typedef int jint;
+typedef long jlong;
+typedef int * jintArray;
+
+class FakeJNIEnv { 
+	public:
+	void *bufAddr = 0;
+//	const char *GetStringUTFChars(FakeJobject, jboolean *) { return ""; }
+	const char *GetStringUTFChars(jstring s, jboolean *) { return s; }
+//	void ReleaseStringUTFChars(FakeJobject, const char *) {}
+	void ReleaseStringUTFChars(jstring, const char *) {}
+	void *GetDirectBufferAddress(jobject) { return bufAddr; } 
+
+};
+
+#else 
+#include <jni.h>
 #include "FrameCaptureJNI.h"
+#endif
 
 #define PAGE_SIZE 4096
 #define PAGE_ROUND(n) ((n + PAGE_SIZE - 1) & (~(PAGE_SIZE - 1)))
@@ -35,6 +111,7 @@
 
 
 // create java headers with javac FrameCaptureJNI.java, javah FrameCaptureJNI
+
 
 
 
@@ -81,10 +158,15 @@ struct config {
 	int maxFrameMs; /* max ms per frame before switching to night mode */
 	int rawRecordSkip; /* skip rate for dumping/recording raw frame data to disk */
 	//struct aiocbp aio;
+	struct {
+		long timestamp;
+		long steer;
+	} logData; 
+	int fakeErr = 0;
 } *configs[10];
 
 
-void v4l2mmap_open(config *, const char *, int, int);
+void v4l2mmap_open(config *);
 void v4l2mmap_close(config *);
 int v4l2mmap_poll(config *);
 void v4l2mmap_wait_frame(config *, unsigned char *);
@@ -99,10 +181,25 @@ config *getCameraObject(int camIndex) {
 	return configs[camIndex];
 }
 
+void setLogData(int id, long steer, long timestamp) { 
+	config *c = getCameraObject(id);
+	c->logData.steer = steer;
+	c->logData.timestamp = timestamp; 
+
+}
+
+JNIEXPORT void JNICALL Java_FrameCaptureJNI_espnowSend
+   (JNIEnv *env, jobject obj, jint cameraIndex, jstring msg) { 
+	jboolean iscopy;
+ 	const char *buf = (env)->GetStringUTFChars(msg, &iscopy);
+	int r = handler->send((unsigned char *)buf, strlen(buf));
+	//printf("espnow_send() %d send\n", r);    
+}
+
 JNIEXPORT void JNICALL Java_FrameCaptureJNI_configure
   (JNIEnv *env, jobject o, jint cameraIndex, jstring fname, jint resWidth, jint resHeight, jint windX, jint windY, 
 	jint windWidth, jint windHeight, jboolean flip, jstring capfname, jint capsize, 
-	jint capcount, jint maxms, jint recordSkip) {
+	jint capcount, jint maxms, jint recordSkip, jboolean useSystemClock) {
 
 		config *conf = getCameraObject(cameraIndex);
 		bzero(conf, sizeof(*conf));
@@ -131,6 +228,7 @@ JNIEXPORT void JNICALL Java_FrameCaptureJNI_configure
 		conf->captureFd = -1;
 		conf->fd = -1;
 		conf->obuf = NULL;
+		espnow_open();
   }
   
   
@@ -219,7 +317,9 @@ extern "C" void process_image(config *conf, const unsigned char *in, unsigned ch
 			//fsync(conf->captureFd);
 			*/
 
-			memcpy((void *)in, (void *)&conf->frameTimestamp, 8);
+			memcpy((void *)in, (void *)&conf->frameTimestamp, 8); // stash the timestamp in the first bytes of the image
+			memcpy((void *)(in + 8), (void *)&conf->logData, sizeof(conf->logData)); // and the logged steering data 
+
 			asynch_write(conf->captureFd, in, PAGE_ROUND(conf->windHeight * conf->windWidth * 2));
 			//if (write(conf->captureFd, in, AGE_ROUND(conf->windHeight * conf->windWidth * 2))
 			//	perror("write()");
@@ -379,7 +479,7 @@ JNIEXPORT jint JNICALL Java_FrameCaptureJNI_grabFrame
 	}
 		
     if (conf->fd < 0) {
-		v4l2mmap_open(conf, conf->filename, conf->resWidth, conf->resHeight);
+		v4l2mmap_open(conf);
 		//openvid(conf->filename, conf->resWidth, conf->resHeight);
 		if (conf->fd > 0) {
 			conf->live = 1;
@@ -720,8 +820,9 @@ read_frame                      (config *conf, unsigned char *arg)
 		CLEAR (buf);
 		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory = V4L2_MEMORY_MMAP;
+		int errors = 0;
 
-		if (-1 == xioctl (conf->fd, VIDIOC_DQBUF, &buf)) {
+		while(conf->fakeErr || -1 == xioctl (conf->fd, VIDIOC_DQBUF, &buf)) {
 				perror("VIDIOC_DQBUF");
 				switch (errno) {
 				case EAGAIN:
@@ -733,7 +834,13 @@ read_frame                      (config *conf, unsigned char *arg)
 						/* fall through */
 
 				default:
-						errno_exit ("VIDIOC_DQBUF");
+					perror("VIDIOC_DQBUF()");
+					usleep(50000);
+					if (errors++ > 30) {
+						v4l2mmap_close(conf);
+						v4l2mmap_open(conf);
+//						errno_exit("VIDIOC_DQBUF()");
+					}
 				}
 		}
 
@@ -822,7 +929,7 @@ stop_capturing                  (config *conf)
 		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 		if (-1 == xioctl (conf->fd, VIDIOC_STREAMOFF, &type))
-				errno_exit ("VIDIOC_STREAMOFF");
+				perror ("VIDIOC_STREAMOFF");
 
 }
 
@@ -859,8 +966,9 @@ uninit_device                   (config *conf)
 
 		for (i = 0; i < n_buffers; ++i)
 			if (-1 == munmap (conf->buffers[i].start, conf->buffers[i].length))
-					errno_exit ("munmap");
-        free (conf->buffers);
+					perror ("munmap");
+        //free (conf->buffers);
+		conf->buffers = NULL;
 }
 
 static void
@@ -941,14 +1049,14 @@ init_mmap                       (config *conf)
 
                 if (MAP_FAILED == conf->buffers[n_buffers].start)
                         errno_exit ("mmap");
-                printf("buf length p=0x%x, start=0x%x %d byte\n", 
-                (int)p, (int)conf->buffers[n_buffers].start, buf.length);
+                printf("buf length p=0x%lx, start=0x%lx %d byte\n", 
+                (long)p, (long)conf->buffers[n_buffers].start, buf.length);
         }
         //printf ("init_mmap() done\n");
 }
 
 static void
-init_device                     (config *conf, int w, int h)
+init_device                     (config *conf)
 {
         struct v4l2_capability cap;
         struct v4l2_cropcap cropcap;
@@ -1026,12 +1134,12 @@ init_device                     (config *conf, int w, int h)
         CLEAR (fmt);
 
         fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        fmt.fmt.pix.width       = w; 
-        fmt.fmt.pix.height      = h;
+        fmt.fmt.pix.width       = conf->resWidth; 
+        fmt.fmt.pix.height      = conf->resHeight;
         fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
         fmt.fmt.pix.field       = V4L2_FIELD_ANY;
 
-		printf ("opening video at %dx%d\n", w, h);
+		printf ("opening video at %dx%d\n", conf->resWidth, conf->resHeight);
 		if (-1 == xioctl (conf->fd, VIDIOC_S_FMT, &fmt)) 
 			perror("VIDIOC_S_FMT");
 
@@ -1083,28 +1191,58 @@ open_device                     (config *conf)
         }
 }
 
-
-void v4l2mmap_open(config *conf, const char *f, int w, int h) { 
+void v4l2mmap_open(config *conf) { 
 	open_device (conf);
-	init_device (conf, w, h);
+	init_device (conf);
 	start_capturing (conf);
+	conf->fakeErr = 0;
 }
    
 void v4l2mmap_close(config *conf) { 
+	printf("v4l2_mmap_close()");
 	stop_capturing (conf);
+	printf("stop cap done");
 	uninit_device (conf);
 	close_device (conf);
 }	 
 
 
-/*
-main() {
-	int w = 320; 
-	int h = 240; 
-	openvid("/dev/video0", w, h);
-	char *b2 = (char *)malloc(w * h * 4);
-    int n = read(fd, b2, w * h * 4);
-    fprintf(stderr, "Got %d\n", n);
+#ifdef USE_MAIN
+int main() {
+	int windw = 320; 
+	int windh = 240; 
+	int windx = 0;
+	int windy = 0;
+	const char * filename = "/dev/video0";
+	int width = windw;
+	int height = windh;
+	int flipVideo = 0;
+	const char * capFile = "/tmp/cap.yuv";
+	int capSize = 1000000;
+	int capCount = 10;
+	int useSystemClock = 1;
+	JNIEnv env;
+	int id = 0;
+	jobject o;
+	
+	Java_FrameCaptureJNI_configure(&env, o, id, filename, width, height, windx, windy, windw, windh, 
+        			flipVideo, capFile, capSize, capCount, 80/*max ms per frame*/,
+        			0 /*raw record skip interval*/);
 
+	jobject ibuf;	
+	env.bufAddr = malloc(width * height * 2);
+	for (int n = 0; n < 10; n++) 
+		Java_FrameCaptureJNI_grabFrame(&env, o, id, ibuf);
+
+	config *conf = getCameraObject(id);
+	conf->fakeErr = 1;
+	
+	//v4l2mmap_close(conf);
+	//v4l2mmap_open(conf);
+	for (int n = 0; n < 10; n++) 
+		Java_FrameCaptureJNI_grabFrame(&env, o, id, ibuf);
+
+        
 }
-*/
+//main() {}
+#endif

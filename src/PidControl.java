@@ -1,5 +1,9 @@
 //import math.*;
 
+import java.util.ArrayList;
+import java.util.function.Supplier;
+
+
 class AverageNO {
 	double sum;
 	long count;
@@ -24,13 +28,39 @@ public class PidControl {
         }
         double p, i, d, j,  l;
         public String toString(String pref) { 
-        	return String.format("%sp=%.2f, %si=%.2f, %sd=%.2f, %sj=%.2f, %sl=%.2f", 
+        	return String.format("%sp %.3f %si %.3f %sd %.3f %sj %.3f %sl %.3f", 
         			pref, p, pref, i, pref, d, pref, j, pref, l); 
         }
     }
-    class GainChannel  {
+	class DelayChannel { 
+		double delay = 0.0;
+		ArrayList<Double> delayList = new ArrayList<Double>();
+		double get(double t, double v) { // apply a t-second delay to value v
+			if (delay == 0.0) 	 
+				return v;
+			delayList.add(v);
+			v = delayList.get(0);
+			if (delayList.size() > delay / EXPECTED_FPS)
+				delayList.remove(0);
+			return v;
+		}
+		public void reset() {
+			delayList.clear();
+		}
+		public DelayChannel clone() { 
+			DelayChannel n = new DelayChannel();
+			n.delay = delay;
+			return n; 
+		}
+	}
+    class GainChannel {
+		// loGain - normal gain
+		// hiGain - additional gain added in starting at loTrans for negative values
+		//     and hiTrans for positive value.  hiGain = 0.50 would add 50% additional
+		//     gain on top of whatever loGain is set to, starting at hiTrans
+		public void reset() {}
     	double loGain = 1, hiGain = 0;
-    	Double loTrans = Double.NaN, hiTrans = Double.NaN, max = Double.NaN;
+    	double loTrans = Double.NaN, hiTrans = Double.NaN, max = Double.NaN;
     	double limitToMax(double v) { 
     		if (Double.isNaN(max))
     			return v;
@@ -51,7 +81,7 @@ public class PidControl {
     		}
     		return c;
     	}
-    	protected GainChannel clone() { 
+    	public GainChannel clone() { 
     		GainChannel n = new GainChannel();
     		n.loGain = loGain;
     		n.hiGain = hiGain;
@@ -60,25 +90,42 @@ public class PidControl {
     		n.max = max;
     		return n;
     	}
-    	
     }
     class GainControl {
     	GainChannel p = new GainChannel();
     	GainChannel i = new GainChannel();
     	GainChannel d = new GainChannel();
-    	GainChannel j = new GainChannel();
     	GainChannel l = new GainChannel();
-    	protected GainControl clone() { 
-    		GainControl n = new GainControl();
-    		n.p = p.clone();
-    		n.i = i.clone();
-    		n.d = d.clone();
-    		n.l = l.clone();
-    		n.j = j.clone();
-    		return n;
-    	}
+		void reset() { p.reset(); i.reset(); d.reset(); l.reset(); }
+		public GainControl clone() { 
+			GainControl n =  new GainControl();
+			n.p = p.clone(); n.i = i.clone(); n.d = d.clone(); n.l = l.clone();
+			return n;
+		}
     }
-    public String toString(String pref) { 
+    class DelayControl {
+    	DelayChannel p = new DelayChannel();
+		DelayChannel i = new DelayChannel();
+		DelayChannel d = new DelayChannel();
+		DelayChannel l = new DelayChannel();
+		void reset() { p.reset(); i.reset(); d.reset(); l.reset();
+		}
+		public DelayControl clone() { 
+			DelayControl n =  new DelayControl();
+			n.p = p.clone(); n.i = i.clone(); n.d = d.clone(); n.l = l.clone();
+			return n;
+		}
+    }
+	void swapGains(PidControl p) { 
+		GainControl g = p.gain.clone();
+		p.gain = gain.clone();
+		gain = g;
+	}
+
+	GainControl gain = new GainControl();
+	DelayControl delays = new DelayControl();
+
+	public String toString(String pref) { 
     	return String.format("%se=%.2f, %sdef=%.2f, %sq=%.2f, %sdrms=%f, ", pref, corr, 
     			pref, defaultValue.calculate(), pref, quality, pref, drms) + err.toString(pref);
     }
@@ -89,26 +136,23 @@ public class PidControl {
     	gain.p.loGain = gp;
       	gain.i.loGain = gi;
       	gain.d.loGain = gd;
-      	gain.j.loGain = gj;
       	gain.l.loGain = gl;
     }
     PID err = new PID(); 
-    PID period = new PID(0.05, 5, .8, .3, 3.0);  // TODO - change from explicit frame counts to a time period
-    PID gainX = new PID(2.5, 0.000, 1.2, 0, 0.0);
-    GainControl gain = new GainControl();
+    PID period = new PID(0.05, 5, 0.5, 0.3, 1.2);  
+	PID delay = new PID(0, 0, 0, 0, 0);
     double finalGain = 1.85;
-    double manualTrim = -0.03; 
-    int derrDegree = 3;
+    int derrDegree = 2;
     int fadeCountMin = (int)Math.floor(period.d * EXPECTED_FPS * 0.2); 
     int fadeCountMax = (int)Math.floor(period.d * EXPECTED_FPS * 0.6);
     double qualityFadeGain = 4.0;
     double qualityFadeThreshold = 0.10;
     double quality = 0.0;
-    
+    double qualityPeriod = 2.0;
     
     // these values are set in reset() method
     double i;
-    RunningQuadraticLeastSquares dd, d, p;
+    RunningQuadraticLeastSquares p, d, l, q;
 	   
     RunningAverage defaultValue = new RunningAverage(150);
     long starttime = 0;
@@ -117,10 +161,15 @@ public class PidControl {
 	void reset() {
 		p = new RunningQuadraticLeastSquares(1, (int)(period.p * 2 * EXPECTED_FPS), period.p);
         i = 0f;
-        dd = new RunningQuadraticLeastSquares(derrDegree, (int)(period.j * 2 * EXPECTED_FPS), period.j);
+        //dd = new RunningQuadraticLeastSquares(derrDegree, (int)(period.j * 2 * EXPECTED_FPS), period.j);
         d = new RunningQuadraticLeastSquares(derrDegree, (int)(period.d * 2 * EXPECTED_FPS), period.d);
+		l = new RunningQuadraticLeastSquares(1, (int)(period.l * 2 * EXPECTED_FPS), period.l);
+		q = new RunningQuadraticLeastSquares(2, (int)(qualityPeriod * 2 * EXPECTED_FPS), qualityPeriod);
         defaultValue.clear();
         starttime = 0;
+		delays.reset();
+		gain.reset();
+		//System.out.printf("reset()\n");
     }
     
     String description;
@@ -133,8 +182,9 @@ public class PidControl {
     	double delta = (newStart - starttime) / 1000;
     	starttime = newStart;
     	d.rebase(-delta);
-    	dd.rebase(-delta);
     	p.rebase(-delta);
+		l.rebase(-delta);
+		q.rebase(-delta);
     }
     
     double lastVal, drms;
@@ -150,24 +200,25 @@ public class PidControl {
         if (Double.isNaN(val) || Double.isInfinite(val)) { 
         	val = Double.NaN;
         	d.removeAged(n);
-        	dd.removeAged(n);
         	p.removeAged(n);
+			l.removeAged(n);
+			q.removeAged(n);
         } else {         
-	        val += manualTrim;
-	        d.add(n, val);
-	        dd.add(n, val);
-	        p.add(n, val);
-	        i = gain.i.limitToMax(i + val);
+	        d.add(n, delays.d.get(n, val));
+	        p.add(n, delays.p.get(n, val));
+			q.add(n, val);
+	        i = gain.i.limitToMax(i + delays.i.get(i, val));
         }
         
         err.p = gain.p.getCorrection(p.calculate());
                 
-        drms = d.rmsError();
+        drms = q.rmsError();
         avgRmsErr.add(drms);
         
-        if (d.size() < fadeCountMin || Double.isNaN(drms) || 
-        		drms > qualityFadeThreshold * (qualityFadeGain + 1))
+        if (q.size() < fadeCountMin || Double.isNaN(drms) || 
+        		drms > qualityFadeThreshold * (qualityFadeGain + 1)) {
         	quality = 0;
+		}
         else if (drms < qualityFadeThreshold)  
         	quality = 1.0;
         else   
@@ -175,28 +226,32 @@ public class PidControl {
      
         quality *= quality;
    
-       if (d.size() >= fadeCountMin && d.size() < fadeCountMax)  {
-        	quality *= (double)(d.size() - fadeCountMin) / (double)(fadeCountMax - fadeCountMin);
+       if (q.size() >= fadeCountMin && q.size() < fadeCountMax)  {
+        	quality *= (double)(q.size() - fadeCountMin) / (double)(fadeCountMax - fadeCountMin);
        }
         err.d = gain.d.getCorrection(d.slope(n, 1));
-        err.j = gain.j.getCorrection(d.slope(n, 2));
-	    err.i = gain.i.getCorrection(i);
+  	    err.i = gain.i.getCorrection(i);
+		err.l = gain.l.getCorrection(l.calculate());
 	           
 	    corr = -(err.p + err.d + err.i + err.l) * finalGain * quality + 
 	    	0 * (1 - quality);
 	    defaultValue.add(corr);
 	    if (Double.isNaN(corr))
 	    	corr = 0.0;
-	    return corr;
+		l.add(n, delays.l.get(n, corr));
+		return corr;
     }
 
-    void copySettings(PidControl pid) { 
+    void copySettings(PidControl pid) {  
     	gain = pid.gain.clone();
+		delays = pid.delays.clone();
     	period = pid.period.clone();
     	finalGain = pid.finalGain;
     	this.qualityFadeThreshold =  pid.qualityFadeThreshold;
     	this.qualityFadeGain = pid.qualityFadeGain;
-    	this.manualTrim = pid.manualTrim;    	
+		this.qualityPeriod = pid.qualityPeriod;
+		this.fadeCountMax = pid.fadeCountMax;
+		this.fadeCountMin = pid.fadeCountMin;
     }
 }
  

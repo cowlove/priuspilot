@@ -7,6 +7,9 @@ import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -105,8 +108,9 @@ class FrameProcessor {
     //LabJackJNI labjack = new LabJackJNI();
     public PidControl selectedPid = pidLL;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
+	GPSTrimCheat trimCheat = null;
     
-    SteeringLogic steering = null;
+    SteeringLogicSimpleLimits steering = new SteeringLogicSimpleLimits();
     int width, height, displayRatio;
     FrameProcessorTunableParameters tp = new FrameProcessorTunableParameters(this);
     TargetFinder tf = null;
@@ -127,6 +131,10 @@ class FrameProcessor {
 
 	GnuplotWrapper gp = new GnuplotWrapper();
 
+	SerialCommandBus gps = new SerialCommandBus("/dev/ttyUSB0", this);
+
+	boolean laneGainsSwapped = false;
+	
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
     		int displayRatio, String serialDevice, String swCam) throws IOException {
         if (displayRatio > 0) 
@@ -135,27 +143,26 @@ class FrameProcessor {
     		writer = new ImageFileWriter(outFile, Silly.fc);
         if (dumpFile != null) 
         	logfile = new Logfile(dumpFile);
-        steering = new SteeringLogic(swCam);
         
         width = w;
         height = h;
         this.rescale = rescale;
         this.displayRatio = displayRatio;
-        cmdBus = new SerialCommandBus(serialDevice, this);
         	
 		restartOutputFiles();
         //td = new TemplateDetectCannyCorrelation(w, h);
         //td = new TemplateDetectRGB(w, h);
         
-        int minSz = 45; // min/max radius
+        int minSz = Silly.debugInt("minSz", 24); // min/max radius
         int maxSz = 100;
-        int houghSize = 91;
-        if (Silly.debug("HOUGH_SIZE"))
-        	houghSize = Silly.debugInt("HOUGH_SIZE");
-        tfl = new TargetFinderLines(w, h, null, true, 55, houghSize, minSz, maxSz, 10, 45);
-        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, 10, 45);
-        tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45);
-        tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45);
+		int minAng = Silly.debugInt("minAng", 12);
+		int maxAng = Silly.debugInt("maxAng", 35);
+        int houghSize = Silly.debugInt("HOUGH_SIZE", 55);
+		double vertPct = Silly.debugInt("SA_VERT_PERCENT",52) / 100.0;
+        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 46), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45, .60);
+        tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45, .60);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
 
 
@@ -185,8 +192,8 @@ class FrameProcessor {
         tfparam = tfparams.get(0);
 
         tfrc = new TargetFinderRoadColor(w, h);
-        tfrcRect = new Rectangle((int)(w * 0.47), (int)(h * 0.42), (int)(w * .12), 
-        		(int)(h * 0.36));
+        tfrcRect = new Rectangle((int)(w * 0.51), (int)(h * 0.55), (int)(w * .12), 
+        		(int)(h * 0.16));
         //new Rectangle((int)(w * 0.44), (int)(h * 0.35), 
         //		(int)(w * .12), (int)(h * .30));
         pids.add(pidLL);
@@ -195,43 +202,52 @@ class FrameProcessor {
         pids.add(pidLV);
         pids.add(pidCA);
         pids.add(ccPid);
-        //pids.add(steering.clc.pid);
-        //selectedPid = steering.clc.pid;
         
         steeringTestPulse.testType = steeringTestPulse.TEST_TYPE_SQUARE;
-        steeringTestPulse.magnitude = 0.2;
-        steeringTestPulse.duration = 0.7;
+        steeringTestPulse.magnitude = 0.30;
+        steeringTestPulse.duration = 0.80;
         steeringTestPulse.count = 0;
         steeringTestPulse.offset = -0.00;
        
-        steeringDitherPulse.magnitude = .10;
+        steeringDitherPulse.magnitude = 0.05;
         
-        pidRL.setGains(2.25, 0.04, 2.00, 0, 0);
+        pidRL.setGains(3.20, 0.04, 2.00, 0, 1);
+		pidRL.period.l = 0.6;
+		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
         pidRL.gain.i.max = 0.00; // I control has minor oscillating problems 
         pidRL.finalGain = 1.70;
-        pidRL.manualTrim = -0.00;   
-        pidRL.qualityFadeThreshold = .0046;
-        pidRL.qualityFadeGain = 2;
+        pidRL.qualityFadeThreshold = .01;
+        pidRL.qualityFadeGain = 4;
+ 		pidRL.reset();
+        pidRL.gain.p.loTrans = -0.04;  // "bumper" points of increased gain for lane proximity
+        pidRL.gain.p.hiTrans = +0.04;  // TODO - change when the tfl prescale constant changes
         
         pidLL.copySettings(pidRL);
         
-        pidRL.gain.p.loTrans = -0.045;  // "bumper" points of increased gain for lane proximity
-        pidLL.gain.p.hiTrans = +0.037;  // TODO - change when the tfl prescale constant changes
-        
-        pidLV.setGains(2.0, 0, 0.40, 0, 0);
-        pidLV.finalGain = .90;
-        pidLV.manualTrim = 0;
+        pidLL.gain.p.loGain = 0.50;      // detune L P value, leave D high
+		pidLL.gain.p.hiGain = 0;
+
+        //pidLV.setGains(2.0, 0, 0.40, 0, 0);
+        pidLV.setGains(0,0,0,0,0);
+		pidLV.finalGain = 0;//.90;
         pidLV.qualityFadeThreshold = .084;
         pidLV.qualityFadeGain = 5;
-        
-        pidPV.copySettings(pidLV);
-        pidPV.qualityFadeThreshold = 0.0100;
-        
+		
+        //pidPV.copySettings(pidLV);
+        pidPV.setGains(2.0, 0, 0.60, 0, 0.8);
+		pidPV.finalGain = 1.80;
+    	pidPV.period.l = 0.4;
+		pidPV.delays.l.delay = 0.4;
+	    pidPV.qualityFadeThreshold = 0.050;
+        pidPV.qualityFadeGain = 5;
+		//pidPV.fadeCountMin = pidPV.fadeCountMax = 0;
+		pidPV.reset();
+        //pidLV.setGains(0,0,0,0,0);
+		
         pidCA.setGains(10.0, 0, 0, 0, 0);
         pidCA.finalGain = 0; //:1.55;
         pidCA.period = pidCA.new PID(1.2, 1, 1, 1, 1);
-        pidCA.manualTrim = +0.00;
         pidCA.qualityFadeThreshold = 0.003;
         pidCA.qualityFadeGain = 5;
         pidCA.finalGain = 0; // disable
@@ -249,14 +265,16 @@ class FrameProcessor {
         tdStartX = w / 2;
         tdStartY = h / 3;
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", (int)(w * 0.5));
-        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", (int)(h * 0.3));
-        inputZeroPoint.zeroPoint.rLane = 334 * w/320;
-        inputZeroPoint.zeroPoint.lLane = 4;
-        
-        cmdBus.start();
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 152); 
+        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 95);
+        inputZeroPoint.zeroPoint.rLane = 330 * w/320;
+        inputZeroPoint.zeroPoint.lLane = 0 * w/320;
+
+		trimCheat = new GPSTrimCheat(400);
+		//gps.start();
     }
     
+
     AdvisorySounds sounds = new AdvisorySounds();
     ImageFileWriter writer = null;
     int rescale = 1;
@@ -337,8 +355,9 @@ class FrameProcessor {
         else if (keyCode == 10) { // [ENTER] key
         	    noSteering = !noSteering;
         }  else if (keyCode == 32) { // [SPACE] key
-        		noProcessing = !noProcessing;  // toggle processing on/off
-         		reset();
+        		noSteering = !noSteering;
+				//noProcessing = !noProcessing;
+				reset();
          	 	steer = 0;
          	 	tfFindTargetNow = false;
          	 	tdFindResult = null;
@@ -417,12 +436,9 @@ class FrameProcessor {
     }
     
     JoystickControl joystick = new JoystickControl();
-    SerialCommandBus cmdBus = null;
     
-    double steeringDeadband = 0.10;
-    double epsSteeringGain = 2.5;	
+    double epsSteeringGain = 1.2;	
     double trq1 = 0, trq2 = 0;
-    int steerOverrideTorque = 300;
     
     long lastCruiseSet = 0; // time of last cruise control command in ms
     synchronized void setCruise(boolean up) {
@@ -431,36 +447,45 @@ class FrameProcessor {
     									  // to one per 1/4sec 
 	    	int val = up ? 40 : 25;
 	    	System.out.printf("setCruise(%s)\n", up ? "UP               " : "               DOWN");
-	    	if (this.arduinoArmed) {
-		    	cmdBus.writeCmd('c', val, 50);
-	    	}
 	    	lastCruiseSet = now;
     	}
     }
 
-    int ardDebugInterval = 500;  // 100th seconds
-    synchronized void setArduinoDebug(int level) { 
-    	ardDebugInterval = level;
-    	cmdBus.writeCmd('d', level);
-    }
-    
+	String steerCmdHost = "255.255.255.255";
+
+    double maxSteer = .4; // wasn't 2.20 a bit excessive?! (WTF)
     synchronized void setSteering(double x) { 
-    	x += servoTrim;
-    	x += joystick.trim;
+
+		if (Silly.sim != null) 
+			Silly.sim.setSteer(x);
+
         x = x * epsSteeringGain;
-        
-        final double maxSteer = 2.2; // wasn't 2.20 a bit excessive?! (WTF)
-        x = Math.max(x, -maxSteer);
-        x = Math.min(x, maxSteer);
-            
-    	int st = (int)(x * 128 / 2.5);
-    	
-    	cmdBus.writeCmd('s', st);
-    	if (count % 30 == 0) { 
-	    	cmdBus.writeCmd('t', steerOverrideTorque);
-	     	//cmdBus.requestAck();
-    	}
+
+		String s = String.format("PPDEG %.3f %.3f", x, x);
+		if (Silly.fc != null) { 
+			Silly.fc.espnowSend(s);	
+		}
+		if (false) { 
+			try {
+				final int lo = 300, hi = 1700;
+				int pwm = (int)(x / 1.2 *  (hi - lo) / 2  + (hi + lo) / 2);
+				pwm = Math.min(hi, Math.max(lo, pwm));
+				DatagramSocket sendSocket = new DatagramSocket();
+				sendSocket.setBroadcast(true);
+				//String cmd = String.format("set pwm=%d", pwm); // old servo-based PWM
+				String cmd = String.format("PPDEG %f 0", x);
+				byte[] data = cmd.getBytes();
+				//System.out.println(cmd);
+				DatagramPacket packet = new DatagramPacket(data, data.length, 
+					InetAddress.getByName(steerCmdHost), 7788);
+				sendSocket.send(packet); 
+				sendSocket.close();
+			} catch(Exception e) {
+				System.out.printf("ouch\n");
+			}
+		}
     }
+	
 
     RunningAverage avgFrameDelay = new RunningAverage(100);
     // TODO- separate text window to display test stats
@@ -469,6 +494,7 @@ class FrameProcessor {
         display.writeText("LTIME: " + String.format("%d",  time - logFileStartTime));
         display.writeText("FPS: " + String.format("%.1f", fps));
         display.writeText("DROPPED: " + framesDropped);
+        display.writeText("GPS    : " + gps.updates);
         //display.writeText("L   : " + String.format("%.2f", pid.la.calculate()));
         //display.writeText("R   : " + String.format("%.2f", pid.ra.calculate()));
         //display.writeText("M   :" + String.format("%.2f", pid.mid));
@@ -577,7 +603,7 @@ class FrameProcessor {
     long ccLastCorrectionTime = 0;
 	long ccMinCorrectionInterval = 400; // milliseconds
     int ccSetPoint = 15;
-	RunningAveragePoint houghVan = new RunningAveragePoint(5);
+	RunningAveragePoint houghVan = new RunningAveragePoint(1);
 	
     
     static Rectangle scaleRect(Rectangle r, int scale) {
@@ -599,7 +625,7 @@ class FrameProcessor {
 		persVanX = Double.NaN;
 
 		time = t;
-    	if (skipFrames > 0 && skipFrames-- > 0)
+    	if (skipFrames > 0 && count < skipFrames)
     		return;
 
     	profTimer.start();
@@ -609,6 +635,19 @@ class FrameProcessor {
    		if (Silly.debug("COPY_IMAGE"))
    			coi = oi.deepCopy();
    		
+		if ((joystick.buttonBits & 0x10) == 0x10) { 
+			if (laneGainsSwapped == false) { 
+				laneGainsSwapped = true;
+				pidLL.swapGains(pidRL);
+			}
+		} else {
+			if (laneGainsSwapped == true) { 
+				laneGainsSwapped = false;
+				pidLL.swapGains(pidRL);
+			}
+
+		}
+
    		if (!noProcessing) { 
 	   		tfrc.findAll(coi, tfrcRect);
 	   		tflo.minLineIntensity = tfro.minLineIntensity = tfl.minLineIntensity = tfr.minLineIntensity = 
@@ -655,7 +694,7 @@ class FrameProcessor {
 	   	   		r = (Rectangle)tflo.vanLimits.clone();
 	   	   		r.x -= tflo.sa.x;
 	   	   		r.y -= tflo.sa.y;
-	   			tflo.h2.projectIntoRect(vpL, r, vpScale);
+				tflo.h2.projectIntoRect(vpL, r, vpScale);
 	
 	   		} });
 	   		t1.start();
@@ -693,7 +732,7 @@ class FrameProcessor {
 			if (gk.max > 15) {	
 				persVanX = (((double)houghVan.ax.calculate()  - inputZeroPoint.zeroPoint.vanX) / width) * pixelWidthPrescale;
 			}
-
+			//System.out.printf("%f\n", persVanX);
 			tfex.findNearest(coi, null, 0, 0);
 
 			tfl.markup(coi);
@@ -723,21 +762,22 @@ class FrameProcessor {
 				gp.draw();
 		  	}
 			
-	   		// Propagate config changes from the selected lane pid to the other lane pid
-	   		// Except for hi/lo gain transition points
-	   		double d1 = pidLL.gain.p.loTrans;
-	 		double d2 = pidLL.gain.p.hiTrans;
-	 		double d3 = pidRL.gain.p.loTrans;
-	 		double d4 = pidRL.gain.p.hiTrans;   		
-			if (selectedPid == pidLL) 
-				pidRL.copySettings(pidLL);
-			else
-				pidLL.copySettings(pidRL);
-	   		pidLL.gain.p.loTrans = d1;
-	 		pidLL.gain.p.hiTrans = d2;
-	 		pidRL.gain.p.loTrans = d3;
-	 		pidRL.gain.p.hiTrans = d4;	
-			
+			if (false) { 
+				// Propagate config changes from the selected lane pid to the other lane pid
+				// Except for hi/lo gain transition points
+				double d1 = pidLL.gain.p.loTrans;
+				double d2 = pidLL.gain.p.hiTrans;
+				double d3 = pidRL.gain.p.loTrans;
+				double d4 = pidRL.gain.p.hiTrans;   		
+				if (selectedPid == pidLL) 
+					pidRL.copySettings(pidLL);
+				else
+					pidLL.copySettings(pidRL);
+				pidLL.gain.p.loTrans = d1;
+				pidLL.gain.p.hiTrans = d2;
+				pidRL.gain.p.loTrans = d3;
+				pidRL.gain.p.hiTrans = d4;	
+			}			
 	   		
 			// Two detected left lines equal, or perhaps reversed?  Reset
 			if (tflo.getAngle() - tfl.getAngle() < 2) {
@@ -781,12 +821,15 @@ class FrameProcessor {
 			
 			
 			//System.out.printf("%f\n", (double)time/1000);
-			pidCSR.add((tfr.csX - inputZeroPoint.zeroPoint.rLane) /width * lanePosPrescale, time);
-			pidCSL.add((tfl.csX - inputZeroPoint.zeroPoint.lLane) /width * lanePosPrescale, time);
+			//pidCSR.add((tfr.csX - inputZeroPoint.zeroPoint.rLane) /width * lanePosPrescale, time);
+			//pidCSL.add((tfl.csX - inputZeroPoint.zeroPoint.lLane) /width * lanePosPrescale, time);
 			
 
 			corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
-			corr += -(pidLV.add(laneVanX, time) + pidPV.add(persVanX, time));
+			if (!Double.isNaN(persVanX)) 
+				corr += -pidPV.add(persVanX, time);
+			if (!Double.isNaN(laneVanX))
+				corr += -pidLV.add(laneVanX, time);
 			double curve = 0;
 			if (!Double.isNaN(caL.getCurve()))
 				curve += caL.getCurve();
@@ -863,82 +906,69 @@ class FrameProcessor {
 	        if (remoteInput != 0.0) 
 	        	steer = remoteInput / 10;
         }
+        
+		if (false) { 
+			if (corrHist == null) {
+				ch = new double[256];
+				corrHist = new HistoryArray(64);
+				predHist = new HistoryArray(corrHist.values.length);
+			}
+			System.arraycopy(corrHist.values, 0, ch, 0, corrHist.values.length);
+			double pred = 0;
+			int extrapolate = 1;
+				   int filterCent = (int)Math.round(((double)ch.length) * 18/ 512 / extrapolate);
+			int filterW = (int)Math.round(((double)ch.length) * 4/ 512 / extrapolate);
+			double filterMag = 0.0;
+			
+			corrHist.addExtrapolate(corr, extrapolate);
+			Complex [] ar = Complex.complexArray(ch);
+			ar = FFT.fft(ar);
+	   
+			pred = ar[filterCent].re() * Math.cos((ch.length - 1) * 2 * Math.PI) + 
+					ar[filterCent].im() * Math.sin((ch.length - 1) * 2* Math.PI);
+			//if (pred < -corr) pred = -corr;
+				// apply filter around oscillation frequency 
+			for (int i = filterCent - filterW; i <= filterCent + filterW ; i++) { 
+				if (i >= 0 && i < ar.length){  
+					ar[i] = ar[i].scale(filterMag);
+					ar[ar.length - i - 1] = ar[ar.length -i -1].scale(filterMag);
+				}
+			}	        	
+			Complex [] iar = FFT.ifft(ar);
+			
+			pred = iar[corrHist.values.length - 1].re();
+			//pred = ar[filterCent].abs();
+			
+			predHist.addExtrapolate(pred, extrapolate);
+				
+			if (Silly.debug("FFT")) {
+				double [][]x = new double[5][];
+				x[0] = corrHist.values;
+				x[1] = predHist.values;
+				x[2] = Complex.magArray(ar);
+				x[3] = Complex.arrayOfRe(ar);
+				x[4] = Complex.arrayOfIm(ar);
+			
+				gp.startNew();
+				gp.addArrays(x, x[0].length);
+				gp.addOptions(new String[]{"ax x1y2", "ax x1y2", null, null, null});
+				gp.draw2D(5);
+			}
+			corr = pred;
+		}
 
-        if (corrHist == null) {
-        	ch = new double[256];
-        	corrHist = new HistoryArray(64);
-        	predHist = new HistoryArray(corrHist.values.length);
-        }
-        System.arraycopy(corrHist.values, 0, ch, 0, corrHist.values.length);
-        double pred = 0;
-        int extrapolate = 1;
-               int filterCent = (int)Math.round(((double)ch.length) * 18/ 512 / extrapolate);
-        int filterW = (int)Math.round(((double)ch.length) * 4/ 512 / extrapolate);
-        double filterMag = 0.0;
-        
-        corrHist.addExtrapolate(corr, extrapolate);
-        Complex [] ar = Complex.complexArray(ch);
-        ar = FFT.fft(ar);
-   
-        pred = ar[filterCent].re() * Math.cos((ch.length - 1) * 2 * Math.PI) + 
-        		ar[filterCent].im() * Math.sin((ch.length - 1) * 2* Math.PI);
-        //if (pred < -corr) pred = -corr;
-        
-        
-        // apply filter around oscillation frequency 
-        for (int i = filterCent - filterW; i <= filterCent + filterW ; i++) { 
-        	if (i >= 0 && i < ar.length){  
-	        	ar[i] = ar[i].scale(filterMag);
-	        	ar[ar.length - i - 1] = ar[ar.length -i -1].scale(filterMag);
-        	}
-        }	        	
-        Complex [] iar = FFT.ifft(ar);
-        
-        pred = iar[corrHist.values.length - 1].re();
-        //pred = ar[filterCent].abs();
-        
-        predHist.addExtrapolate(pred, extrapolate);
- 	        
-        if (Silly.debug("FFT")) {
-	        double [][]x = new double[5][];
-	        x[0] = corrHist.values;
-	        x[1] = predHist.values;
-	        x[2] = Complex.magArray(ar);
-	        x[3] = Complex.arrayOfRe(ar);
-	        x[4] = Complex.arrayOfIm(ar);
-	    
-	        gp.startNew();
-	        gp.addArrays(x, x[0].length);
-	        gp.addOptions(new String[]{"ax x1y2", "ax x1y2", null, null, null});
-	        gp.draw2D(5);
-        }
-        corr = pred;
-        
-        if (!noProcessing && !noSteering) 
+        if (!noSteering) 
         	steer = corr;    
         else
             steer = 0;
         
-        //temp disabled for steering gain investigations 	
-        //if (Math.abs(steer) < .25 && arduinoArmed)
-        steer += steeringDitherPulse.currentPulse();
-
+        //steer += steeringDitherPulse.currentPulse();
         steer += steeringTestPulse.currentPulse();
-        
-        //if (!noSteering) 
-        	steer = steering.steer(time, steer);
-        
+		gps.update(time);
+		steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
         steer = joystick.steer(steer);
-
-        
-        // TODO- deadband should probably be applied last
-        // TODO- deadband and other things should be moved into steering control code
-        if (steeringDeadband > 0 || (steeringDeadband < 0 && Math.abs(steer) > Math.abs(steeringDeadband))) { 
-	        if (steer < 0) steer -= steeringDeadband;
-	        if (steer > 0) steer += steeringDeadband;
-        } 
-
-        setSteering(steer);
+		steer = steering.steer(time, steer);
+	    setSteering(steer);
 	    
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
 	    avgFrameDelay.add(frameResponseMs);
@@ -952,19 +982,50 @@ class FrameProcessor {
     	
         if (joystick.getExit())  
         	this.keyPressed('Q');
-        
-        if (joystick.joystickPresent() && arduinoArmed && !joystick.isArmed()) {
-        	arduinoArmed = false;
-        	cmdBus.writeCmd('a', 0);
-        } else if (!arduinoArmed && joystick.isArmed()) {
-        	arduinoArmed = true;
-        	cmdBus.writeCmd('a', 1);        	
-        }
- 
-        if (joystick.getRecordButtonPressed()) {
+         
+        if (joystick.getButtonPressed(9)) 
         	restartOutputFiles();
-        }
-        
+		if (joystick.getButtonPressed(0))  
+			steeringTestPulse.startPulse(-1);
+		if (joystick.getButtonPressed(2))  
+			steeringTestPulse.startPulse(1);
+		if (joystick.getButtonPressed(8))  
+			inputZeroPoint.setAutoZero(); 
+		if (joystick.getButtonPressed(1))  {
+			tp.adjustParam('M', +1);
+			tp.printParam('M');
+		}
+		if (joystick.getButtonPressed(3)) {
+			tp.adjustParam('M', -1);
+			tp.printParam('M');
+		} 
+		if (joystick.getButtonPressed(10)) { 
+			tp.adjustParam(-1);
+			tp.printCurrent();
+		}
+		if (joystick.getButtonPressed(11)) { 
+			tp.adjustParam(1);
+			tp.printCurrent();
+		}
+		if (joystick.getButtonPressed(12)) { 
+			tp.selectNext(1);
+			tp.printCurrent();
+		}
+		if (joystick.getButtonPressed(13)) { 
+			tp.selectNext(-1);
+			tp.printCurrent();
+		}
+		
+
+		/*
+		for (int bn = 0; bn < 19; bn++) {
+			if (joystick.getButtonPressed(bn)) { 
+				System.out.printf("Button %02d pressed\n", bn);
+			}
+		}
+		*/
+		
+
         if (displayRatio > 0 && (count % displayRatio) == 0) {
         	writeCompositeImage(display.image, coi, rescale, (displayMode & 0x4) != 0,
         			(displayMode & 32) != 0);
@@ -1012,8 +1073,8 @@ class FrameProcessor {
 
             }
             if ((displayMode & 0x8) != 0) {
-				displayPid(pidLL, Color.yellow);
-            	//displayPid(pidLL, Color.yellow);
+				//displayPid(pidPV, Color.cyan);
+            	displayPid(pidLL, Color.yellow);
                	//displayPid(pidLV, Color.green);
                	//displayPid(pidPV, Color.blue);
                	//displayPid(pidRL, Color.white);
@@ -1023,7 +1084,7 @@ class FrameProcessor {
                 double yoff = 0.65;
 	            double yspace = 0.05;
     			final double bWidth = 0.06;
-	            display.rectangle(Color.blue, "FB", steering.lag.feedback + 0.5, yoff, bWidth, 0.05);
+	   	        display.rectangle(Color.yellow, String.format("%d", (int)trimCheat.count), trimCheat.trim + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.white, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 
@@ -1033,7 +1094,7 @@ class FrameProcessor {
 		            display.rectangle(Color.yellow, "P", pid.err.p + 0.5, yoff + 0.005, bWidth, 0.04, true);
 		            display.rectangle(Color.white, "I", pid.err.i + 0.5, yoff, bWidth, 0.03, true);
 		            display.rectangle(Color.green, "D", pid.err.d + 0.5, yoff + 0.01, bWidth, 0.02, true);	     
-		            display.rectangle(Color.black, "D", pid.err.j + 0.5, yoff + 0.015, bWidth, 0.01, true);	     
+		            display.rectangle(Color.black, "L", pid.err.l + 0.5, yoff + 0.015, bWidth, 0.01, true);	     
 		        	Color c = pid.quality < 1.0 ? Color.red : Color.yellow;
 		       		display.rectangle(c, String.format("%03d", (int)(pid.drms / pid.qualityFadeThreshold * 100)), 
 		       				.41 + pid.quality * 0.52, yoff, bWidth, 0.05, false);
@@ -1063,8 +1124,7 @@ class FrameProcessor {
             	//display.image.getWritableTile(0,0).setDataElements(tfTarget.x, tfTarget.y, tf.cimage.getData());
             	//display.image.getWritableTile(0,0).setDataElements(tfTarget.x, tfTarget.y, tfTarget.width, tfTarget.height, 
             	//	pic);
-            	display.g2.setColor(Color.red);
-       
+            	display.g2.setColor(Color.red);  
             	//display.g2.draw(tfResult);
             }
             display.redraw(keepFocus);
@@ -1085,7 +1145,6 @@ class FrameProcessor {
 	        
 	        if ((ms - avgMs) > avgMs * 5) {
 	        	long now = Calendar.getInstance().getTimeInMillis();
-	       
 	        	System.out.println(String.format("%d.03%d", now / 1000, now % 1000) + ": untimely frame #" + count + " took " + ms + " ms, average is " + avgMs + " profTimer is "
 	        		   + pms);
 	        }
@@ -1099,11 +1158,6 @@ class FrameProcessor {
         	int key = pendingKeyCode;
         	pendingKeyCode = 0;
         	keyPressedSync(key);
-        }
-        
-        if (false && cmdBus.ignitionOffCount > 5) {
-        	System.out.printf("Ignition seems off, exiting\n");
-        	System.exit(1);
         }
         this.notify();
     }
@@ -1137,11 +1191,11 @@ class FrameProcessor {
     		}
     	} while(repeatFrame > 0 && repeatFrame == count); 
     	
-    	if (keypresses != null && keypresses.get((int)count) != null) { 
-    		keyPressed((Integer)keypresses.get((int)count));
+    	if (keypresses != null && keypresses.get((int)count - skipFrames ) != null) { 
+    		keyPressed((Integer)keypresses.get((int)count - skipFrames));
     	}
-    	if (clicks != null && clicks.get((int)count) != null) { 
-    		Point p = clicks.get((int)count);
+    	if (clicks != null && clicks.get((int)count - skipFrames) != null) { 
+    		Point p = clicks.get((int)count - skipFrames);
     		this.onMouseClick(p.x, p.y, 1);
     	}
     	//if (exitFrame > 0 && count == exitFrame)
@@ -1240,12 +1294,13 @@ class FrameProcessor {
     }
     
     void displayPid(PidControl p, Color c) { 
-    	displayLs(p, p.d, c);
+    	displayLs(p, p.q, c);
     }
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("RMS errs: LL=%.5f, RL=%.5f, VP=%.5f\n", pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr());
+ 	  	System.out.printf("RMS errs: LL=%.5f, RL=%.5f, VP=%.5f, avgAction=%.5f\n", 
+			pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr(), steering.totalAction / count);
     }
      
 
@@ -1290,12 +1345,11 @@ class FrameProcessor {
 			       				tfl.getInstantaneousAngle(), tfl.getInstantaneousX(height), tfr.getInstantaneousAngle(), tfr.getInstantaneousX(height));
 			       		s += String.format(", hVanX=%d, hVanY=%d", houghVan.calculate().x, houghVan.calculate().y);
 			       	}
-			       	s += ", serDebug = " + cmdBus.lastDebugString;
-			       	cmdBus.lastDebugString = "";
 	    	} else { 
 	    			s = new String(logSpec);
 	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");
-	    			s = s.replace("%TEST1", "%time %steer %corr %tfl %tfr %pvx");
+	    			s = s.replace("%TEST1", "%time %steer %corr %tfl %tfr %pvx %lat %lon %hdg %speed %gpstrim %strim %buttons");
+					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 	    			s = s.replace("%frame", String.format("%d", count));
 	    			s = s.replace("%time", String.format("%d", (int)(time - logFileStartTime)));
 	    			s = s.replace("%ts", String.format("%d", time));
@@ -1323,7 +1377,16 @@ class FrameProcessor {
 	    	    			
 	    			s = s.replace("%steer", String.format("%.4f", steer));
 	    			s = s.replace("%corr", String.format("%.4f", corr));
-	    	    	s = s.replace("~", " ");
+	    			s = s.replace("%lat", String.format("%+13.8f", gps.lat));
+	    			s = s.replace("%lon", String.format("%+13.8f", gps.lon));
+	    			s = s.replace("%hdg", String.format("%5.1f", gps.hdg));
+	    			s = s.replace("%speed", String.format("%5.1f", gps.speed));
+	    			s = s.replace("%strim", String.format("%.5f", steering.trim));
+	    			s = s.replace("%gpstrim", String.format("%.5f", trimCheat.trim));
+	    			s = s.replace("%gpstcount", String.format("%d", (int)trimCheat.count));
+					s = s.replace("%buttons", String.format("%d", joystick.buttonBits));
+
+					s = s.replace("~", " ");
 	    			
 	    	}
 	       	logfile.write(s);

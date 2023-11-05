@@ -1,7 +1,3 @@
 #!/bin/sh
 SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
-$SCRIPT_DIR/pp -displaymode 14   -displayratio 10 -out /host/lanedumps/%s.yuv $@
- #
-
-#-log /host/lanedumps/%s.log $@
-
+$SCRIPT_DIR/pp -displayratio 10 -out /host/lanedumps/%s.yuv $@ -gps -log /host/lanedumps/%s.log $@

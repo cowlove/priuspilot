@@ -9,32 +9,11 @@ import java.util.StringTokenizer;
 
 class SerialCommandBus { 
     FileWriter tty = null;
+	BufferedReader fakeFile = null; 
     String devName; 
     FrameProcessor fp; // TODO- make a clean callback interface rather than a fp member
     SerialCommandBus(String d, FrameProcessor f) { devName = d; fp = f;  }
 
-    byte crc4itu(byte[] bytes) { 
-        byte crc = (byte)0xff; // initial value
-        // loop, calculating CRC for each byte of the string
-        for (int byteIndex = 0; byteIndex < bytes.length; byteIndex++) {
-            byte bit = (byte)0x80; // initialize bit currently being tested
-            for (int bitIndex = 0; bitIndex < 8; bitIndex++)
-            {
-                boolean xorFlag = ((crc & 0x8) == 0x8);
-                // shift bit into register
-                crc <<= 1;
-                if (((bytes[byteIndex] & bit) != 0)) 
-                    crc++;
-                // if last bit out of the register was set, xor register
-                if (xorFlag)    {
-                    crc ^= (byte)0x3;
-                }
-                bit >>= 1;
-            }
-        }
-        return crc;
-    }
-    
     private void open() {
     	boolean complained = false;
     	if (tty != null) {
@@ -49,7 +28,7 @@ class SerialCommandBus {
 
     	while(tty == null) { 
 	    	try {
-	    	    Process p = Runtime.getRuntime().exec("stty -F " + devName + " 9600 -echo raw");
+	    	    Process p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 -echo raw");
 	    	    p.waitFor();
 	        	tty = new FileWriter(devName);
 				System.out.println("Opened " + devName + " for writing at 9600bps");
@@ -74,7 +53,37 @@ class SerialCommandBus {
 	    	open();
     	}
     }
-    
+
+	void startFake(String fn) { 
+		try {
+            fakeFile = new BufferedReader(new FileReader(fn));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+	}
+
+	long startMs = 0;
+	void update(long ms) { 
+		if (startMs == 0)
+			startMs = ms;
+		while (fakeFile != null) { 
+			try {
+				String s = fakeFile.readLine();
+				if (s == null) break;
+				String[] words = s.split("\\s+");
+				lat = Double.parseDouble(words[6]);
+				lon = Double.parseDouble(words[7]);
+				hdg = Double.parseDouble(words[8]);
+				double t = Double.parseDouble(words[0]);
+				updates++;
+				if (t > ms - startMs) 
+					break;				
+			} catch(Exception e) { 
+				e.printStackTrace(); 
+			}
+		}
+	}
+
     void sleep() { 
     	try {
 			Thread.sleep(50);
@@ -103,7 +112,9 @@ class SerialCommandBus {
         }
     });
     
-    
+	Double lat = 0.0, lon = 0.0, hdg = 0.0, siv = 0.0, speed = 0.0; 
+	int updates = 0;
+
     Thread reader = new Thread (new Runnable() {
         public void run() {
         	while(true) { 
@@ -134,13 +145,19 @@ class SerialCommandBus {
 					if (Silly.debug("DEBUG_SERIAL"))
 						System.out.println("Serial read: " + s);	
 					
+					
 					StringTokenizer st = new StringTokenizer(s);
 					try { 
 						if (st.hasMoreTokens()) {
 							String c = st.nextToken();
-							if (c.equals("ack") && st.hasMoreTokens()) {
-								ack = Integer.parseInt(st.nextToken());
-								System.out.println("ACK " + ack);
+							if (c.equals("GPS")) {
+							 	lat = Double.parseDouble(st.nextToken());
+							 	lon = Double.parseDouble(st.nextToken());
+							 	hdg = Double.parseDouble(st.nextToken());
+								siv = Double.parseDouble(st.nextToken());
+								speed = Double.parseDouble(st.nextToken());
+								updates++;
+								//System.out.printf("%f %f %f\n", lat, lon, hdg);
 							}
 							if (c.equals("j") && st.hasMoreTokens()) {
 								int a = Integer.parseInt(st.nextToken());

@@ -8,16 +8,20 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Stroke;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.awt.BasicStroke;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.Writer;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileOutputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -126,10 +130,11 @@ public class Silly {
 	public static final int DEBUG_SHOW_TF = 8;
 	public static final int DEBUG_SERIAL = 16;
 	public static final int DEBUG_LINES = 32;
-	public static final int DEBUG_MARKUP = 64;
+	public static fstainal int DEBUG_MARKUP = 64;
 	public static final int DEBUG_COPY_IMAGE = 128; 
 	*/
 	
+	static CarSim sim = null;
 	static FrameCaptureJNI fc;
 	static FrameCaptureJNI swCam;
     public static void main(String[] args) throws IOException, InterruptedException {
@@ -148,9 +153,13 @@ public class Silly {
         int displayMode = 15;
         int volume = 10;
         int frameInterval = 0; // minimum interval between captured frames
+		String steerCmdHost = "255.255.255.255";
         boolean jni = false;
-        boolean nightMode = false, faketime = false, useSystemClock = true;
-        boolean cannyDebug = false;
+		boolean gps = false;
+		String fakeGps = null;
+		ArrayList<String> trimCheatFiles = new ArrayList<String>();
+        boolean nightMode = false, faketime = false, useSystemClock = true, noSteer = false;
+        boolean cannyDebug = false, realtime = false;
         boolean flipVideo = false;  // warning- not flipping is currently broken, see FrameCaptureJNI.cpp, flip loops is 
         // same as copyout loop 
         HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
@@ -164,12 +173,17 @@ public class Silly {
             else if (a.compareTo("-displayratio") == 0) displayratio = Integer.parseInt(args[++i]);
             else if (a.compareTo("-volume") == 0) volume = Integer.parseInt(args[++i]);
             else if (a.compareTo("-repeat") == 0) repeat = true;
+            else if (a.compareTo("-gps") == 0) gps = true;
+			else if (a.compareTo("-fakeGps") == 0) fakeGps = args[++i];
+			else if (a.compareTo("-trimCheat") == 0) trimCheatFiles.add(args[++i]);
             else if (a.compareTo("-rgb32") == 0) rgb32 = true;
             else if (a.compareTo("-cannyDebug") == 0) cannyDebug = true;
             else if (a.compareTo("-jni") == 0) jni = true;
+            else if (a.compareTo("-nosteer") == 0) noSteer = true;
             else if (a.compareTo("-fps") == 0) framerate = Integer.parseInt(args[++i]);
             else if (a.compareTo("-rescale") == 0) rescale = Integer.parseInt(args[++i]);
             else if (a.compareTo("-skip") == 0) skipFrames = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-steeraddr") == 0) steerCmdHost = args[++i];
             else if (a.compareTo("-frames") == 0) frameCount = Integer.parseInt(args[++i]);
             else if (a.compareTo("-pause") == 0) pauseFrame = Integer.parseInt(args[++i]);
             else if (a.compareTo("-exit") == 0) exitFrame = Integer.parseInt(args[++i]);
@@ -183,7 +197,9 @@ public class Silly {
             else if (a.compareTo("-flip") == 0) flipVideo = true;
             else if (a.compareTo("-night") == 0) nightMode = true;
             else if (a.compareTo("-faketime") == 0) faketime = true;
+            else if (a.compareTo("-realtime") == 0) realtime = true;
             else if (a.compareTo("-systemclock") == 0) useSystemClock = !useSystemClock;
+			
                                         
             else if (a.compareTo("-ct") == 0) colorThreshold = Double.parseDouble(args[++i]);
             else if (a.compareTo("-size") == 0) {
@@ -315,6 +331,14 @@ public class Silly {
         fp.zoom = width / windw;
         fp.keypresses = keypressMap;
         fp.clicks = clickMap;        
+		fp.noSteering = noSteer;
+		fp.steerCmdHost = steerCmdHost;
+		if (gps) fp.gps.start();
+		else if (fakeGps != null) fp.gps.startFake(fakeGps);
+		for(String f : trimCheatFiles) { 
+			fp.trimCheat.addFile(f);
+		}
+		
         if (displayMode > 0) fp.displayMode = displayMode;
 
 
@@ -335,8 +359,24 @@ public class Silly {
     		dropFrames = false;
     	}
     	
-        int count = 0;        		
-    	if (filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".gif"))  { 
+        int count = 0;    
+		IntervalTimer intTimer = new IntervalTimer(30);
+	
+		if (filename.equals("SIM")) { 
+			long ms = 0;
+			sim = new CarSim(width, height);
+
+			while(exitFrame == 0 || --exitFrame > 0) { 
+				ByteBuffer bb = sim.getFrame(ms); 
+				int x = (int)intTimer.tick();
+				if (realtime && x < 35) {
+					Thread.sleep(35 - x);
+				}
+				fp.processFrame(ms, new OriginalImage(bb, width, height));
+				ms += 30;
+			}
+
+		} else if (filename.endsWith(".png") || filename.endsWith(".jpg") || filename.endsWith(".gif"))  { 
     		// load in still image file, scale it to current size, use it as the image 
       		try {
       	  		File in = new File(String.format(filename));
@@ -358,7 +398,6 @@ public class Silly {
 
       		}
     	} else if (filename.endsWith(".gz") || !jni) {
-            IntervalTimer intTimer = new IntervalTimer(30);
         	do {
         		int picsize = height * width * 2;
         		if (rgb32) picsize = height * width * 4;
@@ -376,7 +415,6 @@ public class Silly {
 	        	ByteBuffer bb = ByteBuffer.allocate(picsize);
 	        	while(fis.available() > 0) {
 		        	//ByteBuffer bb = ByteBuffer.allocate(picsize);
-	        		intTimer.start();
 	        		timebb.rewind();
 	        		ib.rewind();
 	        		bb.rewind();
@@ -425,7 +463,11 @@ public class Silly {
 	        	
 	        		// broken, bb contains t(the first 8-byte timestamp
 	        		//ft.post(false, time, new OriginalImage(finalbb, width)); //TODO need to pass time
-        			//System.out.printf("%dms\n", (int)intTimer.tick());
+        			int ms = (int)intTimer.tick();
+					if (realtime && ms < 30 && fp.skipFrames  <= 0) {
+						//System.out.printf("Sleeping %d ms\n", 30 - ms);
+						Thread.sleep(30 - ms);
+					}
 	        		fp.processFrame(time, new OriginalImage(finalbb, width, height));
         			//System.out.printf("%dms\n", (int)intTimer.tick());
 	        		count++;
@@ -564,7 +606,17 @@ public class Silly {
 	public static int debugInt(String s) { 
 		String v = debugOpts.get(s);
 		return Integer.parseInt(v);
+
 	}
+	public static double debugDouble(String s, double def) { 
+		try {
+			String v = debugOpts.get(s);
+			return Double.parseDouble(v);
+		} catch(Exception e) { 
+			return def;
+		}
+	}
+
 	public static int debugInt(String s, int def) { 
 		try {
 			String v = debugOpts.get(s);

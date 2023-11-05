@@ -1,0 +1,5 @@
+lanedumps/AWN.yuv frames 00000-06925 RMS errs: LL=0.00761, RL=0.00267, VP=0.01066, avgAction=0.02586
+lanedumps/EAN.yuv frames 00000-01881 RMS errs: LL=0.04526, RL=0.00305, VP=0.01769, avgAction=0.02889
+lanedumps/EAS.yuv frames 00000-01772 RMS errs: LL=0.01495, RL=0.02875, VP=0.04869, avgAction=0.03239
+lanedumps/I5S-dapples.yuv frames 00000-04522 RMS errs: LL=0.02223, RL=0.01092, VP=0.04098, avgAction=0.05367
+lanedumps/I5S.yuv frames 00000-04324 RMS errs: LL=0.01978, RL=0.00320, VP=0.01719, avgAction=0.03856

@@ -1,9 +1,9 @@
 
-CFLAGS=-I /usr/lib/jvm/java-11-openjdk-amd64/include/linux -I /usr/lib/jvm/java-11-openjdk-amd64/include/ -O3 -g -fpermissive -fPIC -shared 
+CFLAGS=-I /usr/lib/jvm/java-11-openjdk-amd64/include/linux -I /usr/lib/jvm/java-11-openjdk-amd64/include/ -I ESPNOW_lib/src/Includes/ -O3 -g -fpermissive -fPIC -shared 
 JARS=../pplib
 
 
-JAVASRC=TargetFinderExp.java AdvisorySounds.java AutoFocusParameter.java BufferedImageDisplay.java CannyEdgeDetector.java CannyEdgeDetectorOriginal.java CurvatureAnalyzer.java FrameCaptureJNI.java FrameGrabberThread.java FrameProcessor.java FrameProcessorTunableParameters.java GaussianKernel.java GnuplotWrapper.java HoughTransform.java ImageFileWriter.java IntervalTimer.java JavaStreamingAudioPlayerX.java JoystickControl.java LabJackJNI.java LaneDetector.java LazyHslConvert.java Logfile.java NonmaxSuppression.java OriginalImage.java Pauser.java PidControl.java PixelGroup.java PriusVoice.java RemoteTcpCommandSocket.java RunningAveragePoint.java ScanZonePair.java SerialCommandBus.java Silly.java SteeringLogic.java SteeringTestPulseGenerator.java SteeringWheelResolverCam.java TargetFinder.java TargetFinderLines.java TargetFinderRectangle2.java TargetFinderRectangle.java TargetFinderRed.java TargetFinderRoadColor.java TargetFinderRoundAndRed.java TargetFinderSymmetry.java TemplateDetectRGB.java Tracker.java TunableParameterList.java Average.java Complex.java FFT.java Geometry.java JamaLeastSquaresFit.java LeastSquares.java RunningAverage.java RunningLeastSquares.java RunningLeastSquaresSine.java RunningQuadraticLeastSquares.java Snippet.java 
+JAVASRC=CarSim.java TargetFinderExp.java AdvisorySounds.java AutoFocusParameter.java BufferedImageDisplay.java CannyEdgeDetector.java CannyEdgeDetectorOriginal.java CurvatureAnalyzer.java FrameCaptureJNI.java FrameGrabberThread.java FrameProcessor.java FrameProcessorTunableParameters.java GaussianKernel.java GnuplotWrapper.java HoughTransform.java ImageFileWriter.java IntervalTimer.java JavaStreamingAudioPlayerX.java JoystickControl.java LabJackJNI.java LaneDetector.java LazyHslConvert.java Logfile.java NonmaxSuppression.java OriginalImage.java Pauser.java PidControl.java PixelGroup.java PriusVoice.java RemoteTcpCommandSocket.java RunningAveragePoint.java ScanZonePair.java SerialCommandBus.java Silly.java SteeringLogic.java SteeringTestPulseGenerator.java SteeringWheelResolverCam.java TargetFinder.java TargetFinderLines.java TargetFinderRectangle2.java TargetFinderRectangle.java TargetFinderRed.java TargetFinderRoadColor.java TargetFinderRoundAndRed.java TargetFinderSymmetry.java TemplateDetectRGB.java Tracker.java TunableParameterList.java Average.java Complex.java FFT.java Geometry.java JamaLeastSquaresFit.java LeastSquares.java RunningAverage.java RunningLeastSquares.java RunningLeastSquaresSine.java RunningQuadraticLeastSquares.java Snippet.java GPSTrimCheat.java   
 JAVAOBJ=$(JAVASRC:%.java=./bin/%.class)
 
 DEPEND_OBJS     := $(JAVASRC:.java=.u)
@@ -38,9 +38,16 @@ all: libFrameCaptureJNI.so priuspilot.jar
 	javac $<
 	(javah -jni FrameCaptureJNI)
 	
-$(TARGET): $(OBJ)
-	g++ -lrt -shared -o $@ $^ $(CFLAGS) $(LIBS)
+ESPNOW_manager.o: ESPNOW_lib/src/ESPNOW_manager.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $^
+ESPNOW_types.o: ESPNOW_lib/src/ESPNOW_types.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $^
 
+$(TARGET): $(OBJ) ESPNOW_manager.o ESPNOW_types.o
+	g++ -lrt -shared -o $@ $^ $(CFLAGS) $(LIBS) 
+
+main: 	FrameCaptureJNI.cpp
+	g++ -g -o $@ $<  -DUSE_MAIN
 
 clean:
 	rm -f *.o  core $(TARGET) ./*.class priuspilot.jar 

@@ -133,6 +133,35 @@ class SteeringWheelClosedLoopControl {
 	}
 };
 
+
+class SteeringLogicSimpleLimits {
+	double maxSteer = 0.50;
+	double maxChange = 0.06; // per ms
+	double deadband = 0.00;
+	long lastMs = 0;
+	double trim = -0.00;
+	double lastSteer = 0;
+	double steer(long ms, double st) { 
+		if (deadband > 0 || (deadband < 0 && Math.abs(st) > Math.abs(deadband))) { 
+			if (st < 0) st -= deadband;
+			if (st > 0) st += deadband;
+        }
+		st += trim;
+
+		double maxDelta = maxChange * (ms - lastMs) * maxChange;
+		st = Math.min(lastSteer + maxDelta, Math.max(lastSteer - maxDelta, st));
+		st = Math.min(maxSteer, Math.max(-maxSteer, st));
+
+		totalAction += Math.abs(st - lastSteer);
+		lastMs = ms;
+		lastSteer = st;
+		//System.out.printf("%.4f\n", st);
+		return st;
+	}
+	double totalAction = 0.0;
+	void reset() {}
+};
+
 class SimpleSteeringLogic {
 	double threshold = 0.2;
 	double pulseDuration = 0.4;
