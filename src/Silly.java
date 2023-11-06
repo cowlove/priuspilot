@@ -481,7 +481,7 @@ public class Silly {
         } else {
         	fc = new FrameCaptureJNI();
         	fc.configure(filename, width, height, windx, windy, windw, windh, 
-        			flipVideo, capFile, capSize, capCount, 80/*max ms per frame*/,
+        			flipVideo, capFile, capSize, capCount, 65/*max ms per frame*/,
         			0 /*raw record skip interval*/, useSystemClock);
         	if (fp.writer != null) 
         		fp.writer.fc = fc; 
