@@ -1,5 +1,5 @@
 
-CFLAGS=-I /usr/lib/jvm/java-11-openjdk-amd64/include/linux -I /usr/lib/jvm/java-11-openjdk-amd64/include/ -I ESPNOW_lib/src/Includes/ -O3 -g -fpermissive -fPIC -shared 
+CFLAGS=-I /usr/lib/jvm/java-11-openjdk-*/include/linux -I /usr/lib/jvm/java-11-openjdk-*/include/ -I ESPNOW_lib/src/Includes/ -O3 -g -fpermissive -fPIC -shared 
 JARS=../pplib
 
 
