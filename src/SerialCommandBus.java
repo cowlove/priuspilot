@@ -28,7 +28,9 @@ class SerialCommandBus {
 
     	while(tty == null) { 
 	    	try {
-	    	    Process p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 -echo raw");
+	    	    Process p = Runtime.getRuntime().exec("/home/jim/src/gpsd/gpsd-3.25.1~dev/clients/ubxtool -f " + devName + " -p CFG-RATE,100");
+	    	    p.waitFor();
+	    	    p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
 	    	    p.waitFor();
 	        	tty = new FileWriter(devName);
 				System.out.println("Opened " + devName + " for writing at 9600bps");
@@ -144,38 +146,26 @@ class SerialCommandBus {
 					}
 					if (Silly.debug("DEBUG_SERIAL"))
 						System.out.println("Serial read: " + s);	
+
 					
-					
-					StringTokenizer st = new StringTokenizer(s);
+					String st[] = s.split(",");
 					try { 
-						if (st.hasMoreTokens()) {
-							String c = st.nextToken();
-							if (c.equals("GPS")) {
-							 	lat = Double.parseDouble(st.nextToken());
-							 	lon = Double.parseDouble(st.nextToken());
-							 	hdg = Double.parseDouble(st.nextToken());
-								siv = Double.parseDouble(st.nextToken());
-								speed = Double.parseDouble(st.nextToken());
-								updates++;
-								//System.out.printf("%f %f %f\n", lat, lon, hdg);
-							}
-							if (c.equals("j") && st.hasMoreTokens()) {
-								int a = Integer.parseInt(st.nextToken());
-								fp.onCruiseJoystick(a);
-							}
-							if (c.equals("x") && st.hasMoreTokens()) {
-								int a = Integer.parseInt(st.nextToken());
-								//fp.onArduinoArmed(a);
-							}
-							if (c.equals("a") && st.hasMoreTokens()) {
-								int a = Integer.parseInt(st.nextToken());
-								if (a == 0)  
-									ignitionOffCount++;
-								else
-									ignitionOffCount = 0;
-							}
+						if (st[0].equals("$GPRMC")) {
+							lat = Double.parseDouble(st[3]) / 100.0;
+							lon = -Double.parseDouble(st[5]) / 100.0;
+							speed = Double.parseDouble(st[7]);
+							if (st[8].length() > 0) 
+								hdg = Double.parseDouble(st[8]);
+							else 
+								hdg = 0.0;
+							updates++;
+							//System.out.printf("GPS %f %f %f %f\n", lat, lon, hdg, speed);
 						}
-					} catch(Exception e) {}
+						
+						
+					} catch(Exception e) {
+						e.printStackTrace();
+					}
                 }
         	}
         }

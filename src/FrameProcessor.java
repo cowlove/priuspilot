@@ -131,7 +131,7 @@ class FrameProcessor {
 
 	GnuplotWrapper gp = new GnuplotWrapper();
 
-	SerialCommandBus gps = new SerialCommandBus("/dev/ttyUSB0", this);
+	SerialCommandBus gps = new SerialCommandBus("/dev/ttyACM0", this);
 
 	boolean laneGainsSwapped = false;
 	
