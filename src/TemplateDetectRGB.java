@@ -101,6 +101,7 @@ abstract class TemplateDetect {
 		} 
 	}
 
+	FindResult lastResult = null;
 	class Tile { 
 		int scale = 0;
 		Rectangle loc;
@@ -108,24 +109,22 @@ abstract class TemplateDetect {
 	}
 	Tile template = new Tile();
 
-	FindResult setTemplate(byte []pic, int x, int y, int xs, int ys) { 
+	FindResult setTemplate(OriginalImage oi, int x, int y, int xs, int ys) { 
 		Rectangle r = new Rectangle(x - xs / 2, y - ys / 2, xs, ys);
-		setTemplate(pic, r);
+		setTemplate(oi, r);
 		return new FindResult(x, y, 0);	
 	}	
 
-	abstract void setTemplate(byte [] pic, Rectangle r);
-	abstract FindResult find(FindResult startAt, byte []pic); 
-	abstract void newFrame(byte []pic);
+	abstract void draw(OriginalImage oi, int rescale);
+	abstract void setTemplate(OriginalImage oi, Rectangle r);
+	abstract FindResult find(FindResult startAt, OriginalImage oi); 
+	abstract void newFrame(OriginalImage oi);
 	void setSearchDist(int x, int y, int s) { 
 		searchDist = new FindResult(x, y, s, 0);
 	}
 
 	static final int WORST_SCORE = 1000000000;
-	
 	FindResult searchDist; 
-	
-	
 }
 
 class TemplateDetectRGB extends TemplateDetect {
@@ -138,10 +137,8 @@ class TemplateDetectRGB extends TemplateDetect {
 	double maskDecay = 0.95;
 	BufferedWriter f2 = null;
 	LazyHslConvert hsl = null;
+	byte [] picX = null;
 	
-	
-	
-
 	TemplateDetectRGB(int w, int h) { 
 		hsl = null; //new LazyHslConvert(w, h); 
 		width = w; 
@@ -149,7 +146,6 @@ class TemplateDetectRGB extends TemplateDetect {
 	} 
 	
 	Tile scaleTile(Tile in, int scale) { 
-	
 		int xs = in.loc.width + scale;
 		int ys = in.loc.height + scale;
 		//(int)Math.round(xs * in.loc.height / in.loc.width);
@@ -173,12 +169,87 @@ class TemplateDetectRGB extends TemplateDetect {
 		out.scale = scale;
 		return out;
 	}
+	byte [] convertOI(OriginalImage oi) {
+		return yuv2canny(oi);
+	}
+
+	CannyEdgeDetector c = new CannyEdgeDetector();
 	
-	
+	byte [] yuv2canny(OriginalImage oi) { 
+		byte [] p = new byte[width * height * bpp];
+		c.threshold = 5.0F;
+		c.setGaussianKernelRadius(0.8F);
+		c.setGaussianKernelWidth(6);
+		c.zones.lsz.m1 = Double.NaN;
+		c.processData(oi, new Rectangle(0, 0, width, height));
+		int [] cdata = c.getData();
+		GaussianKernel gk = new GaussianKernel(.2, 6, width, height);
+
+		int [] c2data = new int[width * height];
+		//select for and copy only horizontal lines
+		for(int y = 0; y < height; y++) {
+			int continuous = 0;
+			for(int x = 0; x < width; x++) {
+				if (cdata[y * width + x] != 0) { 
+					if (++continuous > 3) {
+						for(int dx = x - continuous + 1; dx <= x; dx++) {
+							c2data[y * width + dx] = cdata[y * width + dx];
+						} 
+					}
+				} else {
+					continuous = 0;
+				}
+			}
+		}
+		// copy for any copy only vertical lines
+		for(int x = 0; x < width; x++) {
+			int continuous = 0;
+			for(int y = 0; y < height; y++) {
+				if (cdata[y * width + x] != 0) { 
+					if (++continuous > 3) {
+						for(int dy = y - continuous + 1; dy <= y; dy++) {
+							c2data[dy * width + x] = cdata[dy * width + x];
+						} 
+					}
+				} else {
+					continuous = 0;
+				}
+			}
+		}
+		gk.blur(c2data);
+		for(int y = 0; y < height; y++) {
+			for(int x = 0; x < width; x++) { 
+				for(int i = 0; i < bpp; i++) {
+					int pi = (y * width + x) * 3 + i;
+					p[pi] = (byte)c2data[y * width + x]; 
+				}
+			}
+		} 
+		return p;
+	}
+	byte [] yuvToRgb(OriginalImage oi) {
+		byte [] p = new byte[width * height * bpp];
+		for(int y = 0; y < height; y++) {
+			for(int x = 0; x < width; x++) { 
+				int r[] = oi.getPixelRGBArray(x, y);
+				int pi = (y * width + x) * 3; 
+				for(int i = 0; i < r.length; i++) { 
+					p[pi + i] = (byte)r[i];
+				}
+				int hsl[] = new int[3];
+				OriginalImage.rgb2hsl(r[0], r[1], r[2], hsl);
+				p[pi] = (byte)hsl[0];
+				p[pi + 1] = (byte)hsl[1];
+				p[pi + 2] = (byte)hsl[2];
+			}
+		}
+		return p;
+	}
 	@Override
-	void setTemplate(byte [] pic, Rectangle r) {
+	void setTemplate(OriginalImage oi, Rectangle r) {
+		byte [] p = convertOI(oi);
 		if (hsl != null) 
-			hsl.convertHsl(pic, r.x, r.y, r.x + r.width, r.y + r.height);
+			hsl.convertHsl(p, r.x, r.y, r.x + r.width, r.y + r.height);
 		template.loc = new Rectangle(r);
 		template.data = new byte[r.width * r.height * bpp];
 		mask = new double[r.width * r.height];
@@ -189,17 +260,16 @@ class TemplateDetectRGB extends TemplateDetect {
 					int pi = (r.x + x + (r.y + y) * width) * bpp + b;
 					int ti = (x + y * r.width) * bpp + b;
 					if (legalIndex(pi)) 
-						template.data[ti] = pic[pi];
+						template.data[ti] = p[pi];
 				}
 			}
 		}
 		scaledTiles.buildScaledTiles(template);
-		
 		scaledTiles.initialized = true;
 	}
 
 	@Override
-	void newFrame(byte []pic) {
+	void newFrame(OriginalImage oi) {
 		if (hsl != null) 
 			hsl.clear();
 		//convertHsl(pic, 0, 0, width, height);
@@ -207,8 +277,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 	
 	class ScaledTilesArray { 
-		private Tile [] scaledTiles = new Tile[201];
-
+		private Tile [] scaledTiles = new Tile[11];
 		public Tile getTileByScale(int s) { 
 			int i = s + scaledTiles.length / 2;
 			if (i >= 0 && i < scaledTiles.length) 
@@ -223,9 +292,7 @@ class TemplateDetectRGB extends TemplateDetect {
 			for(int i = 0; i < scaledTiles.length; i++) { 
 				int scale =  i - scaledTiles.length / 2;
 				scaledTiles[i] = scaleTile(t, scale);
-			}
-
-		
+			}	
 		}
 		boolean initialized = false;
 	}	
@@ -236,7 +303,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 	
 	// interpolate a pixel value from non-integer rectangle
-	int interpolatePixel(byte []pic, double x1, double y1, double x2, double y2, int b) { 
+	int interpolatePixel(byte []p, double x1, double y1, double x2, double y2, int b) { 
 		int ix1 = (int)Math.floor(x1);
 		int iy1 = (int)Math.floor(y1);
 		int ix2 = (int)Math.ceil(x2);
@@ -257,7 +324,7 @@ class TemplateDetectRGB extends TemplateDetect {
 				if (x == ix1) fx -= x1 - ix1;
 				if (y == iy1) fy -= y1 - iy1; 
 				
-				int pixel = (int)pic[(x + y * width) * bpp + b] & 0xff;
+				int pixel = (int)p[(x + y * width) * bpp + b] & 0xff;
 				sum += pixel * fx * fy;
 			}
 		}
@@ -268,7 +335,6 @@ class TemplateDetectRGB extends TemplateDetect {
 	boolean normalize = true;
 	// relative weights of the rgb or hsl bytes in calculating error
 	double [] byteWeights = new double[] {1.0, 1.0, 1.0};
-
 
 	// note- testTilePrescale does not implement makeMask functionality
 	// TODO- normalize saturation and/or luminescensce 
@@ -343,8 +409,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		}
 		return r;
 	}
-
-	
 	
 	// May still be a good idea because it is cleaner and since the template scale doesn't change much, 
 	// would be easier to maintain a quality mask on the template. 
@@ -354,7 +418,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	// 
 	// Probably doesn't support non-square teplates yet 
 	
-	FindResult testTileJitBROKEN(byte []pic, int x, int y, int s, double already, boolean makeMask) { 
+	FindResult testTileJitBROKEN(byte []p, int x, int y, int s, double already, boolean makeMask) { 
 		Tile t= template;
 		int score = 0;
 		
@@ -372,7 +436,7 @@ class TemplateDetectRGB extends TemplateDetect {
 				//for(int b = 1; b < 2; b++) { 
 				for(int b = 0; b < bpp; b++) { 
 					int err = ((int)t.data[(x1 + y1 * t.loc.width) * bpp + b] & 0xff) - 
-						interpolatePixel(pic, px1, py1, px2, py2, b);
+						interpolatePixel(p, px1, py1, px2, py2, b);
 					if (b == 0 && hsl != null) { // H value is angular value, no error more than 180 degrees
 						if (err > 127) err = 255 - err;
 						if (err < -127) err = 255 + err;
@@ -392,7 +456,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		return new FindResult(x, y, s, score / t.loc.width / t.loc.height);
 	}
 
-	
 	FindResult testTile(byte []pic, int x, int y, int s, double already, boolean makeMask) {		
 		int x1 = x - (template.loc.width + s) / 2;
 		int x2 = x + (template.loc.width + s) / 2;
@@ -504,9 +567,8 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 	
 	
-	FindResult findBruteForce(FindResult startAt, byte [] pic) { 
+	FindResult findBruteForce(FindResult startAt, byte [] pic) {
 		FindResult best = null;
-
 		// simple brute-force exhaustive search of the searchDist space
 		for (int s = startAt.scale - searchDist.scale; s <= startAt.scale + searchDist.scale; s++) { 
 			Tile t = scaledTiles.getTileByScale(s);	
@@ -590,17 +652,33 @@ class TemplateDetectRGB extends TemplateDetect {
 		return best;
 	}
 	
+	int pixelIndex(int x, int y) { 
+		return (y * width + x) * bpp;
+	}
+	@Override 
+	// todo rescale is wrong and unneeded here, oi is pre-rescaling 
+	void draw(OriginalImage oi, int rescale) {
+		if (lastResult != null) {
+			rescale = 1; 
+			Rectangle r  = targetRect(lastResult);
+			for(int y = r.y; y < r.y + r.height; y++) { 
+				for(int x = r.x; x < r.x + r.width; x++) {
+					oi.putPixel(x * rescale, y * rescale, picX[pixelIndex(x, y)]); 
+				}
+			}
+		}	
+	}
 	@Override
-	FindResult find(FindResult startAt, byte []pic) { 
+	FindResult find(FindResult startAt, OriginalImage oi) { 
+		picX = convertOI(oi);
 		frame++;
-		return findOptimized(startAt, pic);
-	//	return findBruteForce(startAt,pic);
+		//return findOptimized(startAt, pic);
+		lastResult = findBruteForce(startAt,picX);
+		return lastResult;
 	}
 
 	boolean jit = false;
 	String outDataFile = null;
-
-
 
 /*
 	

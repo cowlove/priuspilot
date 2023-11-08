@@ -151,7 +151,7 @@ class FrameProcessor {
         	
 		restartOutputFiles();
         //td = new TemplateDetectCannyCorrelation(w, h);
-        //td = new TemplateDetectRGB(w, h);
+        td = new TemplateDetectRGB(w, h);
         
         int minSz = Silly.debugInt("minSz", 24); // min/max radius
         int maxSz = 100;
@@ -186,7 +186,7 @@ class FrameProcessor {
         	tfl.param.gaussianKernelRadius = tfr.param.gaussianKernelRadius =
         	(float)Silly.debugDouble("GK_RAD");
         
-        tf = new TargetFinderRed(w, h);
+       	tf = new TargetFinderRed(w, h);
         tfparams.add(tf.param);
         tfparamIndex = 0;
         tfparam = tfparams.get(0);
@@ -353,23 +353,23 @@ class FrameProcessor {
         else if (keyCode == 'A')  
         	restartOutputFiles();
         else if (keyCode == 10) { // [ENTER] key
-        	    noSteering = !noSteering;
+			if (td != null) {
+				td.active = true;
+				tdFindResult = null;
+				tdTempFrame = null;
+				tfFindTargetNow = true;
+			}
         }  else if (keyCode == 32) { // [SPACE] key
-        		noSteering = !noSteering;
-				//noProcessing = !noProcessing;
-				reset();
-         	 	steer = 0;
-         	 	tfFindTargetNow = false;
-         	 	tdFindResult = null;
-         	 	setSteering(0);
-         	 	/*
-         	 	noProcessing = disarmed;
-	           	if (td != null) {
-	        		td.active = !disarmed;
-		        	tdFindResult = null;
-		        	tdTempFrame = null;
-	           	}
-	           	*/
+			noSteering = !noSteering;
+			//noProcessing = !noProcessing;
+			reset();
+			steer = 0;
+			tfFindTargetNow = false;
+			tdFindResult = null;
+			setSteering(0);
+			
+			//noProcessing = disarmed;
+	           	
         } else if (keyCode == 8) { // backspace
         	System.out.printf("Keyboard reset at frame %d,  time %d\n", count, time);
         	onCruiseJoystick(4);
@@ -559,7 +559,7 @@ class FrameProcessor {
     TemplateDetect.FindResult tdFindResult = null;
     int badTdCount = 0;
     IntervalTimer profTimer = new IntervalTimer(100);
-    int tdStartX = 180 + 10;  // TODO raw pixel use!
+    int tdStartX = 180;  // TODO raw pixel use!
     int tdStartY = 70;
     int tdTargetSize = 40;
     ByteBuffer tdTempFrame = null;
@@ -842,43 +842,41 @@ class FrameProcessor {
 	
 			if (tfFindTargetNow) {
 				// try to set tdFindResult to new template.  If fails, tdFindResult will be left null
-				tdStartX = 180 + 10;
-				tdStartY = 70;
-				tfResult = tf.findNearest(coi, tfSearchArea, tdStartX, tdStartY);
-		    	if (tfResult != null) { 
-	    	    	tdStartX = tfResult.x + tfResult.width / 2 + tf.fudge / 2;
-	    	    	tdStartY = tfResult.y + tfResult.height / 2 + tf.fudge / 2;
-	    			//tdFindResult = td.setTemplate(picbb.array(), tdStartX, tdStartY, tfResult.width, tfResult.height);
-	    			tdAvg.reset();
-	    			tdAvg.add(tdFindResult);
-	    			tfFindTargetNow = false;
-	    			if(Silly.debug("CONT_TF")) // debugging - continiously run targetfinder  
-	    				tfFindTargetNow = true;
-		    	} else {
-		    		tdFindResult = null;
-		    	}
+				tdStartX = 152;
+				tdStartY = 105;
+				//tfResult = tf.findNearest(coi, tfSearchArea, tdStartX, tdStartY);
+		    	//if (tfResult != null) { 
+	    	    //tdStartX = tfResult.x + tfResult.width / 2 + tf.fudge / 2;
+	    	    //tdStartY = tfResult.y + tfResult.height / 2 + tf.fudge / 2;
+				tdFindResult = td.setTemplate(coi, tdStartX, tdStartY, 40, 50);
+				tdAvg.reset();
+				tdAvg.add(tdFindResult);
+				tfFindTargetNow = false;
+				if(Silly.debug("CONT_TF")) // debugging - continiously run targetfinder  
+					tfFindTargetNow = true;
+				//} else {
+				//tdFindResult = null;		    	
 	    	}
 	    	
 	    	
 	        if (td != null) {
-				//td.newFrame(picbb.array());
+				td.newFrame(coi);
 		    	td.setSearchDist(5, 5, 2);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
-	        		//	tdFindResult.scale = -10;
-	        		
+	        		//	tdFindResult.scale = -10;	
 	        		// prohibit scale frome changing more than td.searchDist.scale / tdScale.size per frame 
 	        		tdAvg.set(tdFindResult);
-	        		//td.find(tdFindResult, picbb.array());
+	        		td.find(tdFindResult, coi);
 	        		//if (tdChartFiles != null) 
 	        		//	td.makeChartFiles(tdFindResult, picbb.array(), tdChartFiles);
 	            	sounds.setAlertLevel(tdFindResult.score / tdMaxErr);
 	            	tdAvg.add(tdFindResult);
 		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
 		        	if (tdFindResult.score > tdMaxErr) {
-		        		if (++badTdCount > 6) {
-			        		//System.out.printf("Large error %d\n", (int)tdFindResult.score);
+		        		if (++badTdCount > 600) {
+			        		System.out.printf("Large error %d\n", (int)tdFindResult.score);
 			        		corr = 0;
 			        		td.active = false;
 			        		noProcessing = true;
@@ -1027,6 +1025,10 @@ class FrameProcessor {
 		
 
         if (displayRatio > 0 && (count % displayRatio) == 0) {
+			if (tdFindResult != null) {  
+	            	//display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
+				td.draw(coi, rescale);
+			}
         	writeCompositeImage(display.image, coi, rescale, (displayMode & 0x4) != 0,
         			(displayMode & 32) != 0);
   
@@ -1040,6 +1042,7 @@ class FrameProcessor {
             	display.g2.setStroke(new BasicStroke(2));
 	            if (tdFindResult != null) {  
 	            	display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
+					//td.draw(oi);
 	            }
  
 				tfrc.rescaleDisplay = tflo.rescaleDisplay = tfro.rescaleDisplay = tfr.rescaleDisplay = tfl.rescaleDisplay = rescale;

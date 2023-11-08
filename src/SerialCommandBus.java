@@ -32,7 +32,7 @@ class SerialCommandBus {
 	    	    p.waitFor();
 	    	    p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
 	    	    p.waitFor();
-	        	tty = new FileWriter(devName);
+	        	//tty = new FileWriter(devName);
 				System.out.println("Opened " + devName + " for writing at 9600bps");
 				complained = false;
 	        } catch(Exception e) { 
@@ -51,8 +51,8 @@ class SerialCommandBus {
     void start() { 
     	if (devName != null) { 
 	    	reader.start();
-	    	timeout.start();
-	    	open();
+	    	//timeout.start();
+	    	//open();
     	}
     }
 
@@ -114,7 +114,7 @@ class SerialCommandBus {
         }
     });
     
-	Double lat = 0.0, lon = 0.0, hdg = 0.0, siv = 0.0, speed = 0.0; 
+	Double lat = 0.0, lon = 0.0, hdg = 0.0, siv = 0.0, speed = 0.0, hdop = 0.0, nsat = 0.0; 
 	int updates = 0;
 
     Thread reader = new Thread (new Runnable() {
@@ -122,8 +122,12 @@ class SerialCommandBus {
         	while(true) { 
         		BufferedReader fin;
 				try {
+					Process p = Runtime.getRuntime().exec("/home/jim/src/gpsd/gpsd-3.25.1~dev/clients/ubxtool -f " + devName + " -p CFG-RATE,100");
+					p.waitFor();
+					p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
+					p.waitFor();
 					fin = new BufferedReader(new FileReader(devName));
-				} catch (FileNotFoundException e) {
+				} catch (Exception e) {
 					//e.printStackTrace();
 					sleep();
 					continue;
@@ -152,15 +156,23 @@ class SerialCommandBus {
 					try { 
 						if (st[0].equals("$GPRMC")) {
 							lat = Double.parseDouble(st[3]) / 100.0;
-							lon = -Double.parseDouble(st[5]) / 100.0;
+							lon = Double.parseDouble(st[5]) / 100.0;
+							lat = Math.floor(lat) + (lat - Math.floor(lat)) * 100.0 / 60.0;
+							lon = Math.floor(lon) + (lon - Math.floor(lon)) * 100.0 / 60.0;
+							if (st[6].equals("W")) lon = -lon;
+							if (st[4].equals("S")) lat = -lat;
 							speed = Double.parseDouble(st[7]);
 							if (st[8].length() > 0) 
 								hdg = Double.parseDouble(st[8]);
 							else 
 								hdg = 0.0;
 							updates++;
-							//System.out.printf("GPS %f %f %f %f\n", lat, lon, hdg, speed);
-						}
+						} else if (st[0].equals("$GPGGA")) {
+							nsat = Double.parseDouble(st[7]);
+							hdop = Double.parseDouble(st[8]);
+						} 
+						System.out.printf("GPS %+12.08f %+12.08f %05.1f %05.1f %05.1f %.0f\n", 
+							lat, lon, hdg, speed, hdop, nsat);
 						
 						
 					} catch(Exception e) {

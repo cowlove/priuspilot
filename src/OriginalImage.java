@@ -71,7 +71,7 @@ public class OriginalImage {
 	}
 	
 	public int width, height;
-	private ByteBuffer pixels;
+	public ByteBuffer pixels;
 	
 	static void yuv422torgb24(byte []in, byte []out) {
 		// This seems to work best so fr
@@ -138,9 +138,10 @@ public class OriginalImage {
 
 	public byte[] getHslRect(Rectangle redSa) {
 		// TODO Auto-generated method stub
-		//LazyHslConvert hsl = new LazyHslConvert(redSa.width, redSa.height);
-        //hsl.convertHsl(hslpic, 0, 0, redSa.width, redSa.height);
-		return null;
+		byte hslpic[] = new byte[redSa.width * redSa.height];
+		LazyHslConvert hsl = new LazyHslConvert(redSa.width, redSa.height);
+        hsl.convertHsl(hslpic, 0, 0, redSa.width, redSa.height);
+		return hslpic;
 	}
 
 	public OriginalImage deepCopy() {
@@ -161,7 +162,6 @@ public class OriginalImage {
 	}
 	
 	static void rgb2hsl(int r, int g, int b, int hsl[]) {
-		
 		float var_R = ( r / 255f );                    
 		float var_G = ( g / 255f );
 		float var_B = ( b / 255f );
