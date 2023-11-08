@@ -11,7 +11,7 @@
             "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
             "mainClass": "Silly",
             "args": ["/host/lanedumps/20231104.114633.yuv", "-skip", "2250", 
-            "-key","50,10" ]
+            "-key","50000,10", "-debug", "CONT_TF=1", "-debug", "SHOW_TF=1" ]
         },
         {
             "type": "java",

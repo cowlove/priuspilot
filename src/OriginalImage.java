@@ -136,11 +136,18 @@ public class OriginalImage {
 		// TODO Auto-generated method stub
 	}
 
-	public byte[] getHslRect(Rectangle redSa) {
-		// TODO Auto-generated method stub
-		byte hslpic[] = new byte[redSa.width * redSa.height];
-		LazyHslConvert hsl = new LazyHslConvert(redSa.width, redSa.height);
-        hsl.convertHsl(hslpic, 0, 0, redSa.width, redSa.height);
+	public byte[] getHslRect(Rectangle r) {
+		byte hslpic[] = new byte[r.width * r.height * 3];
+		//LazyHslConvert hsl = new LazyHslConvert(redSa.width, redSa.height);
+        //hsl.convertHsl(hslpic, 0, 0, redSa.width, redSa.height);
+		for(int y = 0; y < r.height; y++) { 
+			for(int x = 0; x < r.width; x++) {
+				int hsl[] = getHsl(x + r.x, y + r.y);
+				for (int b = 0; b < 3; b++) { 
+					hslpic[(y * r.width + x) * 3 + b] = (byte)hsl[b];
+				}
+			} 
+		}
 		return hslpic;
 	}
 

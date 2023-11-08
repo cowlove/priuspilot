@@ -156,6 +156,7 @@ public class Silly {
 		String steerCmdHost = "255.255.255.255";
         boolean jni = false;
 		boolean gps = false;
+		boolean showUnusedKeys = false;
 		String fakeGps = null;
 		ArrayList<String> trimCheatFiles = new ArrayList<String>();
         boolean nightMode = false, faketime = false, useSystemClock = true, noSteer = false;
@@ -199,6 +200,7 @@ public class Silly {
             else if (a.compareTo("-faketime") == 0) faketime = true;
             else if (a.compareTo("-realtime") == 0) realtime = true;
             else if (a.compareTo("-systemclock") == 0) useSystemClock = !useSystemClock;
+			else if (a.compareTo("-unusedkeys") == 0) showUnusedKeys = true;
 			
                                         
             else if (a.compareTo("-ct") == 0) colorThreshold = Double.parseDouble(args[++i]);
@@ -338,7 +340,7 @@ public class Silly {
 		for(String f : trimCheatFiles) { 
 			fp.trimCheat.addFile(f);
 		}
-		
+		if (showUnusedKeys) fp.tp.printUnusedKeys();
         if (displayMode > 0) fp.displayMode = displayMode;
 
 

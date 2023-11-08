@@ -261,9 +261,9 @@ class FrameProcessor {
         ccPid.qualityFadeGain = 0;
         ccPid.reset();
         
-        tfSearchArea = new Rectangle(0, 0, w, h);
-        tdStartX = w / 2;
-        tdStartY = h / 3;
+        tdStartX = (int)(w * 0.42);
+        tdStartY = (int)(h * 0.33);
+        tfSearchArea = new Rectangle(tdStartX, tdStartY, w/5, h/4);
         
         inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 152); 
         inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 95);
@@ -352,6 +352,11 @@ class FrameProcessor {
         	pauser.togglePaused();
         else if (keyCode == 'A')  
         	restartOutputFiles();
+		else if (keyCode == 'F') {
+			td.active = false;
+			tdFindResult = null;
+			tfFindTargetNow = false;
+		}
         else if (keyCode == 10) { // [ENTER] key
 			if (td != null) {
 				td.active = true;
@@ -576,6 +581,8 @@ class FrameProcessor {
     	double delta;
     	RunningAverage scale = new RunningAverage(period), x = new RunningAverage(period), y = new RunningAverage(period);
     	void add(TemplateDetect.FindResult f) {
+			if (f == null) 
+				return;
     		if (last != null)
     			delta = Math.sqrt((last.x - f.x) * (last.x - f.x) + (last.y - f.y) * (last.y - f.y) + 
     					(last.scale - f.scale) * (last.scale - f.scale));
@@ -840,23 +847,20 @@ class FrameProcessor {
 				curve = Double.NaN;
 			corr += -pidCA.add(curve, time);
 	
-			if (tfFindTargetNow) {
+			if (tfFindTargetNow || Silly.debug("CONT_TF")) {
 				// try to set tdFindResult to new template.  If fails, tdFindResult will be left null
 				tdStartX = 152;
 				tdStartY = 105;
-				//tfResult = tf.findNearest(coi, tfSearchArea, tdStartX, tdStartY);
-		    	//if (tfResult != null) { 
-	    	    //tdStartX = tfResult.x + tfResult.width / 2 + tf.fudge / 2;
-	    	    //tdStartY = tfResult.y + tfResult.height / 2 + tf.fudge / 2;
-				tdFindResult = td.setTemplate(coi, tdStartX, tdStartY, 40, 50);
+				tfResult = tf.findNearest(coi, tfSearchArea, tdStartX, tdStartY);
+		    	if (tfResult != null) { 
+	    	    	tdStartX = tfResult.x + tfResult.width / 2 + tf.fudge / 2;
+	    	    	tdStartY = tfResult.y + tfResult.height / 2 + tf.fudge / 2;
+					tdFindResult = td.setTemplate(coi, tdStartX, tdStartY, tfResult.width, tfResult.height);
+				}
 				tdAvg.reset();
 				tdAvg.add(tdFindResult);
 				tfFindTargetNow = false;
-				if(Silly.debug("CONT_TF")) // debugging - continiously run targetfinder  
-					tfFindTargetNow = true;
-				//} else {
-				//tdFindResult = null;		    	
-	    	}
+			}
 	    	
 	    	
 	        if (td != null) {
@@ -871,7 +875,7 @@ class FrameProcessor {
 	        		td.find(tdFindResult, coi);
 	        		//if (tdChartFiles != null) 
 	        		//	td.makeChartFiles(tdFindResult, picbb.array(), tdChartFiles);
-	            	sounds.setAlertLevel(tdFindResult.score / tdMaxErr);
+	            	//sounds.setAlertLevel(tdFindResult.score / tdMaxErr);
 	            	tdAvg.add(tdFindResult);
 		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
 		        	if (tdFindResult.score > tdMaxErr) {
