@@ -165,6 +165,7 @@ class BufferedImageDisplay {
     int count = 0;
     Graphics2D g2 = null;
     int textrow = 0;
+	public int rescale = 1;
 
     int clamp(int x) { 
 		if (x < 0) return 0;
@@ -174,7 +175,7 @@ class BufferedImageDisplay {
 
     void writeText(String s) {
         g2.setColor(Color.blue);
-        g2.drawString(s, 10, ++textrow * 12);
+        g2.drawString(s, 10, ++textrow * 12 * rescale);
     }
     static int nextX = 0;
     static int nextY = 0;

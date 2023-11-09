@@ -148,7 +148,7 @@ public class PidControl {
     double qualityFadeGain = 4.0;
     double qualityFadeThreshold = 0.10;
     double quality = 0.0;
-    double qualityPeriod = 2.0;
+    double qualityPeriod = 1.5;
     
     // these values are set in reset() method
     double i;

@@ -931,7 +931,7 @@ class TargetFinderLines extends TargetFinder {
 		Point midLine = findMiddleOfLine(h.origin, h.bestRadius(), focus.getLastAngle(), sa);
 		final int txtOffset = 0;
 
-		g2.drawString(String.format("%d %.1f/%d %.1f", c.results.l.size() * rescaleDisplay, 
+		g2.drawString(String.format("%d %.1f/%d %.1f", c.results.l.size(), 
 			getAngle(), getOffsetX(), h.getAngSpread()), (midLine.x + sa.x + txtOffset) * rescaleDisplay, 
 			(midLine.y + sa.y + txtOffset) * rescaleDisplay);
 		

@@ -83,7 +83,10 @@ class HoughTransform {
 
 		// hard-coded emperical values correlating the typical observed relation between
 		// lane angle/radius hotspots on the hough map
-		double aStep = leftSide ? -1.8 : -0.8;
+		// TODO: this needs to be changed to be in units of ang per pixel, not 
+		// a ratio of hough bins.   The bins sizes change depending on config 
+		// parameters and dynamic focus 
+		double aStep = leftSide ? Silly.debugDouble("LASTEP", -1.7) : Silly.debugDouble("RASTEP", -.5);;
 
 		int rStep = leftSide ? -1 : 1;
 		int rStart = (int)Math.floor(minR / radStep);

@@ -169,16 +169,16 @@ class TemplateDetectRGB extends TemplateDetect {
 		out.scale = scale;
 		return out;
 	}
-	byte [] convertOI(OriginalImage oi) {
-		return yuv2canny(oi);
+	byte [] convertOI(OriginalImage oi, Rectangle r) {
+		return yuv2canny(oi, r);
 	}
 
 	CannyEdgeDetector c = new CannyEdgeDetector();
 	
-	byte [] yuv2canny(OriginalImage oi) { 
+	byte [] yuv2canny(OriginalImage oi, Rectangle r) { 
 		byte [] p = new byte[width * height * bpp];
-		c.threshold = 5.0F;
-		c.setGaussianKernelRadius(0.8F);
+		c.threshold = 2.0F;
+		c.setGaussianKernelRadius(0.3F);
 		c.setGaussianKernelWidth(6);
 		c.zones.lsz.m1 = Double.NaN;
 		c.processData(oi, new Rectangle(0, 0, width, height));
@@ -187,17 +187,19 @@ class TemplateDetectRGB extends TemplateDetect {
 
 		int [] c2data = new int[width * height];
 		//select for and copy only horizontal lines
-		for(int y = 0; y < height; y++) {
-			int continuous = 0;
-			for(int x = 0; x < width; x++) {
-				if (cdata[y * width + x] != 0) { 
-					if (++continuous > 3) {
-						for(int dx = x - continuous + 1; dx <= x; dx++) {
-							c2data[y * width + dx] = cdata[y * width + dx];
-						} 
+		if (false) { 
+			for(int y = 0; y < height; y++) {
+				int continuous = 0;
+				for(int x = 0; x < width; x++) {
+					if (cdata[y * width + x] != 0) { 
+						if (++continuous > 3) {
+							for(int dx = x - continuous + 1; dx <= x; dx++) {
+								c2data[y * width + dx] = cdata[y * width + dx];
+							} 
+						}
+					} else {
+						continuous = 0;
 					}
-				} else {
-					continuous = 0;
 				}
 			}
 		}
@@ -206,7 +208,7 @@ class TemplateDetectRGB extends TemplateDetect {
 			int continuous = 0;
 			for(int y = 0; y < height; y++) {
 				if (cdata[y * width + x] != 0) { 
-					if (++continuous > 3) {
+					if (++continuous > 2) {
 						for(int dy = y - continuous + 1; dy <= y; dy++) {
 							c2data[dy * width + x] = cdata[dy * width + x];
 						} 
@@ -216,7 +218,39 @@ class TemplateDetectRGB extends TemplateDetect {
 				}
 			}
 		}
-		gk.blur(c2data);
+		c2data = cdata;
+		// find best line of horizontal symmetry
+		int bestSymCount = 0, bestSymX = 0; 
+		for(int x = r.x; x < r.x + r.width; x++) { 
+			int symCount = 0; // sym pixels found
+			for (int x1 = 1; x1 < r.width / 2 && x1 < width; x1++) {
+				for(int y = r.y; y < r.y + r.height && y < height; y++) { 
+					int xl = x - x1;
+					int xr = x + x1;
+					if (xl > r.x && xr < r.x + r.width && c2data[y * width + xl] != 0 && c2data[y * width + xr] != 0)
+						symCount++;
+				}
+			}
+			if (symCount > bestSymCount) {
+				bestSymCount = symCount;
+				bestSymX = x;
+			}
+		}
+		
+		if (bestSymCount > 0) { 
+			for(int y = r.y; y < r.y + r.height && y < height; y++) { 
+				for(int x = 1; x < r.x; x++) { 
+					int xl = bestSymX - x;
+					int xr = bestSymX + x;
+					if (xl > r.x && xr < r.x + r.width && xr < width 
+						&& (c2data[y * width + xl] == 0 || c2data[y * width + xr] == 0)) {
+						 c2data[y * width + xl] =  c2data[y * width + xr] = 0;
+					}
+				}
+				c2data[y * width + bestSymX] = -1;
+			}
+		}
+		//gk.blur(c2data);
 		for(int y = 0; y < height; y++) {
 			for(int x = 0; x < width; x++) { 
 				for(int i = 0; i < bpp; i++) {
@@ -247,7 +281,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 	@Override
 	void setTemplate(OriginalImage oi, Rectangle r) {
-		byte [] p = convertOI(oi);
+		byte [] p = convertOI(oi, r);
 		if (hsl != null) 
 			hsl.convertHsl(p, r.x, r.y, r.x + r.width, r.y + r.height);
 		template.loc = new Rectangle(r);
@@ -669,8 +703,11 @@ class TemplateDetectRGB extends TemplateDetect {
 		}	
 	}
 	@Override
-	FindResult find(FindResult startAt, OriginalImage oi) { 
-		picX = convertOI(oi);
+	FindResult find(FindResult startAt, OriginalImage oi) {
+		int rw = 50;
+		int rh = 80;
+		Rectangle r = new Rectangle(startAt.x - rw / 2, startAt.y - rh / 2, rw, rh); 
+		picX = convertOI(oi, r);
 		frame++;
 		//return findOptimized(startAt, pic);
 		lastResult = findBruteForce(startAt,picX);

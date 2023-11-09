@@ -54,14 +54,14 @@ class TargetFinderRed extends TargetFinder {
 	
 	@Override 
 	Rectangle [] findAll(OriginalImage oi, Rectangle saRec) {
-		saRec.width = width / 3;
-		saRec.x = (width - saRec.width) / 2 + 10;
-		saRec.height = (int)(height * .6f);
+		//saRec.width = width / 3;
+		//saRec.x = (width - saRec.width) / 2 + 10;
+		//saRec.height = (int)(height * .6f);
 		sa = saRec;
 		
 		c.zones.height = sa.height;
 		c.zones.clear();
-		
+	
 		c.threshold = param.threshold1;
 		c.setGaussianKernelRadius(param.gaussianKernelRadius);
 		c.setGaussianKernelWidth(param.gaussianKernelWidth);
@@ -81,7 +81,6 @@ class TargetFinderRed extends TargetFinder {
 		c.processData(oi, redSa);
 		boolean [] mask = makeCannyRadiusMask(c.getData(), redSa.width, redSa.height, 5);
 		//applyMask(mask, hslpic);
-
   
 		// apply red filter,
 		int [] red = new int[redSa.height * redSa.width];
@@ -102,13 +101,13 @@ class TargetFinderRed extends TargetFinder {
         		orig[(x + y * sa.width) * bpp + 2] = 0;
         		*/
         	} else {
-        		//red[i / bpp] = 0;
+        		red[i / hslbpp] = l / 3;
         	}
         }
 
         GaussianKernel blur = new GaussianKernel(1.5f, 15, redSa.width, redSa.height);
-        blur.blur(red);
-        //System.out.printf("blur max=%d, bestX=%d, bestY=%d\n", blur.max, blur.bestX, blur.bestY);
+        //blur.blur(red);
+        //System.out.printf("blur max=%f, bestX=%d, bestY=%d\n", blur.max, blur.bestX, blur.bestY);
  
         
         ArrayList<Point> points = new ArrayList<Point>();
@@ -126,7 +125,7 @@ class TargetFinderRed extends TargetFinder {
 
 
         // iterate through list of red areas, eliminating some based on various tests. 
-        for(int i = 0; i < points.size(); i++) { 
+        for(int i = 0; false && i < points.size(); i++) { 
     		Point a = points.get(i);
     		int pix = tmpRed[a.x + a.y * redSa.width];
     		String ddLabel = String.format("%d%%", pix * 100 / ns.max);
@@ -134,7 +133,7 @@ class TargetFinderRed extends TargetFinder {
     		// remove points not in the lower half of the search area
     		int minY = redSa.height / 3;
     		int maxY = redSa.height - 1;
-    		if (dd != null) {
+    		if (false && dd != null) {
     			dd.g2.setColor(Color.yellow);
     			dd.g2.drawLine(0, minY, redSa.width - 1, minY);
     			dd.g2.drawLine(0, maxY, redSa.width - 1, maxY);
@@ -144,7 +143,7 @@ class TargetFinderRed extends TargetFinder {
     			i--;
     			continue;
     		}
-       		if (dd != null) 
+       		if (false && dd != null) 
     			dd.annotate(a.x, a.y, Color.red, ddLabel);
    		
     		// Remove areas that don't meet the intensity threshold
@@ -169,7 +168,7 @@ class TargetFinderRed extends TargetFinder {
        			dd.annotate(a.x, a.y, Color.yellow, ddLabel);
         }
 
-        for(int i = 0; i < points.size(); i++) { 
+        for(int i = 0; false && i < points.size(); i++) { 
     		Point a = points.get(i);       
     		if (dd != null) 
     			dd.annotate(a.x + ddSecondImageOffset, a.y, Color.red, String.format("%d", i));
@@ -189,13 +188,15 @@ class TargetFinderRed extends TargetFinder {
         			continue;
 
 
-        		int symCorr = testRedSymmetry(red, redSa, a, b);
+        		/*
+				int symCorr = testRedSymmetry(red, redSa, a, b);
         		if (dd != null) {  
            			dd.annotate(a.x + ddSecondImageOffset, a.y,  Color.green, String.format("%d", i));
            			dd.annotate(b.x + ddSecondImageOffset, b.y, Color.green, String.format("%d", j));
            			dd.annotate(10, ddYTextLine, Color.red, String.format("P%d-P%d: %d", i, j, symCorr));
            			ddYTextLine += 10;
         		}
+				*/
         		
         		double redEdgeThresh = .5;
         		if (a.x < b.x) { 
