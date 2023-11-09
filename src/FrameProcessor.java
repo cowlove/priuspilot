@@ -173,8 +173,8 @@ class FrameProcessor {
 		double vertPct = Silly.debugInt("SA_VERT_PERCENT",75) / 100.0;
         tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 60), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
-        tflo = new TargetFinderLines(w, h, null, true, 77, 30, minSz, maxSz, 12, 35, .85);
-        tfro = new TargetFinderLines(w, h, null, false, 77, 30, minSz, maxSz, 12, 35, .85);
+        tflo = new TargetFinderLines(w, h, null, true, 77, 60, minSz, maxSz, 12, 35, .85);
+        tfro = new TargetFinderLines(w, h, null, false, 77, 60, minSz, maxSz, 12, 35, .85);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
 
 
@@ -188,11 +188,7 @@ class FrameProcessor {
         
         tfl.useLuminanceCheck = tfr.useLuminanceCheck = true;  
         tflo.useLuminanceCheck = tfro.useLuminanceCheck = false;
-        
-		if (false) { 
-	        tfl.useLuminanceCheck = tfr.useLuminanceCheck = false;  
-			tfl.focus.minWeight = tfr.focus.minWeight = 20000;
-		}
+        tflo.focus.minWeight = tfro.focus.minWeight = 1000;
 
         if (Silly.debug("GK_RAD"))
         	tfl.param.gaussianKernelRadius = tfr.param.gaussianKernelRadius =
