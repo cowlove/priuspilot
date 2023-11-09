@@ -176,7 +176,7 @@ class SerialCommandBus {
 						
 						
 					} catch(Exception e) {
-						e.printStackTrace();
+						//e.printStackTrace();
 					}
                 }
         	}

@@ -447,7 +447,7 @@ class FrameProcessor {
     
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.2;	
+    double epsSteeringGain = 1.9;	
     double trq1 = 0, trq2 = 0;
     
     long lastCruiseSet = 0; // time of last cruise control command in ms
@@ -500,6 +500,7 @@ class FrameProcessor {
     RunningAverage avgFrameDelay = new RunningAverage(100);
     // TODO- separate text window to display test stats
     void writeDisplayText() {
+		display.g2.setColor(Color.white);
         display.writeText("FRAME: " + String.format("%d", count));
         display.writeText("LTIME: " + String.format("%d",  time - logFileStartTime));
         display.writeText("FPS: " + String.format("%.1f", fps));
@@ -611,7 +612,9 @@ class FrameProcessor {
 
     boolean tfFindTargetNow = false; // activate TargetFinder to set a template, cleared once target is found
     Rectangle tfSearchArea = null;
-	
+	RunningAverage avgLLCorr = new RunningAverage(PidControl.EXPECTED_FPS);
+	RunningAverage avgRLCorr = new RunningAverage(PidControl.EXPECTED_FPS);
+
     long ccLastCorrectionTime = 0;
 	long ccMinCorrectionInterval = 400; // milliseconds
     int ccSetPoint = 15;
@@ -813,8 +816,6 @@ class FrameProcessor {
 	
 			if (tfl.focus.getQuality() > laneMinQuality)	
 				lpos = (double)(tfl.getInstantaneousXDouble(height) - inputZeroPoint.zeroPoint.lLane) / width * lanePosPrescale;
-
-			
 			
 			if (tfr.focus.getQuality() > laneMinQuality) 	        		
 	    		rpos = (double)(tfr.getInstantaneousXDouble(height) - (inputZeroPoint.zeroPoint.rLane)) / width * lanePosPrescale;
@@ -836,8 +837,26 @@ class FrameProcessor {
 			//pidCSR.add((tfr.csX - inputZeroPoint.zeroPoint.rLane) /width * lanePosPrescale, time);
 			//pidCSL.add((tfl.csX - inputZeroPoint.zeroPoint.lLane) /width * lanePosPrescale, time);
 			
-
-			corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
+			corr = 0;
+			// Use button 0x1 and 0x4 to temporarily avoid the LL or RL PID, use
+			// the 1-second average instead 
+			pidLL.add(lpos, time);
+			pidRL.add(rpos, time);
+			if ((joystick.buttonBits & 0x1) == 0) { 
+				corr -= pidLL.corr;
+				avgLLCorr.add(pidLL.corr);
+			} else { 
+				corr -= avgLLCorr.calculate();
+			}
+			if ((joystick.buttonBits & 0x4) == 0) { 
+				corr -= pidRL.corr;
+				avgRLCorr.add(pidRL.corr);
+			} else { 
+				corr -= avgRLCorr.calculate();
+			}
+			corr = corr / 2;
+ 
+			//corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
 			if (!Double.isNaN(persVanX)) 
 				corr += -pidPV.add(persVanX, time);
 			if (!Double.isNaN(laneVanX))
@@ -992,10 +1011,10 @@ class FrameProcessor {
          
         if (joystick.getButtonPressed(9)) 
         	restartOutputFiles();
-		if (joystick.getButtonPressed(0))  
-			steeringTestPulse.startPulse(-1);
-		if (joystick.getButtonPressed(2))  
-			steeringTestPulse.startPulse(1);
+		//if (joystick.getButtonPressed(0))  
+		//	steeringTestPulse.startPulse(-1);
+		//if (joystick.getButtonPressed(2))  
+		//	steeringTestPulse.startPulse(1);
 		if (joystick.getButtonPressed(8))  
 			inputZeroPoint.setAutoZero(); 
 		if (joystick.getButtonPressed(1))  {
@@ -1157,8 +1176,8 @@ class FrameProcessor {
 	        
 	        if ((ms - avgMs) > avgMs * 5) {
 	        	long now = Calendar.getInstance().getTimeInMillis();
-	        	System.out.println(String.format("%d.03%d", now / 1000, now % 1000) + ": untimely frame #" + count + " took " + ms + " ms, average is " + avgMs + " profTimer is "
-	        		   + pms);
+	        	System.out.printf("%d.03%d: untimely frame #%d took %d ms, average is %.2f, profTimer is %d\n",
+				 now / 1000, now % 1000, count, ms, avgMs, pms);
 	        }
         }
         lastFrameTime = time;
@@ -1311,7 +1330,8 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("RMS errs: LL=%.5f, RL=%.5f, VP=%.5f, avgAction=%.5f\n", 
+ 	  	System.out.printf("FPS=%05.2f RMS errs: LL=%.5f, RL=%.5f, VP=%.5f, avgAction=%.5f\n",
+			avgMs != 0 ? 1000.0 / avgMs : 0,  
 			pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr(), steering.totalAction / count);
     }
      
@@ -1360,7 +1380,10 @@ class FrameProcessor {
 	    	} else { 
 	    			s = new String(logSpec);
 	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");
-	    			s = s.replace("%TEST1", "%time %steer %corr %tfl %tfr %pvx %lat %lon %hdg %speed %gpstrim %strim %buttons");
+	    			s = s.replace("%TEST1", 
+		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
+		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim " +
+		"strim %strim but %buttons stass %stass");
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 	    			s = s.replace("%frame", String.format("%d", count));
 	    			s = s.replace("%time", String.format("%d", (int)(time - logFileStartTime)));
@@ -1387,6 +1410,7 @@ class FrameProcessor {
 	    			s = s.replace("%pvx", String.format("%.4f", persVanX));
 	    			s = s.replace("%lvx", String.format("%.4f", laneVanX));
 	    	    			
+	    			s = s.replace("%stass", String.format("%.4f", joystick.steerAssist));
 	    			s = s.replace("%steer", String.format("%.4f", steer));
 	    			s = s.replace("%corr", String.format("%.4f", corr));
 	    			s = s.replace("%lat", String.format("%+13.8f", gps.lat));
