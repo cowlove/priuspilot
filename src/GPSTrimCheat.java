@@ -73,10 +73,15 @@ public class GPSTrimCheat {
                 String[] words = s.split("\\s+");
                 Entry e = new Entry();
                 e.trim = reDouble(".*st\\s+([-+]?[0-9.]+)", s);
+                double corr =  reDouble(".*corr\\s+([-+]?[0-9.]+)", s);
+                double gpstrim =  reDouble(".*\\sgpstrim\\s+([-+]?[0-9.]+)", s);
+                double strim =  reDouble(".*\\sstrim\\s+([-+]?[0-9.]+)", s);
                 e.lat = reDouble(".*lat\\s+([-+]?[0-9.]+)", s);
                 e.lon = reDouble(".*lon\\s+([-+]?[0-9.]+)", s);
                 e.hdg = reDouble(".*hdg\\s+([-+]?[0-9.]+)", s);
                 e.buttons = (int)reDouble(".*but\\s+([-+]?[0-9.]+)", s);
+                if (Math.abs(corr + gpstrim + strim) > Math.abs(e.trim))
+                    e.trim = corr + gpstrim + strim;
                 if (Math.abs(e.trim) < trimThresh)
                     e.trim = 0;
                 if (e.lat != lastLat && e.lon != lastLon) {

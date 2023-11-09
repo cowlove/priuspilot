@@ -1,3 +1,15 @@
+2023/11/09 
+	TODO - separate out reDouble() 
+	TODO - parse button hints from GPSTrimCheat
+	TODO - separate out out quality-detection and fade code from PID 
+	TODO - new hardware to allow for usable power steering
+	TODO - change esp32 firmware to increase max steering power to 0.60
+	TODO - separate out ESPNow into own JNI interface
+	TODO - bidirectional EPSNow 
+
+* cloned/built gpsd from github for newer/fresher ubxtool that could actually configure the GPS ok
+
+
 2022/10/10 Investigate left lane loss in I5S
 	time ./scripts/pp lanedumps/20221010.145903.yuv -rescale 4 -skip 2900 -exit 300 -displayratio 0 
 	lanedumps/20221010.145903.yuv: Avg fr=49.33, RMS errs: HL=0.02840, HR=0.00122, VP=0.01041
@@ -5,8 +17,6 @@
 Got scan zones focus working, improved to 00651 
 	lanedumps/20221010.145903.yuv: Avg fr=47.13, RMS errs: HL=0.00651, HR=0.00109, VP=0.00402
  
-
-
 TODO - fix FrameCaptureJNI interface to support multiple cameras/instances of interface. 
 
 
