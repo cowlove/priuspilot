@@ -571,7 +571,7 @@ JNIEXPORT jint JNICALL Java_FrameCaptureJNI_grabFrame
 				else if (newbright < -step) 
 					set_ctl(conf->fd, V4L2_CID_BRIGHTNESS, val - step);
 				val = get_ctl(conf->fd, V4L2_CID_BRIGHTNESS);
-				if (val < 65) { 
+				if (val < 60) { 
 					printf("SWITCHING TO DAY MODE, brightness was %d\n", val);
 					conf->nightMode = false;
 					conf->count = conf->lastMs = 0;

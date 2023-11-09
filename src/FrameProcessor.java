@@ -1,9 +1,11 @@
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.awt.event.ActionEvent;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
@@ -15,6 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 class HistoryArray { 
@@ -137,8 +140,17 @@ class FrameProcessor {
 	
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
     		int displayRatio, String serialDevice, String swCam) throws IOException {
-        if (displayRatio > 0) 
-        	display = new BufferedImageDisplayWithInputs(this, w * rescale, h * rescale);        
+        if (displayRatio > 0) {
+        	display = new BufferedImageDisplayWithInputs(this, w * rescale, h * rescale);    
+			display.rescale = rescale;
+			Map<TextAttribute, Object> attributes = new HashMap<>();
+			Font currentFont = display.g2.getFont();
+			attributes.put(TextAttribute.FAMILY, currentFont.getFamily());
+			attributes.put(TextAttribute.WEIGHT, TextAttribute.WEIGHT_SEMIBOLD);
+			attributes.put(TextAttribute.SIZE, (int) (currentFont.getSize() * rescale));
+			Font myFont = Font.getFont(attributes);
+			display.g2.setFont(myFont);
+		}
     	if (outFile != null) 
     		writer = new ImageFileWriter(outFile, Silly.fc);
         if (dumpFile != null) 
@@ -148,21 +160,21 @@ class FrameProcessor {
         height = h;
         this.rescale = rescale;
         this.displayRatio = displayRatio;
-        	
+        
 		restartOutputFiles();
         //td = new TemplateDetectCannyCorrelation(w, h);
         td = new TemplateDetectRGB(w, h);
         
-        int minSz = Silly.debugInt("minSz", 24); // min/max radius
+        int minSz = Silly.debugInt("minSz", 33); // min/max radius
         int maxSz = 100;
 		int minAng = Silly.debugInt("minAng", 12);
 		int maxAng = Silly.debugInt("maxAng", 35);
         int houghSize = Silly.debugInt("HOUGH_SIZE", 55);
-		double vertPct = Silly.debugInt("SA_VERT_PERCENT",52) / 100.0;
-        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 46), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+		double vertPct = Silly.debugInt("SA_VERT_PERCENT",75) / 100.0;
+        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 60), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
-        tflo = new TargetFinderLines(w, h, null, true, 82, 30, minSz, maxSz, 25, 45, .60);
-        tfro = new TargetFinderLines(w, h, null, false, 80, 30, minSz, maxSz, 25, 45, .60);
+        tflo = new TargetFinderLines(w, h, null, true, 77, 30, minSz, maxSz, 12, 35, .85);
+        tfro = new TargetFinderLines(w, h, null, false, 77, 30, minSz, maxSz, 12, 35, .85);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
 
 
@@ -211,36 +223,33 @@ class FrameProcessor {
        
         steeringDitherPulse.magnitude = 0.05;
         
-        pidRL.setGains(3.20, 0.04, 2.00, 0, 1);
+        pidRL.setGains(2.50, 0.04, 2.00, 0, 1);
 		pidRL.period.l = 0.6;
 		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
         pidRL.gain.i.max = 0.00; // I control has minor oscillating problems 
         pidRL.finalGain = 1.70;
-        pidRL.qualityFadeThreshold = .01;
-        pidRL.qualityFadeGain = 4;
+        pidRL.qualityFadeThreshold = .007;
+        pidRL.qualityFadeGain = 2;
  		pidRL.reset();
         pidRL.gain.p.loTrans = -0.04;  // "bumper" points of increased gain for lane proximity
         pidRL.gain.p.hiTrans = +0.04;  // TODO - change when the tfl prescale constant changes
         
         pidLL.copySettings(pidRL);
-        
-        pidLL.gain.p.loGain = 0.50;      // detune L P value, leave D high
-		pidLL.gain.p.hiGain = 0;
-
-        //pidLV.setGains(2.0, 0, 0.40, 0, 0);
+		        
+		//pidLV.setGains(2.0, 0, 0.40, 0, 0);
         pidLV.setGains(0,0,0,0,0);
 		pidLV.finalGain = 0;//.90;
         pidLV.qualityFadeThreshold = .084;
-        pidLV.qualityFadeGain = 5;
+        pidLV.qualityFadeGain = 2;
 		
         //pidPV.copySettings(pidLV);
         pidPV.setGains(2.0, 0, 0.60, 0, 0.8);
 		pidPV.finalGain = 1.80;
     	pidPV.period.l = 0.4;
 		pidPV.delays.l.delay = 0.4;
-	    pidPV.qualityFadeThreshold = 0.050;
-        pidPV.qualityFadeGain = 5;
+	    pidPV.qualityFadeThreshold = 0.015;
+        pidPV.qualityFadeGain = 2;
 		//pidPV.fadeCountMin = pidPV.fadeCountMax = 0;
 		pidPV.reset();
         //pidLV.setGains(0,0,0,0,0);
@@ -265,10 +274,10 @@ class FrameProcessor {
         tdStartY = (int)(h * 0.33);
         tfSearchArea = new Rectangle(tdStartX, tdStartY, w/5, h/4);
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 152); 
-        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 95);
-        inputZeroPoint.zeroPoint.rLane = 330 * w/320;
-        inputZeroPoint.zeroPoint.lLane = 0 * w/320;
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 224); 
+        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 36);
+        inputZeroPoint.zeroPoint.rLane = 460;
+        inputZeroPoint.zeroPoint.lLane = -19;
 
 		trimCheat = new GPSTrimCheat(400);
 		//gps.start();
@@ -669,8 +678,8 @@ class FrameProcessor {
 		   		tfrc.hh.draw(1);
 	   		}
 	   		
-	   		final int vanRectW = 128 * width / 320;
-	   		final int vanRectH = 32 * height / 240;
+	   		final int vanRectW = 128 ;//* width / 320;
+	   		final int vanRectH = 32;// * height / 240;
 			final int vpScale = 1;
 			   		
 	   		tflo.vanLimits = tfro.vanLimits = tfl.vanLimits = tfr.vanLimits = new
@@ -1297,7 +1306,7 @@ class FrameProcessor {
     	c = p.quality > 1.0 ? Color.red : c;
     	y = (y - minY) / (maxY - minY);
    		display.rectangle(c, "", 0.96, y + p.quality / 30, 0.08, .04);
-   		display.rectangle(c, String.format("%.1f", p.quality), 0.96, y - (1 - q) / 5, 0.08, .04);    	
+   		display.rectangle(c, String.format("%.03f", p.quality), 0.96, y - (1 - q) / 5, 0.08, .04);    	
     }
     
     void displayPid(PidControl p, Color c) { 
