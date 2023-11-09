@@ -171,8 +171,8 @@ class SerialCommandBus {
 							nsat = Double.parseDouble(st[7]);
 							hdop = Double.parseDouble(st[8]);
 						} 
-						System.out.printf("GPS %+12.08f %+12.08f %05.1f %05.1f %05.1f %.0f\n", 
-							lat, lon, hdg, speed, hdop, nsat);
+						//System.out.printf("GPS %+12.08f %+12.08f %05.1f %05.1f %05.1f %.0f\n", 
+						//	lat, lon, hdg, speed, hdop, nsat);
 						
 						
 					} catch(Exception e) {

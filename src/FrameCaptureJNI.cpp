@@ -434,7 +434,9 @@ void max_brightness(int fd, bool max) {
 				set_ctl_to_max(fd, V4L2_CID_SHARPNESS);
 				//set_ctl_to_max(V4L2_CID_SATURATION);
 				//set_ctl_to_max(V4L2_CID_BRIGHTNESS);
-				set_ctl(fd, V4L2_CID_BRIGHTNESS, 100);
+				set_ctl(fd, V4L2_CID_EXPOSURE_ABSOLUTE, 333);
+				set_ctl(fd, V4L2_CID_BRIGHTNESS, 64);
+				set_ctl(fd, V4L2_CID_GAIN, 50);
 			} else { 
 				set_ctl(fd, V4L2_CID_EXPOSURE_AUTO, V4L2_EXPOSURE_APERTURE_PRIORITY);
 				set_ctl_to_default(fd, V4L2_CID_BRIGHTNESS);
@@ -561,20 +563,27 @@ JNIEXPORT jint JNICALL Java_FrameCaptureJNI_grabFrame
 			if (conf->count < 255) 
 				set_ctl(conf->fd, V4L2_CID_BRIGHTNESS, get_ctl(conf->fd, V4L2_CID_BRIGHTNESS) + 1);
 			else if (conf->count % 5) { 
-				int newbright;
+				int newbright = 0;
 				get_brightness_adj(buf, conf->windHeight * conf->windWidth * 2, &newbright);
 				int val = get_ctl(conf->fd, V4L2_CID_BRIGHTNESS);
 				
-				int step = 1;
-				if (newbright > step)  
-					set_ctl(conf->fd, V4L2_CID_BRIGHTNESS, val + step);
-				else if (newbright < -step) 
-					set_ctl(conf->fd, V4L2_CID_BRIGHTNESS, val - step);
-				val = get_ctl(conf->fd, V4L2_CID_BRIGHTNESS);
-				if (val < 60) { 
-					printf("SWITCHING TO DAY MODE, brightness was %d\n", val);
-					conf->nightMode = false;
-					conf->count = conf->lastMs = 0;
+				if (0) { 
+					int step = 1;
+					if (newbright > step) {  
+						set_ctl(conf->fd, V4L2_CID_BRIGHTNESS, val + step);
+						printf("Setting brightness to %d\n", val + step);
+					} else if (newbright < -step) { 
+						set_ctl(conf->fd, V4L2_CID_BRIGHTNESS, val - step);
+						printf("Setting brightness to %d\n", val - step);
+					}
+					val = get_ctl(conf->fd, V4L2_CID_BRIGHTNESS);
+					if (val < 60) { 
+						printf("SWITCHING TO DAY MODE, brightness was %d\n", val);
+						conf->nightMode = false;
+						conf->count = conf->lastMs = 0;
+	
+					}	
+					
 				}		
 			}
 		} else {
