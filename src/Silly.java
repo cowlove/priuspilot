@@ -150,7 +150,7 @@ public class Silly {
         int skipFrames = 0, debug = 0, capSize = 0, capCount = 0;
         double colorThreshold = 0.35;
         int frameCount = 0, pauseFrame = 0, exitFrame = 0, displayratio = 1;
-        int displayMode = 15;
+        int displayMode = 63;
         int volume = 10;
         int frameInterval = 0; // minimum interval between captured frames
 		String steerCmdHost = "255.255.255.255";

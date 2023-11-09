@@ -92,7 +92,7 @@ class FrameProcessor {
     int interval = 10;
     double servoTrim = 0.0;
     double zoom = 1.0; // zoom, normalized to 320x240
-    int displayMode = 10; 
+    int displayMode = 63; 
     //LaneAnalyzer la = null;
     TemplateDetect td = null;
     
@@ -112,7 +112,14 @@ class FrameProcessor {
     public PidControl selectedPid = pidLL;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
 	GPSTrimCheat trimCheat = null;
-    
+   
+	final int laneWidthPeriod = 20;
+	RunningQuadraticLeastSquares laneWidthAvg = 
+		new RunningQuadraticLeastSquares(1, (int)(laneWidthPeriod * PidControl.EXPECTED_FPS),
+		laneWidthPeriod);
+
+
+
     SteeringLogicSimpleLimits steering = new SteeringLogicSimpleLimits();
     int width, height, displayRatio;
     FrameProcessorTunableParameters tp = new FrameProcessorTunableParameters(this);
@@ -223,7 +230,7 @@ class FrameProcessor {
 		pidRL.period.l = 0.6;
 		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
-        pidRL.gain.i.max = 0.00; // I control has minor oscillating problems 
+        pidRL.gain.i.max = 0.10; // I control has minor oscillating problems 
         pidRL.finalGain = 1.70;
         pidRL.qualityFadeThreshold = .007;
         pidRL.qualityFadeGain = 2;
@@ -777,22 +784,10 @@ class FrameProcessor {
 				gp.draw();
 		  	}
 			
-			if (false) { 
-				// Propagate config changes from the selected lane pid to the other lane pid
-				// Except for hi/lo gain transition points
-				double d1 = pidLL.gain.p.loTrans;
-				double d2 = pidLL.gain.p.hiTrans;
-				double d3 = pidRL.gain.p.loTrans;
-				double d4 = pidRL.gain.p.hiTrans;   		
-				if (selectedPid == pidLL) 
-					pidRL.copySettings(pidLL);
-				else
-					pidLL.copySettings(pidRL);
-				pidLL.gain.p.loTrans = d1;
-				pidLL.gain.p.hiTrans = d2;
-				pidRL.gain.p.loTrans = d3;
-				pidRL.gain.p.hiTrans = d4;	
-			}			
+			if (selectedPid == pidLL) 
+				pidRL.copySettings(pidLL);
+			else
+				pidLL.copySettings(pidRL);
 	   		
 			// Two detected left lines equal, or perhaps reversed?  Reset
 			if (tflo.getAngle() - tfl.getAngle() < 2) {
@@ -813,13 +808,27 @@ class FrameProcessor {
 			}
 					
 			final int laneMinQuality = 20;
-	
+			
 			if (tfl.focus.getQuality() > laneMinQuality)	
 				lpos = (double)(tfl.getInstantaneousXDouble(height) - inputZeroPoint.zeroPoint.lLane) / width * lanePosPrescale;
 			
 			if (tfr.focus.getQuality() > laneMinQuality) 	        		
 	    		rpos = (double)(tfr.getInstantaneousXDouble(height) - (inputZeroPoint.zeroPoint.rLane)) / width * lanePosPrescale;
 			
+			// carefully maintain a quality laneWidth average
+			if (tfl.focus.getQuality() > laneMinQuality && tfr.focus.getQuality() > laneMinQuality &&
+				pidLL.quality >= 0.5 && pidRL.quality >= 0.5) { 
+				laneWidthAvg.add(time / 1000.0, (double)rpos - lpos);
+			} else {
+				laneWidthAvg.clear();
+			}
+			laneWidthAvg.removeAged(time / 1000.0);
+			double dynamicLaneWidthAdj = 0.0;
+			if (laneWidthAvg.rmsError() < 0.015) { 
+				dynamicLaneWidthAdj = laneWidthAvg.calculate() / 2;
+			}
+			System.out.printf("%08.4f %08.4f %08.4f\n", dynamicLaneWidthAdj, laneWidthAvg.calculate(), laneWidthAvg.rmsError());
+
 			if (tfr.focus.getQuality() > laneMinQuality && tfl.focus.getQuality() > laneMinQuality) {
 	       		laneVanish = TargetFinderLines.linePairIntercept(tfl, tfr);
 	      		if (tfl.insideVanRect(laneVanish))
@@ -840,8 +849,8 @@ class FrameProcessor {
 			corr = 0;
 			// Use button 0x1 and 0x4 to temporarily avoid the LL or RL PID, use
 			// the 1-second average instead 
-			pidLL.add(lpos, time);
-			pidRL.add(rpos, time);
+			pidLL.add(lpos + dynamicLaneWidthAdj, time);
+			pidRL.add(rpos - dynamicLaneWidthAdj, time);
 			if ((joystick.buttonBits & 0x1) == 0) { 
 				corr -= pidLL.corr;
 				avgLLCorr.add(pidLL.corr);

@@ -7,13 +7,17 @@ import java.util.Iterator;
 import java.util.TreeSet;
 
 
+import java.util.*;
+import java.util.regex.*;
+
 public class GPSTrimCheat {
     class Entry { 
-        Entry(double la, double lo, double hd, double t) {
-            lat = la; lon = lo; hdg = hd; trim = t;
+        Entry(double la, double lo, double hd) {
+            lat = la; lon = lo; hdg = hd; trim = 0; buttons = 0;
         }
         Entry() {}
         double lat, lon, hdg, trim;
+        int buttons;
         double distance(Entry a) { 
             return Math.abs(Math.sqrt((lat - a.lat) * (lat - a.lat) + (lon - a.lon) * (lon - a.lon) * 47/69))
                 * 6068 * 60;
@@ -41,6 +45,19 @@ public class GPSTrimCheat {
     GPSTrimCheat(double radius) { 
         rad = radius;
     }
+    String re(String pat, String s) { 
+        try { 
+            Pattern p = Pattern.compile(pat);
+            Matcher m = p.matcher(s);
+            m.find();
+            return m.group(1);
+        } catch(Exception e) { 
+            return "";
+        }
+    }
+    double reDouble(String p, String s) { 
+        return Double.parseDouble(re(p, s));
+    }
     void addFile(String fn) {
         BufferedReader fin = null; 
         try {
@@ -55,22 +72,25 @@ public class GPSTrimCheat {
                 if (s == null) break;
                 String[] words = s.split("\\s+");
                 Entry e = new Entry();
-                e.trim = Double.parseDouble(words[2]); 
-                e.lat = Double.parseDouble(words[6]);
-                e.lon = Double.parseDouble(words[7]);
-                e.hdg = Double.parseDouble(words[8]);
+                e.trim = reDouble(".*st\\s+([-+]?[0-9.]+)", s);
+                e.lat = reDouble(".*lat\\s+([-+]?[0-9.]+)", s);
+                e.lon = reDouble(".*lon\\s+([-+]?[0-9.]+)", s);
+                e.hdg = reDouble(".*hdg\\s+([-+]?[0-9.]+)", s);
+                e.buttons = (int)reDouble(".*but\\s+([-+]?[0-9.]+)", s);
+                if (Math.abs(e.trim) < trimThresh)
+                    e.trim = 0;
                 if (e.lat != lastLat && e.lon != lastLon) {
                     list.add(e);
                 }
                 lastLat = e.lat;
-                lastLon = e.lon;                
+                lastLon = e.lon;  
             } catch (Exception e) {
                 e.printStackTrace();
             }	
         }  
     }
     double get(double lat, double lon, double hdg) {
-        Entry cl = new Entry(lat, lon, hdg, 0);
+        Entry cl = new Entry(lat, lon, hdg);
         Average avg = new Average();
         //Entry f = null;
         for (Entry f : list) { 
@@ -86,5 +106,6 @@ public class GPSTrimCheat {
     }
     double trim = 0, count = 0;
     double maxTrim = .15;
+    double trimThresh = 0.10;
 }
 

@@ -4,6 +4,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 
@@ -72,11 +74,10 @@ class SerialCommandBus {
 			try {
 				String s = fakeFile.readLine();
 				if (s == null) break;
-				String[] words = s.split("\\s+");
-				lat = Double.parseDouble(words[6]);
-				lon = Double.parseDouble(words[7]);
-				hdg = Double.parseDouble(words[8]);
-				double t = Double.parseDouble(words[0]);
+                lat = reDouble(".*lat\\s+([-+]?[0-9.]+)", s);
+                lon = reDouble(".*lon\\s+([-+]?[0-9.]+)", s);
+                hdg = reDouble(".*hdg\\s+([-+]?[0-9.]+)", s);
+				long t = (long)reDouble("t\\s+([-+]?[0-9.]+)", s);	
 				updates++;
 				if (t > ms - startMs) 
 					break;				
@@ -85,6 +86,20 @@ class SerialCommandBus {
 			}
 		}
 	}
+
+	String re(String pat, String s) { 
+		try { 
+			Pattern p = Pattern.compile(pat);
+			Matcher m = p.matcher(s);
+			m.find();
+			return m.group(1);
+		} catch(Exception e) { 
+			return "";
+		}
+	}
+    double reDouble(String p, String s) { 
+        return Double.parseDouble(re(p, s));
+    }
 
     void sleep() { 
     	try {
