@@ -818,7 +818,7 @@ class FrameProcessor {
 			if (laneWidthAvg.rmsError() < 0.025) { 
 				dynamicLaneWidthAdj = laneWidthAvg.calculate() / 2;
 			}
-			System.out.printf("%08.4f %08.4f %08.4f\n", dynamicLaneWidthAdj, laneWidthAvg.calculate(), laneWidthAvg.rmsError());
+			//System.out.printf("%08.4f %08.4f %08.4f\n", dynamicLaneWidthAdj, laneWidthAvg.calculate(), laneWidthAvg.rmsError());
 
 			if (tfr.focus.getQuality() > laneMinQuality && tfl.focus.getQuality() > laneMinQuality) {
 	       		laneVanish = TargetFinderLines.linePairIntercept(tfl, tfr);
