@@ -157,7 +157,7 @@ public class Silly {
         boolean jni = false;
 		boolean gps = false;
 		boolean showUnusedKeys = false;
-		String fakeGps = null;
+		boolean fakeGps = false;
 		ArrayList<String> trimCheatFiles = new ArrayList<String>();
         boolean nightMode = false, faketime = false, useSystemClock = true, noSteer = false;
         boolean cannyDebug = false, realtime = false;
@@ -175,7 +175,7 @@ public class Silly {
             else if (a.compareTo("-volume") == 0) volume = Integer.parseInt(args[++i]);
             else if (a.compareTo("-repeat") == 0) repeat = true;
             else if (a.compareTo("-gps") == 0) gps = true;
-			else if (a.compareTo("-fakeGps") == 0) fakeGps = args[++i];
+			else if (a.compareTo("-fakeGps") == 0) fakeGps = true;
 			else if (a.compareTo("-trimCheat") == 0) trimCheatFiles.add(args[++i]);
             else if (a.compareTo("-rgb32") == 0) rgb32 = true;
             else if (a.compareTo("-cannyDebug") == 0) cannyDebug = true;
@@ -336,7 +336,10 @@ public class Silly {
 		fp.noSteering = noSteer;
 		fp.steerCmdHost = steerCmdHost;
 		if (gps) fp.gps.start();
-		else if (fakeGps != null) fp.gps.startFake(fakeGps);
+		else if (fakeGps) {
+			String gpsFile = filename.replace(".yuv", ".log");
+			fp.gps.startFake(gpsFile);
+		}
 		for(String f : trimCheatFiles) { 
 			fp.trimCheat.addFile(f);
 		}

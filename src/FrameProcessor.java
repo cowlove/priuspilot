@@ -97,17 +97,16 @@ class FrameProcessor {
     TemplateDetect td = null;
     
     BufferedImageDisplayWithInputs display = null;
-    public PidControl ccPid = new PidControl("Cruise Control PID");
-    public ControlLagLogic ccLag = new ControlLagLogic();
-    public PidControl pidLL = new PidControl("Left Line PID");
-    public PidControl pidCSR = new PidControl("Right Lane Color Segment PID");
-    public PidControl pidCSL = new PidControl("Right Lane Color Segment PID");
-         
+    public PidControl ccPid = null; //new PidControl("Cruise Control PID");
+    //public ControlLagLogic ccLag = new ControlLagLogic();
+    public PidControl pidLL = new PidControl("Left Line PID");         
     public PidControl pidRL = new PidControl("Right Line PID");
     public PidControl pidPV = new PidControl("Perspective PID");
-    public PidControl pidLV = new PidControl("Line X PID");
-    public PidControl pidCA = new PidControl("Curvature PID");
+    public PidControl pidLV = null; //new PidControl("Line X PID");
+    public PidControl pidCA = null; //new PidControl("Curvature PID");
     //public PidControl pid = new PidControl("Main PID");
+    //public PidControl pidCSR = new PidControl("Right Lane Color Segment PID");
+    //public PidControl pidCSL = new PidControl("Right Lane Color Segment PID");
     //LabJackJNI labjack = new LabJackJNI();
     public PidControl selectedPid = pidLL;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
@@ -212,9 +211,9 @@ class FrameProcessor {
         pids.add(pidLL);
         pids.add(pidRL);
         pids.add(pidPV);
-        pids.add(pidLV);
-        pids.add(pidCA);
-        pids.add(ccPid);
+        if (pidLV != null) pids.add(pidLV);
+        if (pidCA != null) pids.add(pidCA);
+        if (ccPid != null) pids.add(ccPid);
         
         steeringTestPulse.testType = steeringTestPulse.TEST_TYPE_SQUARE;
         steeringTestPulse.magnitude = 0.30;
@@ -239,10 +238,12 @@ class FrameProcessor {
         pidLL.copySettings(pidRL);
 		        
 		//pidLV.setGains(2.0, 0, 0.40, 0, 0);
-        pidLV.setGains(0,0,0,0,0);
-		pidLV.finalGain = 0;//.90;
-        pidLV.qualityFadeThreshold = .084;
-        pidLV.qualityFadeGain = 2;
+        if (pidLV != null) {
+			pidLV.setGains(0,0,0,0,0);
+			pidLV.finalGain = 0;//.90;
+			pidLV.qualityFadeThreshold = .084;
+			pidLV.qualityFadeGain = 2;
+		}
 		
         //pidPV.copySettings(pidLV);
         pidPV.setGains(2.0, 0, 0.60, 0, 0.8);
@@ -255,21 +256,26 @@ class FrameProcessor {
 		pidPV.reset();
         //pidLV.setGains(0,0,0,0,0);
 		
-        pidCA.setGains(10.0, 0, 0, 0, 0);
-        pidCA.finalGain = 0; //:1.55;
-        pidCA.period = pidCA.new PID(1.2, 1, 1, 1, 1);
-        pidCA.qualityFadeThreshold = 0.003;
-        pidCA.qualityFadeGain = 5;
-        pidCA.finalGain = 0; // disable
+        if (pidCA != null) { 
+			pidCA.setGains(10.0, 0, 0, 0, 0);
+			pidCA.finalGain = 0; //:1.55;
+			pidCA.period = pidCA.new PID(1.2, 1, 1, 1, 1);
+			pidCA.qualityFadeThreshold = 0.003;
+			pidCA.qualityFadeGain = 5;
+			pidCA.finalGain = 0; // disable
+		}
         
-        ccPid.setGains(.06, 0, .34, 0, 1);
-        ccPid.finalGain = 0.9;
-        ccPid.period = ccPid.new PID(3, 1, 4.5, 1, 1);       
-        ccLag.actuationTime = 0;
-        ccLag.deadTime = 1000;
-        ccLag.lagTime = 2000;
-        ccPid.qualityFadeGain = 0;
-        ccPid.reset();
+		if (ccPid != null) {
+			ccPid.setGains(.06, 0, .34, 0, 1);
+			ccPid.finalGain = 0.9;
+			ccPid.period = ccPid.new PID(3, 1, 4.5, 1, 1);     
+			ccPid.qualityFadeGain = 0;
+			ccPid.reset();
+		}
+		//	ccLag.actuationTime = 0;
+		//	ccLag.deadTime = 1000;
+		//	ccLag.lagTime = 2000;
+	
         
         tdStartX = (int)(w * 0.42);
         tdStartY = (int)(h * 0.33);
@@ -812,7 +818,7 @@ class FrameProcessor {
 				pidLL.quality >= 0.4 && pidRL.quality >= 0.4) { 
 				laneWidthAvg.add(time / 1000.0, (double)rpos - lpos);
 			} else {
-				laneWidthAvg.clear();
+				//laneWidthAvg.clear();
 			}
 			laneWidthAvg.removeAged(time / 1000.0);
 			if (laneWidthAvg.rmsError() < 0.025) { 
@@ -859,7 +865,7 @@ class FrameProcessor {
 			//corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
 			if (!Double.isNaN(persVanX)) 
 				corr += -pidPV.add(persVanX, time);
-			if (!Double.isNaN(laneVanX))
+			if (pidLV != null && !Double.isNaN(laneVanX))
 				corr += -pidLV.add(laneVanX, time);
 			double curve = 0;
 			if (!Double.isNaN(caL.getCurve()))
@@ -869,7 +875,8 @@ class FrameProcessor {
 		
 			if (caL.getCurve() * caR.getCurve() < 0) 
 				curve = Double.NaN;
-			corr += -pidCA.add(curve, time);
+			if (pidCA != null) 
+				corr += -pidCA.add(curve, time);
 	
 			if (tfFindTargetNow || Silly.debug("CONT_TF")) {
 				// try to set tdFindResult to new template.  If fails, tdFindResult will be left null
@@ -911,7 +918,7 @@ class FrameProcessor {
 			        		tdFindResult = null;
 		        		}
 		      
-		        	} else {
+		        	} else if (ccPid != null) {
 		        		badTdCount = 0;
 		        		double ccDist = (tdFindResult.scale - ccSetPoint) / 2;
 		        		double cc = -ccPid.add(ccDist, time);		        		
@@ -1094,7 +1101,6 @@ class FrameProcessor {
         		tfrc.draw(display.g2);
         		display.g2.draw(tfl.scaleRect(tfl.vanLimits, rescale));
 
-    			
     			int s = 7;
         		Rectangle r1 = scaleRect(new Rectangle(houghVan.calculate().x - s, 
 					houghVan.calculate().y - s, s * 2 + 1, s * 2 + 1), rescale);
@@ -1118,12 +1124,12 @@ class FrameProcessor {
             }
             	
             if ((displayMode & 0x10) != 0) {
-                double yoff = 0.65;
+                double yoff = 0.80;
 	            double yspace = 0.05;
     			final double bWidth = 0.06;
-	   	        display.rectangle(Color.yellow, String.format("%d", (int)trimCheat.count), trimCheat.trim + 0.5, yoff, bWidth, 0.05);
+	   	        display.rectangle(Color.blue, String.format("%d", (int)trimCheat.count), trimCheat.trim + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
-	            display.rectangle(arduinoArmed ? Color.red : Color.white, "ST", steer + 0.5, yoff, bWidth, 0.05);
+	            display.rectangle(arduinoArmed ? Color.red : Color.magenta, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 
 	            	yoff += yspace;
 	            	display.text(pid.description, 0, yoff + 0.05);
@@ -1360,18 +1366,20 @@ class FrameProcessor {
 			    	s += pidLL.toString("pidll-") + ", ";
 			    	s += pidRL.toString("pidrl-") + ", ";
 			    	s += pidPV.toString("pidpv-") + ", ";
-			    	s += pidLV.toString("pidlv-") + ", ";
-			      	s += pidCA.toString("pidca-") + ", ";
+			    	if (pidLV != null) s += pidLV.toString("pidlv-") + ", ";
+			      	if (pidCA != null) s += pidCA.toString("pidca-") + ", ";
 			     	s += String.format("tfl.h.bestA=%d tfl.h.bestR=%d ", tfl.h.bestA, tfl.h.bestR);
 			     	s += String.format("tfr.h.bestA=%d tfr.h.bestR=%d ", tfr.h.bestA, tfr.h.bestR);
 			     	s += String.format("tfl.raw=%d ", tfl.rawPeakHough); 
 				 	s += String.format("tfr.raw=%d ", tfr.rawPeakHough); 
 				 	s += String.format("tfl.period=%d ", tfl.pd.getPeriod()); 
 			    	s += String.format("tfr.period=%d ", tfr.pd.getPeriod()); 
-   					s += String.format("ccScale=%d, ccCorr=%.2f, ", 
+   					if (ccPid != null) { 
+						s += String.format("ccScale=%d, ccCorr=%.2f, ", 
 			    			tdFindResult != null ? tdFindResult.scale : 0,
 			    			ccPid.corr) + ccPid.err.toString(new String("ccpid-")) + ", ";
-			       	s += String.format("trqdiff=%.3f, ", trq1 - trq2);
+					}
+					s += String.format("trqdiff=%.3f, ", trq1 - trq2);
 			       	s += String.format("caL=%.4f, caR=%.4f, caLR=%.08f, caSum=%.04f, ", caL.getCurve(), caR.getCurve(), 
 			       			caL.getCurve() * caR.getCurve(), caL.getCurve() + caR.getCurve());
 			       	if (tfl != null) { 
