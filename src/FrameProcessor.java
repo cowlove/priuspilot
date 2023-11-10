@@ -143,8 +143,6 @@ class FrameProcessor {
 
 	SerialCommandBus gps = new SerialCommandBus("/dev/ttyACM0", this);
 
-	boolean laneGainsSwapped = false;
-	
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
     		int displayRatio, String serialDevice, String swCam) throws IOException {
         if (displayRatio > 0) {
@@ -627,7 +625,14 @@ class FrameProcessor {
     int ccSetPoint = 15;
 	RunningAveragePoint houghVan = new RunningAveragePoint(1);
 	
-    
+	void drawLine(int x1, int y1, int x2, int y2) { 
+		display.g2.drawLine(x1 * rescale, y1 * rescale, x2 * rescale, y2 * rescale);
+	}
+    void drawTruncatedLine(int x1, int y1, int x2, int y2, int yt1, int yt2) {
+		int xt1 = x1 + (x2 - x1) * (yt1 - y1) / (y2 - y1);
+		int xt2 = x1 + (x2 - x1) * (yt2 - y1) / (y2 - y1);
+		drawLine(xt1, yt1, xt2, yt2);
+	}
     static Rectangle scaleRect(Rectangle r, int scale) {
     	return new Rectangle(r.x * scale, r.y * scale, r.width * scale, r.height * scale);
     }
@@ -645,6 +650,7 @@ class FrameProcessor {
 		rpos = Double.NaN;
 		laneVanX = Double.NaN;
 		persVanX = Double.NaN;
+		double dynamicLaneWidthAdj = 0.0;
 
 		time = t;
     	if (skipFrames > 0 && count < skipFrames)
@@ -657,19 +663,6 @@ class FrameProcessor {
    		if (Silly.debug("COPY_IMAGE"))
    			coi = oi.deepCopy();
    		
-		if ((joystick.buttonBits & 0x10) == 0x10) { 
-			if (laneGainsSwapped == false) { 
-				laneGainsSwapped = true;
-				pidLL.swapGains(pidRL);
-			}
-		} else {
-			if (laneGainsSwapped == true) { 
-				laneGainsSwapped = false;
-				pidLL.swapGains(pidRL);
-			}
-
-		}
-
    		if (!noProcessing) { 
 	   		tfrc.findAll(coi, tfrcRect);
 	   		tflo.minLineIntensity = tfro.minLineIntensity = tfl.minLineIntensity = tfr.minLineIntensity = 
@@ -811,23 +804,21 @@ class FrameProcessor {
 			
 			if (tfl.focus.getQuality() > laneMinQuality)	
 				lpos = (double)(tfl.getInstantaneousXDouble(height) - inputZeroPoint.zeroPoint.lLane) / width * lanePosPrescale;
-			
 			if (tfr.focus.getQuality() > laneMinQuality) 	        		
 	    		rpos = (double)(tfr.getInstantaneousXDouble(height) - (inputZeroPoint.zeroPoint.rLane)) / width * lanePosPrescale;
 			
 			// carefully maintain a quality laneWidth average
-			if (tfl.focus.getQuality() > laneMinQuality && tfr.focus.getQuality() > laneMinQuality &&
-				pidLL.quality >= 0.5 && pidRL.quality >= 0.5) { 
+			if (!Double.isNaN(lpos) && !Double.isNaN(rpos) &&
+				pidLL.quality >= 0.4 && pidRL.quality >= 0.4) { 
 				laneWidthAvg.add(time / 1000.0, (double)rpos - lpos);
 			} else {
 				laneWidthAvg.clear();
 			}
 			laneWidthAvg.removeAged(time / 1000.0);
-			double dynamicLaneWidthAdj = 0.0;
-			if (laneWidthAvg.rmsError() < 0.015) { 
+			if (laneWidthAvg.rmsError() < 0.025) { 
 				dynamicLaneWidthAdj = laneWidthAvg.calculate() / 2;
 			}
-			//System.out.printf("%08.4f %08.4f %08.4f\n", dynamicLaneWidthAdj, laneWidthAvg.calculate(), laneWidthAvg.rmsError());
+			System.out.printf("%08.4f %08.4f %08.4f\n", dynamicLaneWidthAdj, laneWidthAvg.calculate(), laneWidthAvg.rmsError());
 
 			if (tfr.focus.getQuality() > laneMinQuality && tfl.focus.getQuality() > laneMinQuality) {
 	       		laneVanish = TargetFinderLines.linePairIntercept(tfl, tfr);
@@ -1082,7 +1073,16 @@ class FrameProcessor {
 					//td.draw(oi);
 	            }
  
+				// draw blue target lines adjusted for dynamicLandWidth
 				tfrc.rescaleDisplay = tflo.rescaleDisplay = tfro.rescaleDisplay = tfr.rescaleDisplay = tfl.rescaleDisplay = rescale;
+	            setLineColorAndWidth(dynamicLaneWidthAdj == 0 ? Color.white : Color.blue, 4 * rescale);
+				final int lx = (int)Math.round(inputZeroPoint.zeroPoint.lLane - (dynamicLaneWidthAdj / lanePosPrescale * width));
+				final int rx = (int)Math.round(inputZeroPoint.zeroPoint.rLane + (dynamicLaneWidthAdj / lanePosPrescale * width));
+				drawTruncatedLine(lx - 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
+				drawTruncatedLine(lx + 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
+				drawTruncatedLine(rx - 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
+				drawTruncatedLine(rx + 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
+				
 	            setLineColorAndWidth(Color.green, 1 * rescale);
     			TargetFinderLines.displayLinePairToOutsideVanRec(tflo, tfro, display.g2);
 	            setLineColorAndWidth(Color.red, 2 * rescale);
@@ -1105,12 +1105,9 @@ class FrameProcessor {
     			
     			//display.g2.draw(tfl.sa);
     			//display.g2.draw(tfr.sa);
-    			
 
     			if (tfFindTargetNow)
 	            	display.draw(Color.yellow, scaleRect(tfSearchArea, rescale));
-
-
             }
             if ((displayMode & 0x8) != 0) {
 				//displayPid(pidPV, Color.cyan);
@@ -1141,8 +1138,6 @@ class FrameProcessor {
 		  //          display.text(pid.description, 0.0, yoff);
 	            }
 	            display.rectangle(Color.cyan, String.format("%.1f", fps), Math.min(0.95, (double)fps / 32), yoff, bWidth, 0.05);	            
-
-
 
  //           	TemplateDetect.Tile ti = td.scaledTiles.getTileByScale(tdFindResult.scale);
  //           	display.image.getWritableTile(0,0).setDataElements(0, 0, ti.loc.width, ti.loc.height, 
