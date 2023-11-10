@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
 LIB="$SCRIPT_DIR/../pplib"
 SRC="$SCRIPT_DIR/../src/"
@@ -15,7 +15,10 @@ IF=wlx0013ef802622
 CP=$SRC/priuspilot.jar:$LIB/Joystick.jar:$LIB/jna-3.2.4.jar:/home/jim/workspace/priuspilot/bin:$LIB/Jama-1.0.2.jar:$LIB/mbrola.jar:$LIB/freetts-jsapi10.jar:$LIB/jsapi.jar:$LIB/freetts.jar
 	
 make -C $SRC && \
-java -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP Silly \
+java \
+    -agentpath:/home/jim/src/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=profile.html \
+    -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints \
+    -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP Silly \
     -displaymode 63 -frameinterval 0  \
      /dev/video2 -displayratio 1 \
     -trimCheat /home/jim/src/priuspilot/gpstrim.log \

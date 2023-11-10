@@ -359,9 +359,7 @@ class TargetFinderLines extends TargetFinder {
 			focus.defaultAngle = 90 - defAngle;
 		}
 		h = new HoughTransform(houghAngSz, houghRadSz);
-		h.blurRadius = 0.06;
-		if (Silly.debug("HOUGH_BLUR"))
-			h.blurRadius = Silly.debugDouble("HOUGH_BLUR");
+		h.blurRadius = Silly.debugDouble("HOUGH_BLUR", 0.06);
 
 		h2 = new HoughTransform(houghAngSz, houghRadSz);
 		h2.blurRadius = h.blurRadius;	
