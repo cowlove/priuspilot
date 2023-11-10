@@ -215,7 +215,7 @@ class FrameProcessor {
         if (pidCA != null) pids.add(pidCA);
         if (ccPid != null) pids.add(ccPid);
         
-        steeringTestPulse.testType = steeringTestPulse.TEST_TYPE_SQUARE;
+        steeringTestPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_SQUARE;
         steeringTestPulse.magnitude = 0.30;
         steeringTestPulse.duration = 0.80;
         steeringTestPulse.count = 0;
@@ -223,17 +223,17 @@ class FrameProcessor {
        
         steeringDitherPulse.magnitude = 0.05;
         
-        pidRL.setGains(2.50, 0.04, 2.00, 0, 1);
+        pidRL.setGains(2.50, 0.04, 2.00, 0, 1 / lanePosPrescale);
 		pidRL.period.l = 0.6;
 		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
-        pidRL.gain.i.max = 0.10; // I control has minor oscillating problems 
-        pidRL.finalGain = 1.70;
-        pidRL.qualityFadeThreshold = .007;
+        pidRL.gain.i.max = 0.10 / lanePosPrescale; // I control has minor oscillating problems 
+        pidRL.finalGain = 1.70 * lanePosPrescale;
+        pidRL.qualityFadeThreshold = .007 / lanePosPrescale;
         pidRL.qualityFadeGain = 2;
+        pidRL.gain.p.loTrans = -0.04 / lanePosPrescale;  // "bumper" points of increased gain for lane proximity
+        pidRL.gain.p.hiTrans = +0.04 / lanePosPrescale;  // TODO - change when the tfl prescale constant changes
  		pidRL.reset();
-        pidRL.gain.p.loTrans = -0.04;  // "bumper" points of increased gain for lane proximity
-        pidRL.gain.p.hiTrans = +0.04;  // TODO - change when the tfl prescale constant changes
         
         pidLL.copySettings(pidRL);
 		        
@@ -317,9 +317,9 @@ class FrameProcessor {
         tfro.reset();
     }
     
-    private int normalizePixel(int x) { 
-    	return x * height / 360;
-    }
+    //private int normalizePixel(int x) { 
+    //	return x * height / 360;
+    //}
      	
     public void close() {
     	if (writer != null) 
@@ -809,9 +809,9 @@ class FrameProcessor {
 			final int laneMinQuality = 20;
 			
 			if (tfl.focus.getQuality() > laneMinQuality)	
-				lpos = (double)(tfl.getInstantaneousXDouble(height) - inputZeroPoint.zeroPoint.lLane) / width * lanePosPrescale;
+				lpos = (double)(tfl.getInstantaneousXDouble(height) - inputZeroPoint.zeroPoint.lLane) / width;
 			if (tfr.focus.getQuality() > laneMinQuality) 	        		
-	    		rpos = (double)(tfr.getInstantaneousXDouble(height) - (inputZeroPoint.zeroPoint.rLane)) / width * lanePosPrescale;
+	    		rpos = (double)(tfr.getInstantaneousXDouble(height) - (inputZeroPoint.zeroPoint.rLane)) / width;
 			
 			// carefully maintain a quality laneWidth average
 			if (!Double.isNaN(lpos) && !Double.isNaN(rpos) &&
@@ -821,7 +821,7 @@ class FrameProcessor {
 				//laneWidthAvg.clear();
 			}
 			laneWidthAvg.removeAged(time / 1000.0);
-			if (laneWidthAvg.rmsError() < 0.025) { 
+			if (laneWidthAvg.rmsError() < 0.025 / lanePosPrescale) { 
 				dynamicLaneWidthAdj = laneWidthAvg.calculate() / 2;
 			}
 			//System.out.printf("%08.4f %08.4f %08.4f\n", dynamicLaneWidthAdj, laneWidthAvg.calculate(), laneWidthAvg.rmsError());
@@ -840,8 +840,8 @@ class FrameProcessor {
 			
 			
 			//System.out.printf("%f\n", (double)time/1000);
-			//pidCSR.add((tfr.csX - inputZeroPoint.zeroPoint.rLane) /width * lanePosPrescale, time);
-			//pidCSL.add((tfl.csX - inputZeroPoint.zeroPoint.lLane) /width * lanePosPrescale, time);
+			//pidCSR.add((tfr.csX - inputZeroPoint.zeroPoint.rLane) /width, time);
+			//pidCSL.add((tfl.csX - inputZeroPoint.zeroPoint.lLane) /width, time);
 			
 			corr = 0;
 			// Use button 0x1 and 0x4 to temporarily avoid the LL or RL PID, use
@@ -1083,8 +1083,8 @@ class FrameProcessor {
 				// draw blue target lines adjusted for dynamicLandWidth
 				tfrc.rescaleDisplay = tflo.rescaleDisplay = tfro.rescaleDisplay = tfr.rescaleDisplay = tfl.rescaleDisplay = rescale;
 	            setLineColorAndWidth(dynamicLaneWidthAdj == 0 ? Color.white : Color.blue, 4 * rescale);
-				final int lx = (int)Math.round(inputZeroPoint.zeroPoint.lLane - (dynamicLaneWidthAdj / lanePosPrescale * width));
-				final int rx = (int)Math.round(inputZeroPoint.zeroPoint.rLane + (dynamicLaneWidthAdj / lanePosPrescale * width));
+				final int lx = (int)Math.round(inputZeroPoint.zeroPoint.lLane - (dynamicLaneWidthAdj * width));
+				final int rx = (int)Math.round(inputZeroPoint.zeroPoint.rLane + (dynamicLaneWidthAdj * width));
 				drawTruncatedLine(lx - 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
 				drawTruncatedLine(lx + 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
 				drawTruncatedLine(rx - 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
@@ -1123,6 +1123,7 @@ class FrameProcessor {
                	//displayPid(pidRL, Color.white);
             }
             	
+			final double pds = 0.315;
             if ((displayMode & 0x10) != 0) {
                 double yoff = 0.80;
 	            double yspace = 0.05;
@@ -1134,10 +1135,10 @@ class FrameProcessor {
 	            	yoff += yspace;
 	            	display.text(pid.description, 0, yoff + 0.05);
 		            display.rectangle(Color.red, "S", -pid.corr + 0.5, yoff, bWidth, 0.05, true);
-		            display.rectangle(Color.yellow, "P", pid.err.p + 0.5, yoff + 0.005, bWidth, 0.04, true);
-		            display.rectangle(Color.white, "I", pid.err.i + 0.5, yoff, bWidth, 0.03, true);
-		            display.rectangle(Color.green, "D", pid.err.d + 0.5, yoff + 0.01, bWidth, 0.02, true);	     
-		            display.rectangle(Color.black, "L", pid.err.l + 0.5, yoff + 0.015, bWidth, 0.01, true);	     
+		            display.rectangle(Color.yellow, "P", pid.err.p * pds + 0.5, yoff + 0.005, bWidth, 0.04, true);
+		            display.rectangle(Color.white, "I", pid.err.i * pds + 0.5, yoff, bWidth, 0.03, true);
+		            display.rectangle(Color.green, "D", pid.err.d * pds + 0.5, yoff + 0.01, bWidth, 0.02, true);	     
+		            display.rectangle(Color.black, "L", pid.err.l * pds + 0.5, yoff + 0.015, bWidth, 0.01, true);	     
 		        	Color c = pid.quality < 1.0 ? Color.red : Color.yellow;
 		       		display.rectangle(c, String.format("%03d", (int)(pid.drms / pid.qualityFadeThreshold * 100)), 
 		       				.41 + pid.quality * 0.52, yoff, bWidth, 0.05, false);
@@ -1342,7 +1343,7 @@ class FrameProcessor {
         double avgMs = intTimer.average();
  	  	System.out.printf("FPS=%05.2f RMS errs: LL=%.5f, RL=%.5f, VP=%.5f, avgAction=%.5f\n",
 			avgMs != 0 ? 1000.0 / avgMs : 0,  
-			pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr(), steering.totalAction / count);
+			pidLL.getAvgRmsErr() * lanePosPrescale, pidRL.getAvgRmsErr() * lanePosPrescale, pidPV.getAvgRmsErr(), steering.totalAction / count);
     }
      
 
