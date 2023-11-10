@@ -223,16 +223,16 @@ class FrameProcessor {
        
         steeringDitherPulse.magnitude = 0.05;
         
-        pidRL.setGains(2.50, 0.04, 2.00, 0, 1 / lanePosPrescale);
+        pidRL.setGains(2.50, 0.04, 2.00, 0, 3.1746031746031744);
 		pidRL.period.l = 0.6;
 		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
-        pidRL.gain.i.max = 0.10 / lanePosPrescale; // I control has minor oscillating problems 
-        pidRL.finalGain = 1.70 * lanePosPrescale;
-        pidRL.qualityFadeThreshold = .007 / lanePosPrescale;
+        pidRL.gain.i.max = 0.317460317460317440; // I control has minor oscillating problems 
+        pidRL.finalGain = 0.5355;
+        pidRL.qualityFadeThreshold = .0222222222;
         pidRL.qualityFadeGain = 2;
-        pidRL.gain.p.loTrans = -0.04 / lanePosPrescale;  // "bumper" points of increased gain for lane proximity
-        pidRL.gain.p.hiTrans = +0.04 / lanePosPrescale;  // TODO - change when the tfl prescale constant changes
+        pidRL.gain.p.loTrans = -0.121698;  // "bumper" points of increased gain for lane proximity
+        pidRL.gain.p.hiTrans = +0.121698;  // TODO - change when the tfl prescale constant changes
  		pidRL.reset();
         
         pidLL.copySettings(pidRL);
@@ -566,13 +566,6 @@ class FrameProcessor {
     // Constants to adjust to new 360p frame size.  Lane width, measured at intercept 
     // of lane lines and bottom of frame and normalized to frame width, is about 1.5 times 
     // smaller in the 640x360 image than the old 320x240 frame.
-
-    // The 0.84 is because the offset was mistakenly being computed at the bottom
-    // of the tfl search area, not at the bottom of the frame, and the PIDs were
-    // extensively tuned this way. 
-
-    // the divide by 4 is historical. 
-    final double lanePosPrescale = 1.5f * 0.84 / 4; 
 	
 	// Fixed dash feature was 224 out of 240 pixels on an 320x240 image, and 
 	// 300 out of 640 pixels on a 640x360p image.  The 1.5 is historical 
@@ -821,7 +814,7 @@ class FrameProcessor {
 				//laneWidthAvg.clear();
 			}
 			laneWidthAvg.removeAged(time / 1000.0);
-			if (laneWidthAvg.rmsError() < 0.025 / lanePosPrescale) { 
+			if (laneWidthAvg.rmsError() < .079365) { 
 				dynamicLaneWidthAdj = laneWidthAvg.calculate() / 2;
 			}
 			//System.out.printf("%08.4f %08.4f %08.4f\n", dynamicLaneWidthAdj, laneWidthAvg.calculate(), laneWidthAvg.rmsError());
@@ -1341,9 +1334,9 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("FPS=%05.2f RMS errs: LL=%.5f, RL=%.5f, VP=%.5f, avgAction=%.5f\n",
+ 	  	System.out.printf("FPS=%05.2f RMS errs: LL=%.7f, RL=%.7f, VP=%.7f, avgAction=%.7f\n",
 			avgMs != 0 ? 1000.0 / avgMs : 0,  
-			pidLL.getAvgRmsErr() * lanePosPrescale, pidRL.getAvgRmsErr() * lanePosPrescale, pidPV.getAvgRmsErr(), steering.totalAction / count);
+			pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr(), steering.totalAction / count);
     }
      
 
