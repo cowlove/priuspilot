@@ -48,11 +48,13 @@ void callback(uint8_t src_mac[6], uint8_t *data, int len) {
 }
 
 void espnow_callback(uint8_t src_mac[6], uint8_t *data, int len) {
+	if (false) { 
         printf("%ld received\n", usec());
         printf("callback() got %d bytes: ", len);
         for(int n = 0; n < len; n++)  
                 printf("%02x", data[n]);
         printf("\n");
+	}
 }
 
 void espnow_open() { 
