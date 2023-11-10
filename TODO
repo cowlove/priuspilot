@@ -1,4 +1,5 @@
 2023/11/09 
+	TODO - make -fakeGps flag parse the log file name from the yuv file 
 	TODO - separate out reDouble() 
 	TODO - parse button hints from GPSTrimCheat
 	TODO - separate out out quality-detection and fade code from PID 
