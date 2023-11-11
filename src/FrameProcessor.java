@@ -171,12 +171,12 @@ class FrameProcessor {
         
         int minSz = Silly.debugInt("minSz", 33); // min/max radius
         int maxSz = 100;
-		int minAng = Silly.debugInt("minAng", 12);
+		int minAng = Silly.debugInt("minAng", 6);
 		int maxAng = Silly.debugInt("maxAng", 33);
         int houghSize = Silly.debugInt("HOUGH_SIZE", 80);
 		double vertPct = Silly.debugInt("SA_VERT_PERCENT",65) / 100.0;
-        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 70), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
-        tfr = new TargetFinderLines(w, h, null, false, 70, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 60), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tflo = new TargetFinderLines(w, h, null, true, 77, 60, minSz, maxSz, 12, 35, .85);
         tfro = new TargetFinderLines(w, h, null, false, 77, 60, minSz, maxSz, 12, 35, .85);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
@@ -677,8 +677,8 @@ class FrameProcessor {
 	   		}
 	   		
 	   		final int vanRectW = 64 ;//* width / 320;
-	   		final int vanRectH = 16;// * height / 240;
-			final int vpScale = 2;
+	   		final int vanRectH = 32;// * height / 240;
+			final int vpScale = 1;
 			   		
 	   		tflo.vanLimits = tfro.vanLimits = tfl.vanLimits = tfr.vanLimits = new
 	   			Rectangle(inputZeroPoint.zeroPoint.vanX - vanRectW / 2, 
@@ -738,7 +738,7 @@ class FrameProcessor {
 	   			vp[i] = vpL[i] + vpR[i];
 	   		
 			double gr = Silly.debugDouble("VP_GR", 7) / vpScale;
-			GaussianKernel gk = new GaussianKernel(gr, (int)(gr * 3), r.width / vpScale, 
+			GaussianKernel gk = new GaussianKernel(gr, (int)(gr * 10), r.width / vpScale, 
 					r.height / vpScale);
 			gk.blur(vp);
 	
