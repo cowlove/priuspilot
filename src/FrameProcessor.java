@@ -281,8 +281,8 @@ class FrameProcessor {
         tdStartY = (int)(h * 0.33);
         tfSearchArea = new Rectangle(tdStartX, tdStartY, w/5, h/4);
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 210); 
-        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 25);
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 219); 
+        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 32);
         inputZeroPoint.zeroPoint.rLane = 490;
         inputZeroPoint.zeroPoint.lLane = 1;
 
