@@ -1,5 +1,4 @@
 2023/11/09 
-	TODO - make -fakeGps flag parse the log file name from the yuv file 
 	TODO - separate out reDouble() 
 	TODO - parse button hints from GPSTrimCheat
 	TODO - separate out out quality-detection and fade code from PID 
@@ -7,6 +6,8 @@
 	TODO - change esp32 firmware to increase max steering power to 0.60
 	TODO - separate out ESPNow into own JNI interface
 	TODO - bidirectional EPSNow 
+	TODO - investigate rebase options for new uses of RunningLeastSquares pid.q and avgLaneWidth
+
 
 * cloned/built gpsd from github for newer/fresher ubxtool that could actually configure the GPS ok
 
