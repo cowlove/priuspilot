@@ -76,8 +76,8 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.ierrorLimit += i; }} );
 		//add("PID manualLaneTrim", 'M', .01, 
 		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.manualTrim += i; }} );
-		add("FP fp.steering.trim", 'M', .01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steering.trim += i; }} );
+		add("FP manualLanePosTrim", 'M', .001, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.manualLanePosTrim += i; }} );
 		add("FP select finder param group", 'X', 1, 
 					new TunableParameter.Adjust() { public double adjust(double i) { 
 						fp.tfparamIndex += i;

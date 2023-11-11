@@ -137,7 +137,7 @@ class FrameProcessor {
     PriusVoice pv = new PriusVoice();
 	HistoryArray corrHist = null, predHist = null;
     double []ch = null;
-
+	public double manualLanePosTrim = 0.005;
 	GnuplotWrapper gp = new GnuplotWrapper();
 
 	SerialCommandBus gps = new SerialCommandBus("/dev/ttyACM0", this);
@@ -569,7 +569,7 @@ class FrameProcessor {
 	
 	// Fixed dash feature was 224 out of 240 pixels on an 320x240 image, and 
 	// 300 out of 640 pixels on a 640x360p image.  The 1.5 is historical 
-	final double pixelWidthPrescale = 1.5f * (224f / 240) / (300f / 640);  
+	final double pixelWidthPrescale = 2.9866666666666664; //1.5f * (224f / 240) / (300f / 640);  
   
     TemplateDetect.FindResult tdFindResult = null;
     int badTdCount = 0;
@@ -839,8 +839,8 @@ class FrameProcessor {
 			corr = 0;
 			// Use button 0x1 and 0x4 to temporarily avoid the LL or RL PID, use
 			// the 1-second average instead 
-			pidLL.add(lpos + dynamicLaneWidthAdj, time);
-			pidRL.add(rpos - dynamicLaneWidthAdj, time);
+			pidLL.add(lpos + dynamicLaneWidthAdj + manualLanePosTrim, time);
+			pidRL.add(rpos - dynamicLaneWidthAdj + manualLanePosTrim, time);
 			if ((joystick.buttonBits & 0x1) == 0) { 
 				corr -= pidLL.corr;
 				avgLLCorr.add(pidLL.corr);
@@ -854,12 +854,12 @@ class FrameProcessor {
 				corr -= avgRLCorr.calculate();
 			}
 			corr = corr / 2;
- 
-			//corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
+ 			//corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
+			
 			if (!Double.isNaN(persVanX)) 
-				corr += -pidPV.add(persVanX, time);
+				corr += -pidPV.add(persVanX + manualLanePosTrim * pixelWidthPrescale, time);
 			if (pidLV != null && !Double.isNaN(laneVanX))
-				corr += -pidLV.add(laneVanX, time);
+				corr += -pidLV.add(laneVanX + manualLanePosTrim * pixelWidthPrescale, time);
 			double curve = 0;
 			if (!Double.isNaN(caL.getCurve()))
 				curve += caL.getCurve();
@@ -1424,6 +1424,7 @@ class FrameProcessor {
 	    			s = s.replace("%hdg", String.format("%5.1f", gps.hdg));
 	    			s = s.replace("%speed", String.format("%5.1f", gps.speed));
 	    			s = s.replace("%strim", String.format("%.5f", steering.trim));
+	    			s = s.replace("%lptrim", String.format("%.5f", manualLanePosTrim));
 	    			s = s.replace("%gpstrim", String.format("%.5f", trimCheat.trim));
 	    			s = s.replace("%gpstcount", String.format("%d", (int)trimCheat.count));
 					s = s.replace("%buttons", String.format("%d", joystick.buttonBits));
