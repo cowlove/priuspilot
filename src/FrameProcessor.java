@@ -175,8 +175,8 @@ class FrameProcessor {
 		int maxAng = Silly.debugInt("maxAng", 33);
         int houghSize = Silly.debugInt("HOUGH_SIZE", 80);
 		double vertPct = Silly.debugInt("SA_VERT_PERCENT",65) / 100.0;
-        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 60), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
-        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 65), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfr = new TargetFinderLines(w, h, null, false, 65, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tflo = new TargetFinderLines(w, h, null, true, 77, 60, minSz, maxSz, 12, 35, .85);
         tfro = new TargetFinderLines(w, h, null, false, 77, 60, minSz, maxSz, 12, 35, .85);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
