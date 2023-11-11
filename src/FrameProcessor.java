@@ -108,7 +108,7 @@ class FrameProcessor {
     //public PidControl pidCSR = new PidControl("Right Lane Color Segment PID");
     //public PidControl pidCSL = new PidControl("Right Lane Color Segment PID");
     //LabJackJNI labjack = new LabJackJNI();
-    public PidControl selectedPid = pidLL;
+    public PidControl selectedPid = pidPV;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
 	GPSTrimCheat trimCheat = null;
    
@@ -174,7 +174,7 @@ class FrameProcessor {
 		int minAng = Silly.debugInt("minAng", 6);
 		int maxAng = Silly.debugInt("maxAng", 33);
         int houghSize = Silly.debugInt("HOUGH_SIZE", 80);
-		double vertPct = Silly.debugInt("SA_VERT_PERCENT",65) / 100.0;
+		double vertPct = Silly.debugInt("SA_VERT_PERCENT",80) / 100.0;
         tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 65), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tfr = new TargetFinderLines(w, h, null, false, 65, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tflo = new TargetFinderLines(w, h, null, true, 77, 60, minSz, maxSz, 12, 35, .85);
@@ -227,7 +227,7 @@ class FrameProcessor {
 		pidRL.period.l = 0.6;
 		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
-        pidRL.gain.i.max = 0.317460317460317440; // I control has minor oscillating problems 
+        pidRL.gain.i.max = 0.32; // I control has minor oscillating problems 
         pidRL.finalGain = 0.5355;
         pidRL.qualityFadeThreshold = .0222222222;
         pidRL.qualityFadeGain = 2;
@@ -237,10 +237,10 @@ class FrameProcessor {
         
         pidLL.copySettings(pidRL);
 		        
-		//pidLV.setGains(2.0, 0, 0.40, 0, 0);
         if (pidLV != null) {
-			pidLV.setGains(0,0,0,0,0);
+			pidLV.setGains(0,.00,0,0,0);
 			pidLV.finalGain = 0;//.90;
+			pidLV.gain.i.max = 0.0;
 			pidLV.qualityFadeThreshold = .084;
 			pidLV.qualityFadeGain = 2;
 		}
@@ -281,10 +281,10 @@ class FrameProcessor {
         tdStartY = (int)(h * 0.33);
         tfSearchArea = new Rectangle(tdStartX, tdStartY, w/5, h/4);
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 224); 
-        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 36);
-        inputZeroPoint.zeroPoint.rLane = 460;
-        inputZeroPoint.zeroPoint.lLane = -19;
+        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 210); 
+        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 25);
+        inputZeroPoint.zeroPoint.rLane = 490;
+        inputZeroPoint.zeroPoint.lLane = 1;
 
 		trimCheat = new GPSTrimCheat(400);
 		//gps.start();
@@ -708,7 +708,7 @@ class FrameProcessor {
 	   	   		r = (Rectangle)tflo.vanLimits.clone();
 	   	   		r.x -= tflo.sa.x;
 	   	   		r.y -= tflo.sa.y;
-				tflo.h2.projectIntoRect(vpL, r, vpScale);
+				//tflo.h2.projectIntoRect(vpL, r, vpScale);
 	
 	   		} });
 	   		t1.start();
@@ -727,7 +727,7 @@ class FrameProcessor {
 	   		r = (Rectangle)tfro.vanLimits.clone();
 	   		r.x -= tfro.sa.x;
 	   		r.y -= tfro.sa.y;
-			tfro.h2.projectIntoRect(vpR, r, vpScale);
+			//tfro.h2.projectIntoRect(vpR, r, vpScale);
 	   		
 	   		try { 
 	   			t1.join(0);
@@ -1334,7 +1334,7 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("FPS=%05.2f RMS errs: LL=%.7f, RL=%.7f, VP=%.7f, avgAction=%.7f\n",
+ 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.7f, RL=%.7f, VP=%.7f, avgAction=%.7f\n",
 			avgMs != 0 ? 1000.0 / avgMs : 0,  
 			pidLL.getAvgRmsErr(), pidRL.getAvgRmsErr(), pidPV.getAvgRmsErr(), steering.totalAction / count);
     }
