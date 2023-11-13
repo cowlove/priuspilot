@@ -528,13 +528,17 @@ JNIEXPORT jint JNICALL Java_FrameCaptureJNI_grabFrame
 		
 		if (conf->obuf == NULL) 
 			conf->obuf = (unsigned char *)malloc(PAGE_ROUND(h * w * 2));
-		int needed = PAGE_ROUND(w * h * 2);
-		unsigned char *p = conf->obuf;
-		do { 
-			n = read(conf->fd, p, needed);
-			needed -= n;
-			p += n;
-		} while(needed > 0 && n > 0);
+		
+		if (conf->rawRecordSkip < 1) conf->rawRecordSkip = 1;
+		for (int skip = 0; skip <= conf->rawRecordSkip; skip++) { 
+			int needed = PAGE_ROUND(w * h * 2);
+			unsigned char *p = conf->obuf;
+			do { 
+				n = read(conf->fd, p, needed);
+				needed -= n;
+				p += n;
+			} while(needed > 0 && n > 0);
+		}
 		memcpy((void *)&conf->frameTimestamp, (void *)conf->obuf, 8);
 		process_image(conf, conf->obuf, buf, 0);
 	} else {

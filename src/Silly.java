@@ -23,6 +23,7 @@ import java.io.FileReader;
 import java.io.FileOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Calendar;
@@ -165,7 +166,7 @@ public class Silly {
         // same as copyout loop 
         HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
         HashMap<Object,Point> clickMap = new HashMap<Object,Point>();
-        
+        int skipRatio = 0;
         int targx = 0, targy = 0, targh = 0, targw = 0;
                 
         for(int i = 0; i < args.length; i++) {
@@ -180,6 +181,7 @@ public class Silly {
             else if (a.compareTo("-rgb32") == 0) rgb32 = true;
             else if (a.compareTo("-cannyDebug") == 0) cannyDebug = true;
             else if (a.compareTo("-jni") == 0) jni = true;
+			else if (a.compareTo("-skipratio") == 0) skipRatio = Integer.parseInt(args[++i]);
             else if (a.compareTo("-nosteer") == 0) noSteer = true;
             else if (a.compareTo("-fps") == 0) framerate = Integer.parseInt(args[++i]);
             else if (a.compareTo("-rescale") == 0) rescale = Integer.parseInt(args[++i]);
@@ -377,7 +379,6 @@ public class Silly {
 				if (realtime && x < 35) {
 					Thread.sleep(35 - x);
 				}
-				fp.processFrame(ms, new OriginalImage(bb, width, height));
 				ms += 30;
 			}
 
@@ -403,6 +404,8 @@ public class Silly {
 
       		}
     	} else if (filename.endsWith(".gz") || !jni) {
+			long lastRawTime = 0;
+			long timeAdjust = 0;
         	do {
         		int picsize = height * width * 2;
         		if (rgb32) picsize = height * width * 4;
@@ -413,7 +416,12 @@ public class Silly {
 	        	IntBuffer ib = timebb.asIntBuffer();
 	        
 	        	long time = 0;
-	        	FileInputStream fis = new FileInputStream(new File(filename));
+				InputStream fis = null;
+				if (filename.equals("stdin")) { 
+					fis = System.in;
+				} else { 
+		        	fis = new FileInputStream(new File(filename));
+				}
 	        	GZIPInputStream gis = null;
 	        	if (filename.endsWith(".gz"))  
 	        		gis = new GZIPInputStream(fis);
@@ -423,7 +431,7 @@ public class Silly {
 	        		timebb.rewind();
 	        		ib.rewind();
 	        		bb.rewind();
-	        		if (gis != null) {
+	        		if (gis != null) { // .gz data - does not handle skipRatio yet 
 	    				int needed = 8;
 	    				int offset = 0;
 	        			while(needed > 0) { 
@@ -444,10 +452,19 @@ public class Silly {
 	        				offset += got;
 	        			}
 	        		} else {
-	        			fis.getChannel().read(timebb);  
+	        			//fis.read(timebb.array());  
+						//for (int n = 0; n < 8; n++) // fake the 8 bytes consumed by the timestamp 
+						//	bb.put((byte)0x0);
+		    			int needed = picsize;
+	    				int offset = 0;
+	        			while(needed > 0) { 
+							int n = fis.read(bb.array(), offset, needed);
+							needed -= n;
+							offset += n;
+						}
 						for (int n = 0; n < 8; n++) // fake the 8 bytes consumed by the timestamp 
-							bb.put((byte)0x0);
-		    			fis.getChannel().read(bb); 
+							timebb.array()[n] = bb.array()[n];
+		    			 
 	        		}
 	        		
 	        		if (!faketime) { 
@@ -462,6 +479,12 @@ public class Silly {
 	        		} else {
 	        			time += 30;
 	        		}
+
+					if (time < lastRawTime || time > lastRawTime + 1000) {
+						timeAdjust = lastRawTime - time + 33;
+					}
+					lastRawTime = time;
+					time += timeAdjust;
 	        		ByteBuffer finalbb = bb;
 	        		if (rgb32) 
 	        			finalbb = rgb32toBgr24(bb);
@@ -473,7 +496,8 @@ public class Silly {
 						//System.out.printf("Sleeping %d ms\n", 30 - ms);
 						Thread.sleep(30 - ms);
 					}
-	        		fp.processFrame(time, new OriginalImage(finalbb, width, height));
+					if (skipRatio == 0 || (count % skipRatio) == skipRatio - 1)
+	        			fp.processFrame(time, new OriginalImage(finalbb, width, height));
         			//System.out.printf("%dms\n", (int)intTimer.tick());
 	        		count++;
 	        		if (exitFrame >0 && count == exitFrame)
@@ -487,10 +511,10 @@ public class Silly {
         	fc = new FrameCaptureJNI();
         	fc.configure(filename, width, height, windx, windy, windw, windh, 
         			flipVideo, capFile, capSize, capCount, 40/*max ms per frame*/,
-        			0 /*raw record skip interval*/, useSystemClock);
+        			skipRatio /*raw record skip interval*/, useSystemClock);
         	if (fp.writer != null) 
         		fp.writer.fc = fc; 
-        	
+	    	
         	int n;
         	// BROKEN- when frames are dropped, this thread could read data into the buffer
         	// currently being used by the FrameProcessor thread.  Probably just allocate/free

@@ -178,7 +178,7 @@ class PeriodicityDetector {
 	
 }
 class Focus { 
-	double minWeight = 185000; // TODO needs to be normalized, values change with useLuminance, etc
+	double minWeight = 185000; // TODO RAW_FPS // TODO needs to be normalized, values change with useLuminance, etc
 	//double minWeight = 9000; // TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
@@ -186,7 +186,7 @@ class Focus {
 	int defaultIntercept = 0;
 	double radZoneOffset = 0.50; // verticle center of the scan strip
 	double angZoneOffset = 0.50;
-	int averagePeriod = Silly.debugInt("SZ_PERIOD", 10);
+	int averagePeriod = Silly.debugInt("SZ_PERIOD", 10); // TODO: RAW_FPS
 	public RunningLeastSquares angle = new RunningLeastSquares(averagePeriod);
 	public RunningLeastSquares intercept = new RunningLeastSquares(averagePeriod);
 	
@@ -273,7 +273,7 @@ class AverageLine {
 	AverageLine(int n) {
 		
 	}
-	public RunningLeastSquares angle = new RunningLeastSquares(5);
+	public RunningLeastSquares angle = new RunningLeastSquares(5); //TODO: RAW_FPS 
 	public RunningLeastSquares radius = new RunningLeastSquares(5);
 	int count = 0;
 	double lastAng, lastRad;
@@ -486,7 +486,7 @@ class TargetFinderLines extends TargetFinder {
 			int continuousHorizontalPixels = 0;
 			for(int x = 0; x < sa.width; x++) {
 				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
-					if (++continuousHorizontalPixels > 2) { 
+					if (++continuousHorizontalPixels > Silly.debugInt("HPIXEL_FILTER", 2)) { 
 						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
 							c.results.gradResults[y*sa.width+dx] = 0;
 							//c.results.l.remove(new Point(dx,y));
