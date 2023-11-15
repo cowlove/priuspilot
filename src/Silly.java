@@ -426,7 +426,8 @@ public class Silly {
 	        	if (filename.endsWith(".gz"))  
 	        		gis = new GZIPInputStream(fis);
 	        	ByteBuffer bb = ByteBuffer.allocate(picsize);
-	        	while(fis.available() > 0) {
+				boolean eof = false;
+	        	while(!eof) {
 		        	//ByteBuffer bb = ByteBuffer.allocate(picsize);
 	        		timebb.rewind();
 	        		ib.rewind();
@@ -441,8 +442,7 @@ public class Silly {
 	        				offset += got;
 	        			}
 						for (int n = 0; n < 8; n++) // fake the 8 bytes consumed by the timestamp 
-							bb.put((byte)0x0);
-	        				
+							bb.put((byte)0x0);	
 	        			needed = picsize - 8;
 	        			offset = 8;
 	        			while(needed > 0) { 
@@ -459,12 +459,17 @@ public class Silly {
 	    				int offset = 0;
 	        			while(needed > 0) { 
 							int n = fis.read(bb.array(), offset, needed);
+							if (n < 0) {
+								eof = true;
+								break;
+							}
 							needed -= n;
 							offset += n;
 						}
+						if (needed > 0)
+							break;
 						for (int n = 0; n < 8; n++) // fake the 8 bytes consumed by the timestamp 
 							timebb.array()[n] = bb.array()[n];
-		    			 
 	        		}
 	        		
 	        		if (!faketime) { 
@@ -481,10 +486,10 @@ public class Silly {
 	        		}
 
 					if (time < lastRawTime || time > lastRawTime + 1000) {
-						timeAdjust = lastRawTime - time + 33;
+						timeAdjust += time - lastRawTime + 33;
 					}
 					lastRawTime = time;
-					time += timeAdjust;
+					time -= timeAdjust;
 	        		ByteBuffer finalbb = bb;
 	        		if (rgb32) 
 	        			finalbb = rgb32toBgr24(bb);
@@ -503,6 +508,7 @@ public class Silly {
 	        		if (exitFrame >0 && count == exitFrame)
 	        			break;
 	        	}
+				System.out.printf("count %d fis.available() %d\n", count, fis.available());
 	        	//fp.close();
         	} while(repeat);
  
@@ -510,7 +516,7 @@ public class Silly {
         } else {
         	fc = new FrameCaptureJNI();
         	fc.configure(filename, width, height, windx, windy, windw, windh, 
-        			flipVideo, capFile, capSize, capCount, 40/*max ms per frame*/,
+        			flipVideo, capFile, capSize, capCount, 100/*max ms per frame*/,
         			skipRatio /*raw record skip interval*/, useSystemClock);
         	if (fp.writer != null) 
         		fp.writer.fc = fc; 

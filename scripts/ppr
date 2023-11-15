@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/sh -x
 SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
-$SCRIPT_DIR/pp -size 432x240  \
+$SCRIPT_DIR/pp -size 432x240 \
     -displayratio 10 -out /host/lanedumps/%s.yuv -gps \
     -log /host/lanedumps/%s.log $@
+# -skipratio 2 -debug EXPECTED_FPS=15 -debug SZ_PERIOD=5 -debug minSz=38 -debug minAng=5 \
