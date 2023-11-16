@@ -10,6 +10,12 @@
 
 good north/south I-5 with bright glare, direct sun, dapples 
 20231116.141353.yuv 20231116.140744.yuv 
+
+./scripts/pp /host/lanedumps/20231116.140744.yuv -displayratio 0 | grep RMS
+# /host/lanedumps/20231116.140744.yuv frames 00000-04570 FPS=076.22 RMS errs: LL=0.0191007 0.0687090 0.9258514, RL=0.0144772 0.0553611 0.9435118, VP=0.0137228 0.1179431 0.8915013, avgAction=0.0622489
+./scripts/pp /host/lanedumps/20231116.141353.yuv -displayratio 0 | grep RMS
+# /host/lanedumps/20231116.141353.yuv frames 00000-04211 FPS=079.30 RMS errs: LL=0.0164319 0.0213726 0.9732035, RL=0.0115328 0.0280218 0.9717053, VP=0.0121655 0.0949893 0.9038639, avgAction=0.0513307
+
 failures for this commit:
 # R lane crack distractor
 ./scripts/pp /host/lanedumps/20231116.141353.yuv -skip 1250 -exit 300
