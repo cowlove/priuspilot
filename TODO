@@ -9,6 +9,9 @@
 	TODO - investigate rebase options for new uses of RunningLeastSquares pid.q and avgLaneWidth
 
 
+good tests for this commit 20231116.130858.yuv and 20231116.131526.yuv
+
+
 /scripts/pp lanedumps/20231114.180029.yuv -debug EXPECTED_FPS=15 -debug SZ_PERIOD=5 -debug minSz=33 -debug defLAng=65 -rescale 2 -debug LASTEP=-0.9 -log lastep09.log 
 
 lanedumps/20231114.180029.yuv frames 00000-03830 FPS=027.07 RMS errs: LL=0.0181513 0.0483029 0.9460675, RL=0.0128105 0.0281984 0.9721301, VP=0.0119665 0.0973890 0.9090727, avgAction=0.0457513

@@ -142,6 +142,7 @@ class SteeringLogicSimpleLimits {
 	double trim = -0.00;
 	double lastSteer = 0;
 	double steer(long ms, double st) { 
+		if (Double.isNaN(lastSteer)) lastSteer = 0.0;
 		if (deadband > 0 || (deadband < 0 && Math.abs(st) > Math.abs(deadband))) { 
 			if (st < 0) st -= deadband;
 			if (st > 0) st += deadband;
