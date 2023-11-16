@@ -110,7 +110,7 @@ public class GPSTrimCheat {
         return trim;
     }
     double trim = 0, count = 0;
-    double maxTrim = .15;
+    double maxTrim = .20;
     double trimThresh = 0.10;
 }
 

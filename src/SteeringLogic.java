@@ -135,7 +135,7 @@ class SteeringWheelClosedLoopControl {
 
 
 class SteeringLogicSimpleLimits {
-	double maxSteer = 0.50;
+	double maxSteer =  0.50;
 	double maxChange = 0.06; // per ms
 	double deadband = 0.00;
 	long lastMs = 0;

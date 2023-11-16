@@ -60,7 +60,7 @@ AsyncUDP udpCmd;
 PwmChannel pwm1(pins.pwm1, 1200/*hz*/, 2/*chan*/, 0/*gradual*/);
 PwmChannel pwm2(pins.pwm2, 1200/*hz*/, 1/*chan*/, 0/*gradual*/);
 
-CLI_VARIABLE_FLOAT(maxSteer, 0.5);
+CLI_VARIABLE_FLOAT(maxSteer, 0.6);
 
 struct ExtrapolationTable<float>::Pair table[] = {
 	{-10.00, 8500},

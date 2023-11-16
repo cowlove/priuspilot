@@ -166,7 +166,7 @@ struct config {
 	int lastDroppedFrames;
 	int lastMs;
 	int maxFrameMs; /* max ms per frame before switching to night mode */
-	int rawRecordSkip; /* skip rate for dumping/recording raw frame data to disk */
+	int rawRecordSkip; /* skip rate for reading frames */
 	//struct aiocbp aio;
 	struct {
 		long timestamp;
@@ -178,7 +178,7 @@ struct config {
 
 void v4l2mmap_open(config *);
 void v4l2mmap_close(config *);
-int v4l2mmap_poll(config *);
+int v4l2mmap_poll(config *, int usec=0);
 void v4l2mmap_wait_frame(config *, unsigned char *);
 
 
@@ -450,7 +450,8 @@ void max_brightness(int fd, bool max) {
 			} else { 
 				set_ctl(fd, V4L2_CID_EXPOSURE_AUTO, V4L2_EXPOSURE_APERTURE_PRIORITY);
 				set_ctl_to_default(fd, V4L2_CID_BRIGHTNESS);
-				set_ctl_to_max(fd, V4L2_CID_SHARPNESS);
+				set_ctl_to_default(fd, V4L2_CID_SHARPNESS);
+				set_ctl_to_default(fd, V4L2_CID_CONTRAST);
 				//set_ctl(V4L2_CID_EXPOSURE_AUTO, V4L2_EXPOSURE_APERTURE_PRIORITY);
 				//set_ctl(V4L2_CID_EXPOSURE_ABSOLUTE, 156);
 				//set_ctl_to_max(V4L2_CID_SHARPNESS);
@@ -840,35 +841,40 @@ read_frame                      (config *conf, unsigned char *arg)
         struct v4l2_buffer buf;
         unsigned int i;
 
+		int errors = 0;
+		int skipped = 0;
+
+		if (conf->rawRecordSkip < 1) conf->rawRecordSkip = 1;
+		for (int skipped = 1; skipped < conf->rawRecordSkip; skipped++) {
+			CLEAR (buf);
+			buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+			buf.memory = V4L2_MEMORY_MMAP;
+			while(xioctl (conf->fd, VIDIOC_DQBUF, &buf) == -1) {
+				//perror("VIDIOC_DQBUF1");
+				v4l2mmap_poll(conf, 10000);
+				if (errors++ > 30) {
+					v4l2mmap_close(conf);
+					v4l2mmap_open(conf);
+						errno_exit("VIDIOC_DQBUF()");
+				}
+			}	
+			if (xioctl (conf->fd, VIDIOC_QBUF, &buf) == -1) {
+				fprintf(stderr, "VIDIOC_QBUF failed for device '%s'\n", conf->filename);
+				errno_exit ("VIDIOC_QBUF1");
+			}
+		} 
 		CLEAR (buf);
 		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		buf.memory = V4L2_MEMORY_MMAP;
-		int errors = 0;
-
-		while(conf->fakeErr || -1 == xioctl (conf->fd, VIDIOC_DQBUF, &buf)) {
-				perror("VIDIOC_DQBUF");
-				switch (errno) {
-				case EAGAIN:
-						return 0;
-
-				case EIO:
-						/* Could ignore EIO, see spec. */
-
-						/* fall through */
-
-				default:
-					perror("VIDIOC_DQBUF()");
-					usleep(50000);
-					if (errors++ > 30) {
-						v4l2mmap_close(conf);
-						v4l2mmap_open(conf);
-//						errno_exit("VIDIOC_DQBUF()");
-					}
-				}
+		while(xioctl (conf->fd, VIDIOC_DQBUF, &buf) == -1) {
+			v4l2mmap_poll(conf, 10000);
+			if (errors++ > 30) {
+				v4l2mmap_close(conf);
+				v4l2mmap_open(conf);
+			}
 		}
-
+	
 		assert (buf.index < n_buffers);
-
 		conf->totalFrames++;
 		if (v4l2mmap_poll(conf) != 0) {
 			// ugly: others waiting, just discard this one 
@@ -878,7 +884,7 @@ read_frame                      (config *conf, unsigned char *arg)
 				arg, &buf.timestamp);
 		}
 		
-		if (-1 == xioctl (conf->fd, VIDIOC_QBUF, &buf)) {
+		if (xioctl (conf->fd, VIDIOC_QBUF, &buf) == -1) {
 				fprintf(stderr, "VIDIOC_QBUF failed for device '%s'\n", conf->filename);
 				errno_exit ("VIDIOC_QBUF");
 		}
@@ -886,7 +892,7 @@ read_frame                      (config *conf, unsigned char *arg)
 }
 
 int
-v4l2mmap_poll                        (config *conf)
+v4l2mmap_poll                        (config *conf, int us)
 {
 		fd_set fds;
 		struct timeval tv;
@@ -896,7 +902,7 @@ v4l2mmap_poll                        (config *conf)
 
 		/* Timeout. */
 		tv.tv_sec = 0;
-		tv.tv_usec = 0;
+		tv.tv_usec = (long)us;
 
 		return select (conf->fd + 1, &fds, NULL, NULL, &tv);
 }					
@@ -1056,8 +1062,6 @@ init_mmap                       (config *conf)
                 buf.index       = n_buffers;
 
                 void *p  = memalign (getpagesize(), 1024 * 1024 * 16);
-
-
 
                 if (-1 == xioctl (conf->fd, VIDIOC_QUERYBUF, &buf))
                         errno_exit ("VIDIOC_QUERYBUF");

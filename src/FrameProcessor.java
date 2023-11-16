@@ -227,12 +227,12 @@ class FrameProcessor {
 		pidRL.period.l = 0.6;
 		pidRL.delays.l.delay = 0.4;
         pidRL.gain.p.hiGain = 1.52;
-        pidRL.gain.i.max = 0.32; // I control has minor oscillating problems 
-        pidRL.finalGain = 0.5355;
-        pidRL.qualityFadeThreshold = .0222222222;
+        pidRL.gain.i.max = 0.40; // I control has minor oscillating problems 
+        pidRL.finalGain = 0.54;
+        pidRL.qualityFadeThreshold = .022;
         pidRL.qualityFadeGain = 2;
-        pidRL.gain.p.loTrans = -0.121698;  // "bumper" points of increased gain for lane proximity
-        pidRL.gain.p.hiTrans = +0.121698;  // TODO - change when the tfl prescale constant changes
+        pidRL.gain.p.loTrans = -0.1;  // "bumper" points of increased gain for lane proximity
+        pidRL.gain.p.hiTrans = +0.1;  // TODO - change when the tfl prescale constant changes
  		pidRL.reset();
         
         pidLL.copySettings(pidRL);
@@ -286,7 +286,7 @@ class FrameProcessor {
         inputZeroPoint.zeroPoint.rLane = 490;
         inputZeroPoint.zeroPoint.lLane = 1;
 
-		trimCheat = new GPSTrimCheat(400);
+		trimCheat = new GPSTrimCheat(50);
 		//gps.start();
     }
     
@@ -474,7 +474,7 @@ class FrameProcessor {
 
 	String steerCmdHost = "255.255.255.255";
 
-    double maxSteer = .4; // wasn't 2.20 a bit excessive?! (WTF)
+    //double maxSteer = .5; // wasn't 2.20 a bit excessive?! (WTF)
     synchronized void setSteering(double x) { 
 
 		if (Silly.sim != null) 
@@ -511,7 +511,7 @@ class FrameProcessor {
     RunningAverage avgFrameDelay = new RunningAverage(100);
     // TODO- separate text window to display test stats
     void writeDisplayText() {
-		display.g2.setColor(Color.white);
+		display.g2.setColor(Color.blue);
         display.writeText("FRAME: " + String.format("%d", count));
         display.writeText("LTIME: " + String.format("%d",  time - logFileStartTime));
         display.writeText("FPS: " + String.format("%.1f", fps));
