@@ -316,8 +316,7 @@ extern "C" void process_image(config *conf, const unsigned char *in, unsigned ch
 			memcpy(out, in, conf->windHeight * conf->windWidth * 2);
 	}
 		
-	if (conf->captureFd > 0 && (conf->rawRecordSkip < 1 || (conf->count % conf->rawRecordSkip) == 0)
-		) {
+	if (conf->captureFd > 0) {
 			// TODO - nonblocking AIO
 			/*
 			int r = write(conf->captureFd, &conf->frameTimestamp, 8);

@@ -427,6 +427,8 @@ public class Silly {
 	        		gis = new GZIPInputStream(fis);
 	        	ByteBuffer bb = ByteBuffer.allocate(picsize);
 				boolean eof = false;
+				int totalBytesRead = 0;
+				int readCount = 0;
 	        	while(!eof) {
 		        	//ByteBuffer bb = ByteBuffer.allocate(picsize);
 	        		timebb.rewind();
@@ -465,6 +467,8 @@ public class Silly {
 							}
 							needed -= n;
 							offset += n;
+							totalBytesRead += n;
+							readCount++;
 						}
 						if (needed > 0)
 							break;
@@ -501,14 +505,15 @@ public class Silly {
 						//System.out.printf("Sleeping %d ms\n", 30 - ms);
 						Thread.sleep(30 - ms);
 					}
-					if (skipRatio == 0 || (count % skipRatio) == skipRatio - 1)
+					//if (skipRatio == 0 || (count % skipRatio) == skipRatio - 1)
 	        			fp.processFrame(time, new OriginalImage(finalbb, width, height));
         			//System.out.printf("%dms\n", (int)intTimer.tick());
 	        		count++;
 	        		if (exitFrame >0 && count == exitFrame)
 	        			break;
 	        	}
-				System.out.printf("count %d fis.available() %d\n", count, fis.available());
+				System.out.printf("readCount %d totalBytesRead %d count %d fis.available() %d\n", 
+				readCount, totalBytesRead, count, fis.available());
 	        	//fp.close();
         	} while(repeat);
  
