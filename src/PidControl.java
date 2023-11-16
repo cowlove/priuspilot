@@ -149,6 +149,8 @@ public class PidControl {
     double qualityFadeThreshold = 0.10;
     double quality = 0.0;
     double qualityPeriod = 1.5;
+	Average avgQuality = new Average();
+	int lowQualityCount = 0;
     
     // these values are set in reset() method
     double i;
@@ -226,10 +228,14 @@ public class PidControl {
      
         quality *= quality;
    
-       if (q.size() >= fadeCountMin && q.size() < fadeCountMax)  {
-        	quality *= (double)(q.size() - fadeCountMin) / (double)(fadeCountMax - fadeCountMin);
-       }
-        err.d = gain.d.getCorrection(d.slope(n, 1));
+		if (q.size() >= fadeCountMin && q.size() < fadeCountMax)  {
+				quality *= (double)(q.size() - fadeCountMin) / (double)(fadeCountMax - fadeCountMin);
+		}
+		avgQuality.add(quality);
+		if (quality < 0.6) 
+			lowQualityCount++;
+
+    	err.d = gain.d.getCorrection(d.slope(n, 1));
   	    err.i = gain.i.getCorrection(i);
 		err.l = gain.l.getCorrection(l.calculate());
 	           

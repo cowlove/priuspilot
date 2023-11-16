@@ -178,8 +178,8 @@ class PeriodicityDetector {
 	
 }
 class Focus { 
-	double minWeight = 185000; // TODO RAW_FPS // TODO needs to be normalized, values change with useLuminance, etc
-	//double minWeight = 9000; // TODO needs to be normalized, values change with useLuminance, etc
+	//double minWeight = 185000; // TODO RAW_FPS // TODO needs to be normalized, values change with useLuminance, etc
+	double minWeight = 9000; // TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -352,10 +352,10 @@ class TargetFinderLines extends TargetFinder {
 		}
 		
 		if (leftSide) { 
-			focus.defaultIntercept = (int)(Math.tan(Math.toRadians(90 - defAngle)) * sa.width) - 10;
+			focus.defaultIntercept = (int)(Math.tan(Math.toRadians(90 - defAngle)) * sa.width) - 40;
 			focus.defaultAngle = 90 + defAngle;
 		} else { 
-			focus.defaultIntercept = -10;
+			focus.defaultIntercept = -40;
 			focus.defaultAngle = 90 - defAngle;
 		}
 		h = new HoughTransform(houghAngSz, houghRadSz);
@@ -506,7 +506,40 @@ class TargetFinderLines extends TargetFinder {
 
 		if (Silly.debug("DEBUG_LUM") && Silly.debugInt("DEBUG_LUM") == h.id) 
 			ar = new double[sa.height * sa.width];
-		double maxLum = 255;
+		double maxLum = 255; // TODO - needs to be relative luminance, maybe 90% 
+		// or something, won't lock on dim lane lines 
+		for(int x = 0; x < sa.width; x++) {
+			int continuousPixels = 0;
+			for (int y = 0; y < sa.height; y++) { 
+				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
+					if (++continuousPixels > 5) { 
+						for (int y1 = y - continuousPixels; y1 < y; y1++) { 
+							c.results.gradResults[y1*sa.width+x] = 0;
+						}
+					}
+				} else {
+					continuousPixels = 0;
+				}			
+			}
+		}
+
+		int [] lumDist = new int[256];
+		for (int i = 0; i < 256; i++)
+			lumDist[i] = 0;
+		if (useLuminanceCheck) {
+			for (int y = 0; y < sa.height; y++) { 
+				for(int x = 0; x < sa.width; x++) {
+					int i = (int)getLuminance(oi, sa, x, y);
+					if (i > 0 && i < 256) 
+						lumDist[i]++;
+				}
+			}
+		}
+		int lumSum = 0, lum90 = 0;
+		for (lum90 = 0; lum90 < 256 && lumSum < sa.height * sa.width * .90; lum90++) { 
+			lumSum += lumDist[lum90];
+		}
+			
 		for (int y = 0; y < sa.height; y++) { 
 			int continuousHorizontalPixels = 0;
 			for(int x = 0; x < sa.width; x++) {
@@ -521,8 +554,12 @@ class TargetFinderLines extends TargetFinder {
 				}			
         		double wt =  c.results.gradResults[y*sa.width+x];
 	    		if (useLuminanceCheck) {
-					double rlum = (float)getLuminance(oi, sa, x, y) / maxLum; 
-        			wt = wt * rlum * rlum;
+					double rlum = (float)getLuminance(oi, sa, x, y);
+					if (rlum >= lum90) { 
+	        			//wt *= rlum * rlum;
+					} else {
+						wt = 0;
+					}
 				}	
         		if (ar != null) 
         			ar[(sa.height - y - 1) * sa.width + x] = wt;
@@ -929,7 +966,7 @@ class TargetFinderLines extends TargetFinder {
 		Point midLine = findMiddleOfLine(h.origin, h.bestRadius(), focus.getLastAngle(), sa);
 		final int txtOffset = 0;
 
-		g2.drawString(String.format("%d %.1f/%d %.1f", c.results.l.size(), 
+		g2.drawString(String.format("%d %.1f/%d %.1f", focus.getQuality(), 
 			getAngle(), getOffsetX(), h.getAngSpread()), (midLine.x + sa.x + txtOffset) * rescaleDisplay, 
 			(midLine.y + sa.y + txtOffset) * rescaleDisplay);
 		
