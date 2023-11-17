@@ -229,12 +229,12 @@ class FrameProcessor {
 		pidRL.period.l = 0.15;
 		pidRL.delays.l.delay = 1.75;
         pidRL.gain.p.hiGain = 1.52;
-        pidRL.gain.i.max = 0.40; // I control has minor oscillating problems 
+        pidRL.gain.i.max = 0.50; // I control has minor oscillating problems 
         pidRL.finalGain = 0.54;
         pidRL.qualityFadeThreshold = .022;
         pidRL.qualityFadeGain = 2;
-        pidRL.gain.p.loTrans = -0.1;  // "bumper" points of increased gain for lane proximity
-        pidRL.gain.p.hiTrans = +0.1;  // TODO - change when the tfl prescale constant changes
+        pidRL.gain.p.loTrans = -0.05;  // "bumper" points of increased gain for lane proximity
+        pidRL.gain.p.hiTrans = +0.05; 
  		pidRL.reset();
         
         pidLL.copySettings(pidRL);
@@ -461,7 +461,7 @@ class FrameProcessor {
     
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.9;	
+    double epsSteeringGain = 1.1;	
     double trq1 = 0, trq2 = 0;
     
     long lastCruiseSet = 0; // time of last cruise control command in ms
@@ -847,6 +847,8 @@ class FrameProcessor {
 			corr = 0;
 			// Use button 0x1 and 0x4 to temporarily avoid the LL or RL PID, use
 			// the 1-second average instead 
+			if (pidLL.i < 0 && pidRL.i > 0 || pidLL.i > 0 && pidRL.i < 0) 
+				pidLL.i = pidRL.i = (pidLL.i + pidRL.i) / 2;
 			pidLL.add(lpos + dynamicLaneWidthAdj + manualLanePosTrim, time);
 			pidRL.add(rpos - dynamicLaneWidthAdj + manualLanePosTrim, time);
 			if ((joystick.buttonBits & 0x1) == 0) { 
@@ -996,7 +998,7 @@ class FrameProcessor {
         else
             steer = 0;
         
-        //steer += steeringDitherPulse.currentPulse();
+        steer += steeringDitherPulse.currentPulse();
         steer += steeringTestPulse.currentPulse();
 		gps.update(time);
 		steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);

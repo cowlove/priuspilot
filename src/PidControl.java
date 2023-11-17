@@ -238,7 +238,8 @@ public class PidControl {
     	err.d = gain.d.getCorrection(d.slope(n, 1));
   	    err.i = gain.i.getCorrection(i);
 		err.l = gain.l.getCorrection(l.calculate());
-	           
+	    if (err.l > 0 && (err.d + err.i + err.l) > 0 || err.l < 0 && (err.d + err.i + err.l) < 0)
+			err.l = 0;       
 	    corr = -(err.p + err.d + err.i + err.l) * finalGain * quality + 
 	    	0 * (1 - quality);
 		if (Double.isNaN(defaultValue.calculate()))

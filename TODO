@@ -11,15 +11,16 @@
 good north/south I-5 with bright glare, direct sun, dapples 
 20231116.141353.yuv 20231116.140744.yuv 
 
-./scripts/pp /host/lanedumps/20231116.140744.yuv -displayratio 0 | grep RMS
-# /host/lanedumps/20231116.140744.yuv frames 00000-04570 FPS=076.22 RMS errs: LL=0.0191007 0.0687090 0.9258514, RL=0.0144772 0.0553611 0.9435118, VP=0.0137228 0.1179431 0.8915013, avgAction=0.0622489
-./scripts/pp /host/lanedumps/20231116.141353.yuv -displayratio 0 | grep RMS
-# /host/lanedumps/20231116.141353.yuv frames 00000-04211 FPS=079.30 RMS errs: LL=0.0164319 0.0213726 0.9732035, RL=0.0115328 0.0280218 0.9717053, VP=0.0121655 0.0949893 0.9038639, avgAction=0.0513307
+./scripts/pp /host/lanedumps/20231116.140744.yuv -headless | grep RMS
+./scripts/pp /host/lanedumps/20231116.141353.yuv -headless | grep RMS
 ./scripts/pp /host/lanedumps/20231114.181623.yuv -headless | grep RMS
-# /host/lanedumps/20231114.181623.yuv frames 00000-03611 FPS=077.16 RMS errs: LL=0.0134636 0.0282470 0.9718635, RL=0.0113522 0.0044309 0.9917562, VP=0.0112487 0.0725561 0.9286652, avgAction=0.0461607
 ./scripts/pp /host/lanedumps/20231114.181221.yuv -headless | grep RMS
-# /host/lanedumps/20231114.181221.yuv frames 00000-02481 FPS=083.68 RMS errs: LL=0.0173422 0.0806127 0.9246103, RL=0.0098594 0.0157195 0.9876389, VP=0.0103214 0.0306328 0.9622814, avgAction=0.0530475
-jim@jim-d
+# /host/lanedumps/20231116.140744.yuv frames 00000-04570 FPS=074.35 RMS errs: LL=0.0174156 0.0518600 0.9412400, RL=0.0119710 0.0564551 0.9466875, VP=0.0134801 0.1271335 0.8890318, avgAction=0.0568524
+# /host/lanedumps/20231116.141353.yuv frames 00000-04211 FPS=082.44 RMS errs: LL=0.0154076 0.0197103 0.9743632, RL=0.0104443 0.0363334 0.9656581, VP=0.0113009 0.0845405 0.9158332, avgAction=0.0484595
+# /host/lanedumps/20231114.181623.yuv frames 00000-03611 FPS=074.79 RMS errs: LL=0.0134265 0.0296317 0.9697861, RL=0.0095320 0.0066464 0.9936935, VP=0.0108257 0.0628635 0.9353056, avgAction=0.0455138
+# /host/lanedumps/20231114.181221.yuv frames 00000-02481 FPS=075.30 RMS errs: LL=0.0159422 0.0266022 0.9666575, RL=0.0082103 0.0088674 0.9884532, VP=0.0094778 0.0201532 0.9775660, avgAction=0.0536090
+
+
 failures for this commit:
 # R lane crack distractor
 ./scripts/pp /host/lanedumps/20231116.141353.yuv -skip 1250 -exit 300
