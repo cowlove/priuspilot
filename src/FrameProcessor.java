@@ -223,9 +223,11 @@ class FrameProcessor {
        
         steeringDitherPulse.magnitude = 0.05;
         
-        pidRL.setGains(2.50, 0.04, 2.00, 0, 3.1746031746031744);
-		pidRL.period.l = 0.6;
-		pidRL.delays.l.delay = 0.4;
+		double lx = Silly.debugDouble("LX", 36)/ 20.0;
+
+		pidRL.setGains(2.50, 0.04, 2.00, 0, 1.8);
+		pidRL.period.l = 0.15;
+		pidRL.delays.l.delay = 1.75;
         pidRL.gain.p.hiGain = 1.52;
         pidRL.gain.i.max = 0.40; // I control has minor oscillating problems 
         pidRL.finalGain = 0.54;
@@ -236,6 +238,7 @@ class FrameProcessor {
  		pidRL.reset();
         
         pidLL.copySettings(pidRL);
+		pidLL.reset();
 		        
         if (pidLV != null) {
 			pidLV.setGains(0,.00,0,0,0);
@@ -246,10 +249,10 @@ class FrameProcessor {
 		}
 		
         //pidPV.copySettings(pidLV);
-        pidPV.setGains(2.0, 0, 0.60, 0, 0.8);
+        pidPV.setGains(2.0, 0, 0.60, 0, 0.40);
 		pidPV.finalGain = 1.80;
-    	pidPV.period.l = 0.4;
-		pidPV.delays.l.delay = 0.4;
+    	pidPV.period.l = 0.2;
+		pidPV.delays.l.delay = 1.55;
 	    pidPV.qualityFadeThreshold = 0.015;
         pidPV.qualityFadeGain = 2;
 		//pidPV.fadeCountMin = pidPV.fadeCountMax = 0;
@@ -1397,8 +1400,11 @@ class FrameProcessor {
 	    			s = s.replace("%TEST1", 
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim " +
-		"strim %strim but %buttons stass %stass");
+		"strim %strim but %buttons stass %stass %pidrl %pidll %pidpv " +
+		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x ");
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
+					s = s.replace("%pidll", pidLL.toString("pidll-"));
+					s = s.replace("%pidpv", pidPV.toString("pidvp-"));
 	    			s = s.replace("%frame", String.format("%d", count));
 	    			s = s.replace("%time", String.format("%d", (int)(time - logFileStartTime)));
 	    			s = s.replace("%ts", String.format("%d", time));
@@ -1416,6 +1422,10 @@ class FrameProcessor {
 	    			s = s.replace("%tfw", String.format("%d", tfResult == null ? 0 : tfResult.width));
 	    			s = s.replace("%tfh", String.format("%d", tfResult == null ? 0 : tfResult.height));
 
+	    			s = s.replace("%tfl-ang", String.format("%.3f", tfl.getAngle()));
+	    			s = s.replace("%tfl-x", String.format("%.3f", (double)tfl.getOffsetX()));
+	    			s = s.replace("%tfr-ang", String.format("%.3f", tfr.getAngle()));
+	    			s = s.replace("%tfr-x", String.format("%.3f", (double)tfr.getOffsetX()));
 
 	    			s = s.replace("%tfl-cs", String.format("%.2f", tfl.csX));
 	    			s = s.replace("%tfr-cs", String.format("%.2f", tfr.csX));

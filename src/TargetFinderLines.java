@@ -186,7 +186,7 @@ class Focus {
 	int defaultIntercept = 0;
 	double radZoneOffset = 0.50; // verticle center of the scan strip
 	double angZoneOffset = 0.50;
-	int averagePeriod = Silly.debugInt("SZ_PERIOD", 10); // TODO: RAW_FPS
+	int averagePeriod = Silly.debugInt("SZ_PERIOD", 5); // TODO: RAW_FPS
 	public RunningLeastSquares angle = new RunningLeastSquares(averagePeriod);
 	public RunningLeastSquares intercept = new RunningLeastSquares(averagePeriod);
 	
@@ -536,10 +536,12 @@ class TargetFinderLines extends TargetFinder {
 			}
 		}
 		int lumSum = 0, lum90 = 0;
-		for (lum90 = 0; lum90 < 256 && lumSum < sa.height * sa.width * .90; lum90++) { 
+		double lumPercentile = 0.12;
+		for (lum90 = 0; lum90 < 256 && lumSum < sa.height * sa.width * lumPercentile; lum90++) { 
 			lumSum += lumDist[lum90];
 		}
-			
+		//lum90 = 256 / 9;
+		//System.out.printf("%d\n", lum90);	
 		for (int y = 0; y < sa.height; y++) { 
 			int continuousHorizontalPixels = 0;
 			for(int x = 0; x < sa.width; x++) {
@@ -642,9 +644,9 @@ class TargetFinderLines extends TargetFinder {
         }
 		h.blur();   
 		
-		if (useLaneWidthFilter)  
-			h.applyCorrelationRad(3.0, 12.5, leftSide);
-		
+		if (useLaneWidthFilter) {  
+			h.applyCorrelationRad(3, Silly.debugDouble("maxR", 11), leftSide, ang, intercept);
+		}
 		
 		// search for a nearby max, giving slight preference to inside and 
 		// steeper lines.
@@ -823,20 +825,23 @@ class TargetFinderLines extends TargetFinder {
 	HslHist2D hsl2d = new HslHist2D(), hsl2d2 =new HslHist2D();
 	public Point hOriginOverride = null;
 
+	// return luminance of pixel and surrounding area  normalized to 0-255
 	private float getLuminance(OriginalImage oi, Rectangle sa, int x, int y) {
 		float lum=0;
-
+		int count = 0;
 		// ???? The odd shape of this kernel lowered test results, don't understand why 
 		for(int dx = -1; dx <= 1; dx++) { 
 			for (int dy = -1; dy <= 1; dy++) { 
 				if (x + dx >= 0 && x + dx < sa.width && dy + y >= 0 && dy + y < sa.height) {  
-					//lum = Math.max(lum, oi.getPixelLum(x + dx + sa.x, y + dy + sa.y));
-					lum += oi.getPixelLum(x + dx + sa.x, y + dy + sa.y);
+					lum = Math.max(lum, oi.getPixelLum(x + dx + sa.x, y + dy + sa.y));
+					count = 1;
+					//lum += oi.getPixelLum(x + dx + sa.x, y + dy + sa.y);
+					//count++;
 				}
 			}
 		}
 		//System.out.println(String.format("%.2f", lum));
-		return lum;
+		return lum / count;
 				
 	}
 	

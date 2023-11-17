@@ -173,7 +173,8 @@ public class Silly {
             String a = args[i];
             if (a.compareTo("-nodrop") == 0) dropFrames = false;
             else if (a.compareTo("-displayratio") == 0) displayratio = Integer.parseInt(args[++i]);
-            else if (a.compareTo("-volume") == 0) volume = Integer.parseInt(args[++i]);
+            else if (a.compareTo("-headless") == 0) displayratio = 0;
+			else if (a.compareTo("-volume") == 0) volume = Integer.parseInt(args[++i]);
             else if (a.compareTo("-repeat") == 0) repeat = true;
             else if (a.compareTo("-gps") == 0) gps = true;
 			else if (a.compareTo("-fakeGps") == 0) fakeGps = true;

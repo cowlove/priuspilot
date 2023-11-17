@@ -75,7 +75,7 @@ class HoughTransform {
 		corHough = bestNh;
 	}
 
-	void applyCorrelationRad(double minR, double maxR, boolean leftSide) { 
+	void applyCorrelationRad(double minR, double maxR, boolean leftSide, double ang, int intercept) { 
 		maxhough = 0;
 		float [] nh = null, bestNh = null;
 		
@@ -85,10 +85,18 @@ class HoughTransform {
 		// lane angle/radius hotspots on the hough map
 		// TODO: this needs to be changed to be in units of ang per pixel, not 
 		// a ratio of hough bins.   The bins sizes change depending on config 
-		// parameters and dynamic focus 
-		double aStep = leftSide ? Silly.debugDouble("LASTEP", -1.7) : Silly.debugDouble("RASTEP", -.5);;
+		// parameters and dynamic focus, and the relationship between ang/rad changes based
+		// on the lane angle 
+		
+		//gnuplot> p [90:180][-400:400] '51.log' u 84:86, 208-tan(x*pi/180-pi/2)*(240-32)
+		//gnuplot> p [0:90][0:1200] '51.log' u 88:90, 208-tan(x*pi/180-pi/2)*(240-32)
 
-		int rStep = leftSide ? -1 : 1;
+		//if (leftSide) 
+		//	System.out.printf("r %d a %.3f a %.3f\n", intercept, ang, (angMin + angMax) / 2);
+
+		double aStep = leftSide ? 
+			Silly.debugDouble("LASTEP", -1.1) : Silly.debugDouble("RASTEP", -1.3);;
+
 		int rStart = (int)Math.floor(minR / radStep);
 		int rEnd = (int)Math.ceil(maxR / radStep);
 		
@@ -119,6 +127,7 @@ class HoughTransform {
 			}
 		}
 
+		//if (id == 0) System.out.printf("bestr %f %f\n", radStep, bestR * radStep);
 		//	if (bestNh != null)  // probably don't do this, VP code would like unchanged map
 		//	hough = nh;
 		corHough = bestNh;

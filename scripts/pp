@@ -20,7 +20,7 @@ java \
     -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints \
     -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP Silly \
     -displaymode 63 -frameinterval 0  \
-    -debug EXPECTED_FPS=15 -debug SZ_PERIOD=5 -debug minSz=33 -debug defLAng=65 -rescale 2 -debug LASTEP=-0.9 \
+    -debug EXPECTED_FPS=15 -debug SZ_PERIOD=5 -rescale 2 \
      /dev/video2 -displayratio 1 \
     -trimCheat $HOME/src/priuspilot/gpstrim.log \
     $@

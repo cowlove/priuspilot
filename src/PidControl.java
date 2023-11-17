@@ -12,7 +12,7 @@ class AverageNO {
 }
 
 public class PidControl {
-	static int EXPECTED_FPS = Silly.debugInt("EXPECTED_FPS", 30);
+	static int EXPECTED_FPS = Silly.debugInt("EXPECTED_FPS", 15);
 	Average avgRmsErr = new Average();
     class PID {
         PID(double ap, double ai, double ad, double aj, double al) {
@@ -40,7 +40,7 @@ public class PidControl {
 				return v;
 			delayList.add(v);
 			v = delayList.get(0);
-			if (delayList.size() > delay / EXPECTED_FPS)
+			if (delayList.size() > EXPECTED_FPS * delay)
 				delayList.remove(0);
 			return v;
 		}
@@ -126,7 +126,7 @@ public class PidControl {
 	DelayControl delays = new DelayControl();
 
 	public String toString(String pref) { 
-    	return String.format("%se=%.2f, %sdef=%.2f, %sq=%.2f, %sdrms=%f, ", pref, corr, 
+    	return String.format("%se %.3f %sdef %.3f %sq %.3f %sdrms %.3f ", pref, corr, 
     			pref, defaultValue.calculate(), pref, quality, pref, drms) + err.toString(pref);
     }
     double getAvgRmsErr() {
@@ -241,6 +241,8 @@ public class PidControl {
 	           
 	    corr = -(err.p + err.d + err.i + err.l) * finalGain * quality + 
 	    	0 * (1 - quality);
+		if (Double.isNaN(defaultValue.calculate()))
+			defaultValue.clear();
 	    defaultValue.add(corr);
 	    if (Double.isNaN(corr))
 	    	corr = 0.0;
