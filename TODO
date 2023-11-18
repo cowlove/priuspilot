@@ -7,6 +7,12 @@
 	TODO - separate out ESPNow into own JNI interface
 	TODO - bidirectional EPSNow 
 	TODO - investigate rebase options for new uses of RunningLeastSquares pid.q and avgLaneWidth
+	TODO - lane pos trim biases the VP pid and winds up the lane PID integrals, possibly adjust VP with lanepostrim
+	TODO - auto limit FPS to 15 rather than require manual -skiprate flag
+	
+
+11/17/2023 excellent results with these changes
+
 
 good north/south I-5 with bright glare, direct sun, dapples 
 20231116.141353.yuv 20231116.140744.yuv 
