@@ -94,6 +94,7 @@ public class GPSTrimCheat {
                     double timeD = e.time - last.time;
                     double hdgD = last.hdgDiff(e);
                     double curve = hdgD * 100000/ (timeD * e.speed);
+                    curve = Math.max(-15, Math.min(15, curve));
                     e.curve = curve;
                 }
                 if (last == null || (e.lat != last.lat && e.lon != last.lon)) {
@@ -120,8 +121,8 @@ public class GPSTrimCheat {
                 buttons = buttons | f.buttons;
             }
         } 
-        trim = steerAvg.calculate() / 2;
-        curve = curveAvg.calculate() * -0.015;
+        trim = steerAvg.calculate() * 0.4;
+        curve = curveAvg.calculate() * -0.012;
         count = steerAvg.count;
 
 
