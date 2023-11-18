@@ -413,13 +413,13 @@ class FrameProcessor {
         	//tp.adjustParam(-10);
     		//tp.printCurrent();
     		//logPidSettings();	
-        	steeringTestPulse.startPulse(-1);
+        	steeringTestPulse.startPulse(time, -1);
         }
         else if (keyCode == 39) { // right arrow 
          	//tp.adjustParam(10);
          	//tp.printCurrent();
          	//logPidSettings();
-         	steeringTestPulse.startPulse(1);
+         	steeringTestPulse.startPulse(time, 1);
         }
         else 
         	System.out.println("Unknown key pressed - " + keyCode);
@@ -461,7 +461,7 @@ class FrameProcessor {
     
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.1;	
+    double epsSteeringGain = 1.0;	
     double trq1 = 0, trq2 = 0;
     
     long lastCruiseSet = 0; // time of last cruise control command in ms
@@ -1003,11 +1003,11 @@ class FrameProcessor {
         else
             steer = 0;
         
-        steer += steeringTestPulse.currentPulse();
+        steer += steeringTestPulse.currentPulse(time);
 		gps.update(time);
 		steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
         steer = joystick.steer(steer);
-        steer += steeringDitherPulse.currentPulse();
+        steer += steeringDitherPulse.currentPulse(time);
 		steer = steering.steer(time, steer);
 	    setSteering(steer);
 	    

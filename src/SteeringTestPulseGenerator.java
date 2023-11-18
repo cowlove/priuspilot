@@ -25,9 +25,9 @@ class SteeringTestPulseGenerator {
     	return (double)testType;
     }
     
-    void startPulse(int dir) { 
-    	startTime = Calendar.getInstance().getTimeInMillis();
-    	direction = dir;
+    void startPulse(long ms, int dir) { 
+    	startTime = ms;
+		direction = dir;
     	count = 1;
     	if (testType == TEST_TYPE_CONSTANT_OFFSET) {
     		offset += magnitude * dir;	
@@ -35,8 +35,9 @@ class SteeringTestPulseGenerator {
     	}
     }
     
-    double currentPulse() { 
-    	double t = ((double)Calendar.getInstance().getTimeInMillis() - startTime) / 1000;
+    double currentPulse(long ms) {
+
+    	double t = (1.0 * ms - startTime) / 1000;
     	if ((count >= 0 && t >= duration * count)  || testType == TEST_TYPE_CONSTANT_OFFSET)
     		return offset; 
     	

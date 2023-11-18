@@ -93,7 +93,7 @@ public class GPSTrimCheat {
                 if (last != null) {
                     double timeD = e.time - last.time;
                     double hdgD = last.hdgDiff(e);
-                    double curve = hdgD * 100000/ (timeD * e.speed);
+                    double curve = hdgD * 100000 / (timeD * e.speed);
                     curve = Math.max(-15, Math.min(15, curve));
                     e.curve = curve;
                 }
