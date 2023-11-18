@@ -13,10 +13,10 @@ import java.util.regex.*;
 public class GPSTrimCheat {
     class Entry { 
         Entry(double la, double lo, double hd) {
-            lat = la; lon = lo; hdg = hd; trim = 0; buttons = 0;
+            lat = la; lon = lo; hdg = hd; trim = 0; buttons = 0; curve = 0; speed = 0; time = 0;
         }
         Entry() {}
-        double lat, lon, hdg, trim;
+        double time, lat, lon, hdg, trim, curve, speed;
         int buttons;
         double distance(Entry a) { 
             return Math.abs(Math.sqrt((lat - a.lat) * (lat - a.lat) + (lon - a.lon) * (lon - a.lon) * 47/69))
@@ -26,8 +26,9 @@ public class GPSTrimCheat {
             return Math.abs(lat - e.lat) * 6068 * 60;
         }
         double hdgDiff(Entry a) { // difference in feet of the two points
-            double d = Math.abs(hdg - a.hdg);
+            double d = hdg - a.hdg;
             if (d > 180) d = 360 - d;
+            if (d < -180) d = d + 360;
             return d;
         }
     }
@@ -55,6 +56,9 @@ public class GPSTrimCheat {
             return "";
         }
     }
+    double degreeDiff(double a, double b) { 
+        return a-b; 
+    }
     double reDouble(String p, String s) { 
         return Double.parseDouble(re(p, s));
     }
@@ -65,52 +69,71 @@ public class GPSTrimCheat {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        double lastLat = 0, lastLon =0;
+        Entry last = null;
+        int line = 0;
+        String s = new String("");
         while(fin != null) { 
             try {
-                String s = fin.readLine();
+                s = fin.readLine();
                 if (s == null) break;
-                String[] words = s.split("\\s+");
                 Entry e = new Entry();
                 e.trim = reDouble(".*st\\s+([-+]?[0-9.]+)", s);
+                e.time = reDouble("t\\s+([-+]?[0-9.]+)", s);
                 double corr =  reDouble(".*corr\\s+([-+]?[0-9.]+)", s);
                 double gpstrim =  reDouble(".*\\sgpstrim\\s+([-+]?[0-9.]+)", s);
                 double strim =  reDouble(".*\\sstrim\\s+([-+]?[0-9.]+)", s);
                 e.lat = reDouble(".*lat\\s+([-+]?[0-9.]+)", s);
                 e.lon = reDouble(".*lon\\s+([-+]?[0-9.]+)", s);
                 e.hdg = reDouble(".*hdg\\s+([-+]?[0-9.]+)", s);
+                e.speed = reDouble(".*speed\\s+([-+]?[0-9.]+)", s);
                 e.buttons = (int)reDouble(".*but\\s+([-+]?[0-9.]+)", s);
                 if (Math.abs(corr + gpstrim + strim) > Math.abs(e.trim))
                     e.trim = corr + gpstrim + strim;
-                if (Math.abs(e.trim) < trimThresh)
-                    e.trim = 0;
-                if (e.lat != lastLat && e.lon != lastLon) {
+                
+                if (last != null) {
+                    double timeD = e.time - last.time;
+                    double hdgD = last.hdgDiff(e);
+                    double curve = hdgD * 100000/ (timeD * e.speed);
+                    e.curve = curve;
+                }
+                if (last == null || (e.lat != last.lat && e.lon != last.lon)) {
                     list.add(e);
                 }
-                lastLat = e.lat;
-                lastLon = e.lon;  
+                last = e;
+                line++;
             } catch (Exception e) {
-                e.printStackTrace();
+                //System.out.printf("file %s, line %d: %s\n", fn, line, s);
+                //e.printStackTrace();
             }	
         }  
     }
     double get(double lat, double lon, double hdg) {
         Entry cl = new Entry(lat, lon, hdg);
-        Average avg = new Average();
+        Average steerAvg = new Average();
+        Average curveAvg = new Average();
         //Entry f = null;
+        buttons = 0;
         for (Entry f : list) { 
-            if (f.hdgDiff(cl) < 20 && f.distance(cl) < rad) {
-                avg.add(f.trim); 
+            if (Math.abs(f.hdgDiff(cl)) < 20 && f.distance(cl) < rad) {
+                steerAvg.add(f.trim); 
+                curveAvg.add(f.curve); 
+                buttons = buttons | f.buttons;
             }
         } 
-        trim = avg.calculate();
-        count = avg.count;
+        trim = steerAvg.calculate() / 2;
+        curve = curveAvg.calculate() * -0.015;
+        count = steerAvg.count;
+
 
         trim = Math.min(maxTrim, Math.max(-maxTrim, trim));
-        return trim;
+        curve = Math.min(maxCurve, Math.max(-maxCurve, curve));
+
+        return trim + curve;
     }
-    double trim = 0, count = 0;
-    double maxTrim = .20;
+    double trim = 0, count = 0, curve = 0;
+    double maxTrim = .15;
+    double maxCurve = .20;
     double trimThresh = 0.10;
+    int buttons = 0xffff;
 }
 

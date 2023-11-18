@@ -77,6 +77,7 @@ class SerialCommandBus {
                 lat = reDouble(".*lat\\s+([-+]?[0-9.]+)", s);
                 lon = reDouble(".*lon\\s+([-+]?[0-9.]+)", s);
                 hdg = reDouble(".*hdg\\s+([-+]?[0-9.]+)", s);
+                speed = reDouble(".*speed\\s+([-+]?[0-9.]+)", s);
 				long t = (long)reDouble("t\\s+([-+]?[0-9.]+)", s);	
 				updates++;
 				if (t > ms - startMs) 

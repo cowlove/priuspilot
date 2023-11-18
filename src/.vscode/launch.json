@@ -11,8 +11,7 @@
             "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
             "mainClass": "Silly",
             "args": ["/host/lanedumps/20231116.141353.yuv", 
-            "-size","432x240","-displayratio","10","-debug","EXPECTED_FPS=15","-debug","SZ_PERIOD=5","-debug","minSz=33","-debug","defLAng=65","-rescale","2","-debug","LASTEP=-0.9"
-            ,"-rescale","2","-displayratio","5"
+            "-fakeGps", "-trimCheat", "/host/lanedumps/20231116.141353.log"
                     
              ]
         },

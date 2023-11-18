@@ -43,7 +43,7 @@ class ButtonDebounce {
 
 class JoystickControl {
 	ArrayList<Joystick>  joysticks = new ArrayList<Joystick>();
-	double lowGain = 0.40;
+	double lowGain = 1.0;
 	double hiGain = 0.45;
 	double gainStep = 0.001;
 	public double steerAssist = 0;

@@ -211,6 +211,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("PID quality fade gain", 'S', .1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.selectedPid.qualityFadeGain += i; }});
+		add("PID L delay", 'J', .05,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.selectedPid.delays.l.delay += i; }});
 		add("FP displayRatio", 'H', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.displayRatio = (int)Math.min(10, Math.max(0, fp.displayRatio + i)); }});

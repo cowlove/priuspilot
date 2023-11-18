@@ -36,4 +36,9 @@ public class RunningAverage extends Average {
 		sum += x * w;
 	}
 	public void clear() { sum = weight = count = index = 0; }
+    
+	public void validate() {
+		if (Double.isInfinite(calculate()) || Double.isNaN(calculate()))
+			clear();
+    }
 }

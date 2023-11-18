@@ -224,4 +224,10 @@ public class RunningQuadraticLeastSquares {
 		return y -  calculate(x);
 	}
 
+    public void validate() {
+		double r = calculate();
+		if (Double.isNaN(r) || Double.isInfinite(r))
+			clear();
+    }
+
 }

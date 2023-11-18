@@ -108,7 +108,7 @@ class FrameProcessor {
     //public PidControl pidCSR = new PidControl("Right Lane Color Segment PID");
     //public PidControl pidCSL = new PidControl("Right Lane Color Segment PID");
     //LabJackJNI labjack = new LabJackJNI();
-    public PidControl selectedPid = pidPV;
+    public PidControl selectedPid = pidLL;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
 	GPSTrimCheat trimCheat = null;
    
@@ -221,7 +221,7 @@ class FrameProcessor {
         steeringTestPulse.count = 0;
         steeringTestPulse.offset = -0.00;
        
-        steeringDitherPulse.magnitude = 0.05;
+        steeringDitherPulse.magnitude = 0.20;
         
 		double lx = Silly.debugDouble("LX", 36)/ 20.0;
 
@@ -477,7 +477,6 @@ class FrameProcessor {
 
 	String steerCmdHost = "255.255.255.255";
 
-    //double maxSteer = .5; // wasn't 2.20 a bit excessive?! (WTF)
     synchronized void setSteering(double x) { 
 
 		if (Silly.sim != null) 
@@ -683,6 +682,10 @@ class FrameProcessor {
 	   		final int vanRectH = 32;// * height / 240;
 			final int vpScale = 1;
 			   		
+			avgRLCorr.validate();
+			avgLLCorr.validate();
+			laneWidthAvg.validate();
+			
 	   		tflo.vanLimits = tfro.vanLimits = tfl.vanLimits = tfr.vanLimits = new
 	   			Rectangle(inputZeroPoint.zeroPoint.vanX - vanRectW / 2, 
 	   					inputZeroPoint.zeroPoint.vanY - vanRectH / 2, vanRectW, vanRectH);
@@ -851,17 +854,19 @@ class FrameProcessor {
 				pidLL.i = pidRL.i = (pidLL.i + pidRL.i) / 2;
 			pidLL.add(lpos + dynamicLaneWidthAdj + manualLanePosTrim, time);
 			pidRL.add(rpos - dynamicLaneWidthAdj + manualLanePosTrim, time);
-			if ((joystick.buttonBits & 0x1) == 0) { 
+			if ((joystick.buttonBits & 0x1) == 0 && (trimCheat.buttons & 0x1) == 0) { 
 				corr -= pidLL.corr;
 				avgLLCorr.add(pidLL.corr);
 			} else { 
+				System.out.printf("IGNORE L\n");
 				corr -= avgLLCorr.calculate();
 			}
-			if ((joystick.buttonBits & 0x4) == 0) { 
+			if ((joystick.buttonBits & 0x4) == 0 && (trimCheat.buttons & 0x4) == 0) { 
 				corr -= pidRL.corr;
 				avgRLCorr.add(pidRL.corr);
 			} else { 
 				corr -= avgRLCorr.calculate();
+				System.out.printf("IGNORE R\n");
 			}
 			corr = corr / 2;
  			//corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
@@ -998,11 +1003,11 @@ class FrameProcessor {
         else
             steer = 0;
         
-        steer += steeringDitherPulse.currentPulse();
         steer += steeringTestPulse.currentPulse();
 		gps.update(time);
 		steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
         steer = joystick.steer(steer);
+        steer += steeringDitherPulse.currentPulse();
 		steer = steering.steer(time, steer);
 	    setSteering(steer);
 	    
@@ -1131,7 +1136,7 @@ class FrameProcessor {
                 double yoff = 0.80;
 	            double yspace = 0.05;
     			final double bWidth = 0.06;
-	   	        display.rectangle(Color.blue, String.format("%d", (int)trimCheat.count), trimCheat.trim + 0.5, yoff, bWidth, 0.05);
+	   	        display.rectangle(Color.blue, String.format("%d", (int)trimCheat.count), trimCheat.trim + trimCheat.curve + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.magenta, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 
@@ -1401,7 +1406,7 @@ class FrameProcessor {
 	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");
 	    			s = s.replace("%TEST1", 
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
-		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim " +
+		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim curve %curve " +
 		"strim %strim but %buttons stass %stass %pidrl %pidll %pidpv " +
 		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x ");
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
@@ -1418,6 +1423,7 @@ class FrameProcessor {
 	    			s = s.replace("%tde", String.format("%d", tdFindResult == null ? 0 : tdFindResult.score));
 	    			s = s.replace("%tdv", String.format("%d", tdFindResult == null ? 0 : tdFindResult.var));
 	    			s = s.replace("%tddelta", String.format("%.1f", tdAvg.delta));
+	    			s = s.replace("%curve", String.format("%f", trimCheat.curve));
 
 	    			s = s.replace("%tfx", String.format("%d", tfResult == null ? 0 : tfResult.x));
 	    			s = s.replace("%tfy", String.format("%d", tfResult == null ? 0 : tfResult.y));
