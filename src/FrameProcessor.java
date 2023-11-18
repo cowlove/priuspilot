@@ -858,7 +858,7 @@ class FrameProcessor {
 				corr -= pidLL.corr;
 				avgLLCorr.add(pidLL.corr);
 			} else { 
-				System.out.printf("IGNORE L\n");
+				//System.out.printf("IGNORE L\n");
 				corr -= avgLLCorr.calculate();
 			}
 			if ((joystick.buttonBits & 0x4) == 0 && (trimCheat.buttons & 0x4) == 0) { 
@@ -866,7 +866,7 @@ class FrameProcessor {
 				avgRLCorr.add(pidRL.corr);
 			} else { 
 				corr -= avgRLCorr.calculate();
-				System.out.printf("IGNORE R\n");
+				//System.out.printf("IGNORE R\n");
 			}
 			corr = corr / 2;
  			//corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
@@ -1136,7 +1136,7 @@ class FrameProcessor {
                 double yoff = 0.80;
 	            double yspace = 0.05;
     			final double bWidth = 0.06;
-	   	        display.rectangle(Color.blue, String.format("%d", (int)trimCheat.count), trimCheat.trim + trimCheat.curve + 0.5, yoff, bWidth, 0.05);
+	   	        display.rectangle((trimCheat.buttons & 0x5) == 0 ? Color.blue : Color.cyan, String.format("%d", (int)trimCheat.count), trimCheat.trim + trimCheat.curve + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.magenta, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 

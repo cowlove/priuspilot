@@ -114,7 +114,7 @@ public class GPSTrimCheat {
         //Entry f = null;
         buttons = 0;
         for (Entry f : list) { 
-            if (Math.abs(f.hdgDiff(cl)) < 20 && f.distance(cl) < rad) {
+            if (Math.abs(f.hdgDiff(cl)) < 30 && f.distance(cl) < rad) {
                 steerAvg.add(f.trim); 
                 curveAvg.add(f.curve); 
                 buttons = buttons | f.buttons;
