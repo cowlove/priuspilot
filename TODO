@@ -24,6 +24,8 @@ for f in \
 	./lanedumps/20231116.141353.yuv \
 	./lanedumps/20231117.174827.yuv \
 	./lanedumps/20231117.175518.yuv \
+	./lanedumps/20231119.102804.yuv \
+	./lanedumps/20231119.101920.yuv \
 ;do ./scripts/pp $f -headless | grep RMS; done
 
 # ./lanedumps/20231114.181221.yuv frames 00000-02481 FPS=051.15 RMS errs: LL=0.0159422 0.0266022 0.9666575, RL=0.0082103 0.0088674 0.9884532, VP=0.0094778 0.0201532 0.9775660, avgAction=0.1324759
@@ -39,7 +41,8 @@ failures for this commit:
 ./scripts/pp ./lanedumps/20231116.141353.yuv -skip 1250 -exit 300
 # crack distractor
 ./scripts/pp ./lanedumps/20231116.140744.yuv  -skip 2750 -exit 200
-
+# crack distractors all along AWS
+./scripts/pp /host/lanedumps/20231119.101920.yuv -skip 1500
 
 
 

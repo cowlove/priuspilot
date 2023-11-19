@@ -872,9 +872,9 @@ class FrameProcessor {
  			//corr = -(pidLL.add(lpos, time)  + pidRL.add(rpos, time)) / 2;
 			
 			if (!Double.isNaN(persVanX)) 
-				corr += -pidPV.add(persVanX + manualLanePosTrim * pixelWidthPrescale, time);
+				corr += -pidPV.add(persVanX, time);
 			if (pidLV != null && !Double.isNaN(laneVanX))
-				corr += -pidLV.add(laneVanX + manualLanePosTrim * pixelWidthPrescale, time);
+				corr += -pidLV.add(laneVanX, time);
 			double curve = 0;
 			if (!Double.isNaN(caL.getCurve()))
 				curve += caL.getCurve();
