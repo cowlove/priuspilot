@@ -158,6 +158,7 @@ public class CannyEdgeDetector {
 		width = r.width;
 		height = r.height;
 		zones.height = height;
+		zones.width = width;
 		initArrays();
 		results.clear();
 	

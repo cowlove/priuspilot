@@ -9,12 +9,25 @@ public class ScanZonePair {
 	int midX;
 	public ScanZone lsz = new ScanZone(), rsz = new ScanZone();
 	int height;
-
+	int width; 
+	
 	public void clear() { 
 		lsz.m1 = lsz.m2 = rsz.m1 = rsz.m2 = 0;
 		lsz.b1 = rsz.b1 = 0;
 		lsz.b2 = rsz.b2 = height;
                 lsz.minY = rsz.minY = 0;
+	}
+
+	int xstart(int y) {
+		if (Double.isNaN(lsz.m1))
+			return 0;
+		return  (int)((y - lsz.b1) / lsz.m1);
+	}
+	int xend(int y) { 
+		if (Double.isNaN(lsz.m1))
+			return (int)width;
+		return  (int)((y - lsz.b2) / lsz.m2);
+
 	}
 	int ystart(int x) {
 		if (Double.isNaN(lsz.m1))

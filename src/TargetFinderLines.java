@@ -523,22 +523,31 @@ class TargetFinderLines extends TargetFinder {
 			}
 		}
 
-		int [] lumDist = new int[256];
-		for (int i = 0; i < 256; i++)
-			lumDist[i] = 0;
+		int lum90 = 0;
 		if (useLuminanceCheck) {
+			int [] lumDist = new int[256];
+			int lumSum = 0, lumCount = 0;
+			for (int i = 0; i < 256; i++)
+				lumDist[i] = 0;
 			for (int y = 0; y < sa.height; y++) { 
-				for(int x = 0; x < sa.width; x++) {
-					int i = (int)getLuminance(oi, sa, x, y);
-					if (i > 0 && i < 256) 
-						lumDist[i]++;
+				int xs = Math.max(0, c.zones.xstart(y));
+				int xe = Math.min(sa.width, c.zones.xend(y));
+				//if (h.id == 0) System.out.printf("%03d %03d %d\n", y, xs, xe);
+				//xs = 0; xe = sa.width;
+				for(int x = xs; x < xe; x++) {
+					if (x > 0 && x < sa.width) {
+						int i = (int)getLuminance(oi, sa, x, y, 0);
+						if (i > 0 && i < 256) { 
+							lumDist[i]++;
+							lumCount++;
+						}
+					}
 				}
 			}
-		}
-		int lumSum = 0, lum90 = 0;
-		double lumPercentile = 0.12;
-		for (lum90 = 0; lum90 < 256 && lumSum < sa.height * sa.width * lumPercentile; lum90++) { 
-			lumSum += lumDist[lum90];
+		double lumPercentile = Silly.debugDouble("PCTLUM", 0.12);
+			for (lum90 = 0; lum90 < 256 && lumSum < lumCount * lumPercentile; lum90++) { 
+				lumSum += lumDist[lum90];
+			}
 		}
 		//lum90 = 256 / 9;
 		//System.out.printf("%d\n", lum90);	
@@ -556,12 +565,15 @@ class TargetFinderLines extends TargetFinder {
 				}			
         		double wt =  c.results.gradResults[y*sa.width+x];
 	    		if (useLuminanceCheck) {
-					double rlum = (float)getLuminance(oi, sa, x, y);
+					double rlum = (float)getLuminance(oi, sa, x, y, 1);
 					if (rlum >= lum90) { 
 	        			//wt *= rlum * rlum;
 					} else {
 						wt = 0;
 					}
+					//if (getDarkestNearestPixel(oi, sa, x, y, 1) < Silly.debugDouble("DCO", 20)) {
+					//	wt = 0;
+					//}
 				}	
         		if (ar != null) 
         			ar[(sa.height - y - 1) * sa.width + x] = wt;
@@ -825,13 +837,31 @@ class TargetFinderLines extends TargetFinder {
 	HslHist2D hsl2d = new HslHist2D(), hsl2d2 =new HslHist2D();
 	public Point hOriginOverride = null;
 
+	private float getDarkestNearestPixel(OriginalImage oi, Rectangle sa, int x, int y, int kern) {
+		float lum=255;
+		int count = 0;
+		// ???? The odd shape of this kernel lowered test results, don't understand why 
+		for(int dx = -kern; dx <= kern; dx++) { 
+			for (int dy = -kern; dy <= kern; dy++) { 
+				if (x + dx >= 0 && x + dx < sa.width && dy + y >= 0 && dy + y < sa.height) {  
+					lum = Math.min(lum, oi.getPixelLum(x + dx + sa.x, y + dy + sa.y));
+					count = 1;
+					//lum += oi.getPixelLum(x + dx + sa.x, y + dy + sa.y);
+					//count++;
+				}
+			}
+		}
+		return lum / count;				
+	}
+
+
 	// return luminance of pixel and surrounding area  normalized to 0-255
-	private float getLuminance(OriginalImage oi, Rectangle sa, int x, int y) {
+	private float getLuminance(OriginalImage oi, Rectangle sa, int x, int y, int kern) {
 		float lum=0;
 		int count = 0;
 		// ???? The odd shape of this kernel lowered test results, don't understand why 
-		for(int dx = -1; dx <= 1; dx++) { 
-			for (int dy = -1; dy <= 1; dy++) { 
+		for(int dx = -kern; dx <= kern; dx++) { 
+			for (int dy = -kern; dy <= kern; dy++) { 
 				if (x + dx >= 0 && x + dx < sa.width && dy + y >= 0 && dy + y < sa.height) {  
 					lum = Math.max(lum, oi.getPixelLum(x + dx + sa.x, y + dy + sa.y));
 					count = 1;

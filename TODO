@@ -24,7 +24,6 @@ for f in \
 	./lanedumps/20231116.141353.yuv \
 	./lanedumps/20231117.174827.yuv \
 	./lanedumps/20231117.175518.yuv \
-	./lanedumps/20231119.102804.yuv \
 	./lanedumps/20231119.101920.yuv \
 ;do ./scripts/pp $f -headless | grep RMS; done
 
@@ -34,6 +33,14 @@ for f in \
 # ./lanedumps/20231116.141353.yuv frames 00000-04211 FPS=053.82 RMS errs: LL=0.0154076 0.0197103 0.9743632, RL=0.0104443 0.0363334 0.9656581, VP=0.0113009 0.0845405 0.9158332, avgAction=0.1532435
 # ./lanedumps/20231117.174827.yuv frames 00000-04900 FPS=042.79 RMS errs: LL=0.0186475 0.0761224 0.9252223, RL=0.0129821 0.0726531 0.9294272, VP=0.0133384 0.0989796 0.9006933, avgAction=0.1646769
 # ./lanedumps/20231117.175518.yuv frames 00000-04280 FPS=053.36 RMS errs: LL=0.0163408 0.0633178 0.9373291, RL=0.0104381 0.0532710 0.9531615, VP=0.0115518 0.0483645 0.9463519, avgAction=0.1593195
+
+for f in ./lanedumps/20231114.181221.yuv ./lanedumps/20231114.181623.yuv \
+	./lanedumps/20231116.140744.yuv         ./lanedumps/20231116.141353.yuv \
+	./lanedumps/20231117.174827.yuv    ./lanedumps/20231117.175518.yuv   \
+	./lanedumps/20231119.101920.yuv ; 
+	do echo $f; for p in `./scripts/floatrange 0 .91 .1`; do echo -n "$p: ";
+	 	./scripts/pp $f  -debug PCTLUM=$p -headless | grep RMS; done ; done
+
 
 
 failures for this commit:
