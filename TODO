@@ -38,7 +38,7 @@ for f in ./lanedumps/20231114.181221.yuv ./lanedumps/20231114.181623.yuv \
 	./lanedumps/20231116.140744.yuv         ./lanedumps/20231116.141353.yuv \
 	./lanedumps/20231117.174827.yuv    ./lanedumps/20231117.175518.yuv   \
 	./lanedumps/20231119.101920.yuv ; 
-	do echo $f; for p in `./scripts/floatrange 0 .91 .1`; do echo -n "$p: ";
+	do echo $f; for p in .12 .85 .95; do echo -n "$p: ";
 	 	./scripts/pp $f  -debug PCTLUM=$p -headless | grep RMS; done ; done
 
 

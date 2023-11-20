@@ -390,6 +390,12 @@ class TargetFinderLines extends TargetFinder {
 	int rcHueMaxDiff = 44;
 	
 	
+	int xstart(int y) { 
+		return Math.max(0, c.zones.xstart(y));
+	}
+	int xend(int y) { 
+		return Math.min(sa.width, c.zones.xend(y));	
+	}
 	int cannyMaxPoints = 800, cannyMinPoints = 400;
 	@Override 
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
@@ -484,7 +490,7 @@ class TargetFinderLines extends TargetFinder {
 
 		for (int y = 0; y < sa.height; y++) { 
 			int continuousHorizontalPixels = 0;
-			for(int x = 0; x < sa.width; x++) {
+			for(int x = xstart(y); x < xend(y); x++) {
 				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
 					if (++continuousHorizontalPixels > Silly.debugInt("HPIXEL_FILTER", 2)) { 
 						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
@@ -506,11 +512,10 @@ class TargetFinderLines extends TargetFinder {
 
 		if (Silly.debug("DEBUG_LUM") && Silly.debugInt("DEBUG_LUM") == h.id) 
 			ar = new double[sa.height * sa.width];
-		double maxLum = 255; // TODO - needs to be relative luminance, maybe 90% 
-		// or something, won't lock on dim lane lines 
+
 		for(int x = 0; x < sa.width; x++) {
 			int continuousPixels = 0;
-			for (int y = 0; y < sa.height; y++) { 
+			for (int y = Math.max(0, c.zones.ystart(x)); y < Math.min(sa.height, c.zones.yend(x)); y++) { 
 				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
 					if (++continuousPixels > 5) { 
 						for (int y1 = y - continuousPixels; y1 < y; y1++) { 
@@ -530,11 +535,7 @@ class TargetFinderLines extends TargetFinder {
 			for (int i = 0; i < 256; i++)
 				lumDist[i] = 0;
 			for (int y = 0; y < sa.height; y++) { 
-				int xs = Math.max(0, c.zones.xstart(y));
-				int xe = Math.min(sa.width, c.zones.xend(y));
-				//if (h.id == 0) System.out.printf("%03d %03d %d\n", y, xs, xe);
-				//xs = 0; xe = sa.width;
-				for(int x = xs; x < xe; x++) {
+				for(int x = xstart(y); x < xend(y); x++) {
 					if (x > 0 && x < sa.width) {
 						int i = (int)getLuminance(oi, sa, x, y, 0);
 						if (i > 0 && i < 256) { 
@@ -544,16 +545,15 @@ class TargetFinderLines extends TargetFinder {
 					}
 				}
 			}
-		double lumPercentile = Silly.debugDouble("PCTLUM", 0.12);
+			double lumPercentile = Silly.debugDouble("PCTLUM", 0.12);
 			for (lum90 = 0; lum90 < 256 && lumSum < lumCount * lumPercentile; lum90++) { 
 				lumSum += lumDist[lum90];
 			}
 		}
-		//lum90 = 256 / 9;
-		//System.out.printf("%d\n", lum90);	
+	
 		for (int y = 0; y < sa.height; y++) { 
 			int continuousHorizontalPixels = 0;
-			for(int x = 0; x < sa.width; x++) {
+			for(int x = xstart(y); x < xend(y); x++) {
 				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
 					if (++continuousHorizontalPixels > 5) { 
 						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
@@ -586,74 +586,6 @@ class TargetFinderLines extends TargetFinder {
 			gp.draw();
 		}
 
-		// RELIC CODE, MAY NOT RUN
-    	// retain only inner-most canny pixel for each pixel row
-		if (false && !this.useLaneWidthFilter) { 
-			for (int y = 0; y < sa.height; y++) { 
-				int startX = leftSide ? sa.width - 1 : 0;
-				int endX = leftSide ? -1 : sa.width;
-				int step = leftSide ? -1 : 1;
-				boolean first = true;
-				int continuous = 0;
-				final int reqContinuousPixels = 1;
-				for(int x = startX; x != endX; x  += step) { 
-					if ((canny[x + y * sa.width] & 0xff) == 0xff) {
-						if (checkLuminance(oi, sa, x, y, minLineIntensity)) {
-							if (++continuous == reqContinuousPixels && first) { 
-								h.add(x, y);
-								lumPoints.add(new Point(x - step * continuous,y));
-								first = false;
-							}
-						} else {
-							continuous = 0;
-						}
-					}
-				}
-			}
-        } /*else  { 	        
-        	for( Point p : c.results.l ) {
-	        	if(!useLuminanceCheck || checkLuminance(oi, sa, p.x, p.y, minLineIntensity)) {
-	        		h.add(p.x, p.y, 1);
-	        		lumPoints.add(p);
-	        	} else 
-	        		nonLumPoints.add(p);
-	        }
-        }*/
-		
-		// For a broken lane line, try to add in a couple older frames' data
-		// to make the line more continuous
-        // Broken, period detection is work in progress 
-        if (false && usePeriodDetection) { 
-			pd.add(count, (int)h.maxhough);
-			int period = pd.getPeriod();
-			//if (h.id < 2) System.out.printf("id %d period %d\n", h.id, period);
-			ptHist.add(new ArrayList<Point>(lumPoints));
-			if (ptHist.size() == histDelay) { 
-				if (period >= 4 && period < histDelay /*TODO - bounds/array checking*/) {
-					// Add points from about 1/3 of the way through the intermittent line
-					// period
-					for(Point p : ptHist.get(histDelay - period / 3 - 1)) { 
-						h.add(p.x, p.y);
-						lumPoints.add(p);
-						//oi.putPixel(p.x + sa.x, p.y + sa.y, -1);
-					}
-					for(Point p : ptHist.get(histDelay - period / 2 - 1)) { 
-						h.add(p.x, p.y);
-						lumPoints.add(p);
-						//oi.putPixel(p.x + sa.x, p.y + sa.y, -1);
-					}
-				}
-	
-				// And also, for all lines add in points from the most recent frame, to help with
-				// dot smearing and to weight the average towards more current values
-				for(Point p : ptHist.get(histDelay - 1))  
-					h.add(p.x, p.y);
-				for(Point p : ptHist.get(histDelay - 2))  
-					h.add(p.x, p.y);
-				
-				ptHist.remove(0);
-			}
-        }
 		h.blur();   
 		
 		if (useLaneWidthFilter) {  

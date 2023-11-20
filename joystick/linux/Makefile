@@ -63,7 +63,7 @@ TARGET=../lib/libjjstick.so
 # Application-specific definitions  -- EDIT THESE
 ##############################################################################
 
-BASE_JVM = /usr/lib/jvm/java-11-openjdk-amd64/
+BASE_JVM = /usr/lib/jvm/java-11-openjdk-`sudo apt-get install openjdk-11-jdk-headless`/
 INCS =-I. -I$(BASE_JVM)/include -I$(BASE_JVM)/include/linux
 
 # other C and C++ common options

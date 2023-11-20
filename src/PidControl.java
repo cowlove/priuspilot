@@ -247,7 +247,7 @@ public class PidControl {
 	    defaultValue.add(corr);
 	    if (Double.isNaN(corr))
 	    	corr = 0.0;
-		l.add(n, delays.l.get(n, corr));
+			l.add(n, delays.l.get(n, corr));
 		return corr;
     }
 
