@@ -10,8 +10,8 @@
             "request": "launch",
             "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
             "mainClass": "Silly",
-            "args": ["/host/lanedumps/20231116.141353.yuv", 
-            "-fakeGps", "-trimCheat", "/host/lanedumps/20231116.141353.log"
+            "args": ["/home/jim/src/priuspilot/lanedumps/20231116.141353.yuv", 
+            "-fakeGps", "-trimCheat", "/home/jim/src/priuspilot/lanedumps/20231116.141353.log"
                     
              ]
         },

@@ -57,12 +57,13 @@ int main(int argc, char **argv) {
 	struct {
 		int32_t goo = 1234567;
 		int32_t goo2 = 1234567;
-	} buf;
+	} bufx;
+        char buf[256];
 	while(1) {
 		sleep(1);
 		usleep(10000);
-		buf.goo++;
-		int r = handler->send((uint8_t*)&buf, sizeof(buf));
+		snprintf(buf, sizeof(buf), "%d\n", bufx.goo2++);
+		int r = handler->send((uint8_t*)&buf, strlen(buf));
 		printf("%ld send\n", usec());
 		std::this_thread::yield();
 	}

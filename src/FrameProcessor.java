@@ -8,6 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -477,16 +479,33 @@ class FrameProcessor {
 
 	String steerCmdHost = "255.255.255.255";
 
+	FileWriter cmdLink = null;
     synchronized void setSteering(double x) { 
 
+		if (cmdLink == null) { 
+			try {
+				String devName = "/dev/ttyUSB0";
+				Process p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
+				p.waitFor();
+				cmdLink = new FileWriter(devName);
+			} catch(Exception e) { 
+				e.printStackTrace();
+			}
+		}
 		if (Silly.sim != null) 
 			Silly.sim.setSteer(x);
 
         x = x * epsSteeringGain;
 
-		String s = String.format("PPDEG %.3f %.3f", x, x);
+		String s = String.format("PPDEG %.3f %.3f\n", x, x);
 		if (Silly.fc != null) { 
 			Silly.fc.espnowSend(s);	
+		}
+		if (cmdLink != null) {
+			try {
+				cmdLink.write(s);
+				cmdLink.flush();
+			} catch (Exception e) {}
 		}
 		if (false) { 
 			try {
