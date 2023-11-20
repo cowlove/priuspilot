@@ -391,10 +391,10 @@ class TargetFinderLines extends TargetFinder {
 	
 	
 	int xstart(int y) { 
-		return Math.max(0, c.zones.xstart(y));
+		return Math.max(0, Math.min(c.zones.xend(y), c.zones.xstart(y)));
 	}
 	int xend(int y) { 
-		return Math.min(sa.width, c.zones.xend(y));	
+		return Math.min(sa.width, Math.max(c.zones.xend(y), c.zones.xstart(y)));
 	}
 	int cannyMaxPoints = 800, cannyMinPoints = 400;
 	@Override 
@@ -490,7 +490,8 @@ class TargetFinderLines extends TargetFinder {
 
 		for (int y = 0; y < sa.height; y++) { 
 			int continuousHorizontalPixels = 0;
-			for(int x = xstart(y); x < xend(y); x++) {
+			int xe = xend(y);
+			for(int x = xstart(y); x < xe; x++) {
 				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
 					if (++continuousHorizontalPixels > Silly.debugInt("HPIXEL_FILTER", 2)) { 
 						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
@@ -515,7 +516,8 @@ class TargetFinderLines extends TargetFinder {
 
 		for(int x = 0; x < sa.width; x++) {
 			int continuousPixels = 0;
-			for (int y = Math.max(0, c.zones.ystart(x)); y < Math.min(sa.height, c.zones.yend(x)); y++) { 
+			final int ye = Math.min(sa.height, c.zones.yend(x));
+			for (int y = Math.max(0, c.zones.ystart(x)); y < ye; y++) { 
 				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
 					if (++continuousPixels > 5) { 
 						for (int y1 = y - continuousPixels; y1 < y; y1++) { 
@@ -534,8 +536,9 @@ class TargetFinderLines extends TargetFinder {
 			int lumSum = 0, lumCount = 0;
 			for (int i = 0; i < 256; i++)
 				lumDist[i] = 0;
-			for (int y = 0; y < sa.height; y++) { 
-				for(int x = xstart(y); x < xend(y); x++) {
+			for (int y = 0; y < sa.height; y++) {
+				final int xe = xend(y); 
+				for(int x = xstart(y); x < xe; x++) {
 					if (x > 0 && x < sa.width) {
 						int i = (int)getLuminance(oi, sa, x, y, 0);
 						if (i > 0 && i < 256) { 
@@ -553,7 +556,8 @@ class TargetFinderLines extends TargetFinder {
 	
 		for (int y = 0; y < sa.height; y++) { 
 			int continuousHorizontalPixels = 0;
-			for(int x = xstart(y); x < xend(y); x++) {
+			final int xe = xend(y);
+			for(int x = xstart(y); x < xe; x++) {
 				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
 					if (++continuousHorizontalPixels > 5) { 
 						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
