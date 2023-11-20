@@ -485,10 +485,10 @@ class FrameProcessor {
 		if (cmdLink == null) { 
 			try {
 				String devName = "/dev/ttyUSB0";
-				Process p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
-				p.waitFor();
 				File f = new File(devName);
 				if(f.exists() && !f.isDirectory()) { 
+					Process p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
+					p.waitFor();
 					cmdLink = new FileWriter(devName);
 				}
 			} catch(Exception e) { 
