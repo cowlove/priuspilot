@@ -93,8 +93,8 @@ class JoystickControl {
 	    					joystick.getR(), joystick.getU(), joystick.getV(),
 	    					joystick.getPOV());
 	    		}
-				if ((buttonBits & (L2 | R2 | L1)) == 0) // TMPonly allow steer if buttons pressed 
-					steer = 0;
+				//if ((buttonBits & (L2 | R2 | L1)) == 0) // TMPonly allow steer if buttons pressed 
+				//	steer = 0;
 				if ((buttonBits & L1) != 0) {  // L1 - engage right joystick
 	           		steerAssist = joystick.getX() * lowGain;
 					steer += steerAssist;
@@ -138,6 +138,10 @@ class JoystickControl {
 		return steer;
 	}
 	
+	boolean safetyButton() { 
+		return (buttonBits & (L2 | R2 | L1)) != 0;
+	}
+
 	ButtonDebounce buttonDebounce[];
 	public boolean getButtonPressed(int b) {
 		for (Joystick joystick : joysticks) { 

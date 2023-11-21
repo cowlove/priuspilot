@@ -1039,6 +1039,14 @@ class FrameProcessor {
         steer = joystick.steer(steer);
         steer += steeringDitherPulse.currentPulse(time);
 		steer = steering.steer(time, steer);
+
+		if (!joystick.safetyButton() && !armButton)
+			steer = 0;
+
+		if (joystick.safetyButton() && armButton) { 
+			armButton = false; 
+			display.panel.butArm.setBackground(armButton ? Color.RED : null);
+		}
 	    setSteering(steer);
 	    
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
@@ -1522,12 +1530,12 @@ class FrameProcessor {
 		String s = ae.getActionCommand();
 		if (s.equals("RECORD")) { 
 			keyPressed('A');
-			display.panel.butRec.setBackground((writer != null && writer.active) ? Color.RED : Color.lightGray);
+			display.panel.butRec.setBackground((writer != null && writer.active) ? Color.RED : null);
 			
 
 		} else if (s.equals("ARM")) { 
 			armButton = !armButton;
-			display.panel.butArm.setBackground(armButton ? Color.RED : Color.lightGray);
+			display.panel.butArm.setBackground(armButton ? Color.RED : null);
 		} else if (s.equals("EXIT")) { 
 			keyPressed('Q');				
 		} else if (s.equals("FASTER")) { 
