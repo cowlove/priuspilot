@@ -1508,6 +1508,8 @@ class FrameProcessor {
     	System.out.println("Outputfile datestring is now " + dateString);
     }
 
+	boolean armButton = false;
+
 	synchronized public void actionPerformed(ActionEvent ae) {
 		int current = tp.current;
 		int i = display.panel.cb.getSelectedIndex();
@@ -1520,8 +1522,12 @@ class FrameProcessor {
 		String s = ae.getActionCommand();
 		if (s.equals("RECORD")) { 
 			keyPressed('A');
+			display.panel.butRec.setBackground((writer != null && writer.active) ? Color.RED : Color.lightGray);
+			
+
 		} else if (s.equals("ARM")) { 
-			onCruiseJoystick(4);
+			armButton = !armButton;
+			display.panel.butArm.setBackground(armButton ? Color.RED : Color.lightGray);
 		} else if (s.equals("EXIT")) { 
 			keyPressed('Q');				
 		} else if (s.equals("FASTER")) { 

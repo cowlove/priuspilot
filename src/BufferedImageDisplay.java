@@ -48,12 +48,14 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 	
 	FrameProcessor fp = null;
 
-	void addButton(String s) { 
+	JButton addButton(String s) { 
 		JButton b = new JButton(s);
 		b.addActionListener(this);
 		b.setPreferredSize(new Dimension(120, 40));
 		box.add(b);
+		return b;
 	}
+	JButton butArm = null, butRec = null;
 	
 	int width, height;
 	MyPanel(FrameProcessor f, int w, int h) {
@@ -65,10 +67,10 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 		typingArea.addKeyListener(this);
 	    
 	    box.add(typingArea);
-		addButton("RECORD");
+		butRec = addButton("RECORD");
+		butArm = addButton("ARM");
 		addButton("INCREASE");
 		addButton("DECREASE");
-		//addButton("ARM");
 		//addButton("EXIT");
 		
 //		addButton("FASTER");
