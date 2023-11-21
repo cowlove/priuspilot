@@ -1525,16 +1525,6 @@ class FrameProcessor {
 		}
 		//tdStartX  = x - 2; // TODO - figure out why these constant offsets are needed
 		//tdStartY = y - 22;
-		
-		/*
-		tdFindResult = null;
-		noProcessing = false;
-		tfFindTargetNow = true;
-		disarmed = true;
-		*/
-		//tfrcRect.x = x - 2;
-		//tfrcRect.y = y - 22;
-		
 	}
 	
 	boolean arduinoArmed = false;
@@ -1597,17 +1587,17 @@ class FrameProcessor {
 	HslChronograph hh = new HslChronograph();
 	
 	public void onMouseDragged(int x, int y) {
-		int []hsl = this.coi.getHsl(x, y);
-		System.out.printf("Mouse Dragged %d, %d = (%d,%d,%d)\n", x, y, hsl[0], hsl[1], hsl[2]); 
-		hsl2d.add(hsl2d.hists[0].maxX + 1, hsl);
-		hh.add(hsl);
+	//	int []hsl = this.coi.getHsl(x, y);
+	//	System.out.printf("Mouse Dragged %d, %d = (%d,%d,%d)\n", x, y, hsl[0], hsl[1], hsl[2]); 
+	//	hsl2d.add(hsl2d.hists[0].maxX + 1, hsl);
+	//	hh.add(hsl);
 	}
 
 	public void onMouseReleased() {
 		// TODO Auto-generated method stub
 		//hsl2d.draw();
-		hh.draw();
-		hh.clear();
+		//hh.draw();
+		//hh.clear();
 		//hsl2d.clear();
 		
 	}
