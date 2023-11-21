@@ -1,77 +1,10 @@
 #!/bin/bash -x
-VID=/dev/video0
-SERDEV=/dev/ttyUSB0
-BAUD=9600 
-
-PPROOT=/home/jim/workspace/priuspilot
-SCRIPTS=${PPROOT}/scripts/
-IDLE_COUNT=0
-
-/sbin/fsck -y /dev/sda3
-/bin/mount /dev/sda3 /host/lanedumps
-
-${SCRIPTS}/pp_yuvcopyout &
 
 while true; do
+ 	VIDEODEV=`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
+	$HOME/src/priuspilot/scripts/ppr \
+	/dev/video0 -skipratio 1 -rescale 1 -displayratio 30 $@
 
-#rmmod ftdi_sio
-#rmmod usbserial
-#sleep 1
-modprobe usbserial
-modprobe ftdi_sio
-
-/usr/bin/xhost + 
-#rmmod uvcvideo
-#sleep 1
-modprobe uvcvideo 
-
-ls -l $VID
-ls -l $SERDEV
-
-if [ -c $SERDEV ]; then
-	stty -F $SERDEV $BAUD
-	while true; do 
-		echo "d5000 5000" > $SERDEV && break
-		sleep 1;
-	done
-fi
-
-${SCRIPTS}/setvolume
-
-/bin/date >> /tmp/restarts
-
-
-if [ -c $VID ] && [ -c /dev/ttyUSB0 ]; then
-	if echo "d5000 5000" > $SERDEV; then
-		su -l jim -c "${SCRIPTS}/ppr -serial $SERDEV $VID"
-	fi
-fi
-
- 
-#if [ -c $VID ] && [ -c /dev/ttyUSB0 ]; then
-	#umount /dev/sdb1
-	#fsck -y /dev/sdb1
-	#mount /dev/sdb1 /host/lanedumps -o uid=1000,gid=1000
-	#/usr/bin/killall gnome-power-manager
-	#if /home/jim/bin/timogrep /dev/ttyUSB0 'a 8'; then
-	#	sleep 3
-	#	su -l jim -c ~jim/bin/r $VID
-	#	IDLE_COUNT=0
-	#else
-	#	IDLE_COUNT=$(( $IDLE_COUNT + 1 ))
-	#fi
-	#else
-	#	IDLECOUNT=0
-	#fi
-	#
-	#if (( $IDLE_COUNT == 2 )); then
-	#	echo suspending...	
-	#	#/usr/sbin/pm-suspend
-	#	IDLE_COUNT=0
-	#fi
-
-sleep 2
-
+	sleep 1
 done
-
 
