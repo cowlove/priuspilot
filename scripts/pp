@@ -1,5 +1,6 @@
-#!/bin/sh 
+#!/bin/sh
 SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
+PPDIR="$SCRIPT_DIR/.."
 LIB="$SCRIPT_DIR/../pplib"
 SRC="$SCRIPT_DIR/../src/"
 export LD_LIBRARY_PATH="$LIB"
@@ -11,18 +12,21 @@ IF=wlx0013ef802622
 #sudo ifconfig $IF up
 #sudo iwconfig $IF channel 6
 
+# Invoke profiling with PROFILE=1 ./scripts/pp ...
+if [ "$PROFILE" != "" ]; then
+    PROFILE="-agentpath:${HOME}/src/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=profile.html \
+    -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints \
+    "
+fi
 
 CP=$SRC/priuspilot.jar:$LIB/Joystick.jar:$LIB/jna-3.2.4.jar:/home/jim/workspace/priuspilot/bin:$LIB/Jama-1.0.2.jar:$LIB/mbrola.jar:$LIB/freetts-jsapi10.jar:$LIB/jsapi.jar:$LIB/freetts.jar
 	
 make -C $SRC && \
 java \
-    -agentpath:/home/jim/src/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=profile.html \
-    -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints \
-    -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP Silly \
+    -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP $PROFILE Silly  \
     -displaymode 63 -frameinterval 0  \
-    -debug EXPECTED_FPS=15 -debug SZ_PERIOD=5 -rescale 2 \
-     /dev/video2 -displayratio 1 \
-    -trimCheat $HOME/src/priuspilot/gpstrim.log \
+    -rescale 2 -displayratio 1 \
+    -trimCheat $PPDIR/gpstrim.log \
     $@
 
 #    -agentpath:/home/jim/src/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=profile.html \
