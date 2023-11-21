@@ -216,6 +216,10 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 					fp.inputZeroPoint.setAutoZero(); return 0;
 				}});
 				
+		add("fp.keepFocus", 'F', 0, 
+				new TunableParameter.Adjust() { public double adjust(double i) { 
+					fp.keepFocus = !fp.keepFocus; return fp.keepFocus ? 1.0 : 0.0;
+				}});
 
 				// Placeholders for hardcoded keys in FP class 
 		add("QUIT", 'Q', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});

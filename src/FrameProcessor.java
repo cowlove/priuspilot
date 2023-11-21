@@ -379,11 +379,11 @@ class FrameProcessor {
         	pauser.togglePaused();
         else if (keyCode == 'A')  
         	restartOutputFiles();
-		else if (keyCode == 'F') {
-			td.active = false;
-			tdFindResult = null;
-			tfFindTargetNow = false;
-		}
+//		else if (keyCode == 'F') {
+//			td.active = false;
+//			tdFindResult = null;
+//			tfFindTargetNow = false;
+//		}
         else if (keyCode == 10) { // [ENTER] key
 			if (td != null) {
 				td.active = true;

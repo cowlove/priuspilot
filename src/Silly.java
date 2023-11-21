@@ -171,7 +171,7 @@ public class Silly {
         HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
         HashMap<Object,Point> clickMap = new HashMap<Object,Point>();
         int targx = 0, targy = 0, targh = 0, targw = 0;
-                
+		boolean keepFocus = false;
         for(int i = 0; i < args.length; i++) {
             String a = args[i];
             if (a.compareTo("-nodrop") == 0) dropFrames = false;
@@ -296,6 +296,7 @@ public class Silly {
             else if (a.compareTo("-raw") == 0) rawOutputFile = args[++i];
             else if (a.compareTo("-logspec") == 0) logspec = args[++i];
             else if (a.compareTo("-minms") == 0) ++i; // handled by getargDouble below, fix this 
+            else if (a.compareTo("-keepfocus") == 0) keepFocus = true; // handled by getargDouble below, fix this 
             else if (a.startsWith("-"))	usage();
             else filename = a;
         }
@@ -341,6 +342,7 @@ public class Silly {
         fp.clicks = clickMap;        
 		fp.noSteering = noSteer;
 		fp.steerCmdHost = steerCmdHost;
+		fp.keepFocus = keepFocus;
 		if (gps) fp.gps.start();
 		else if (fakeGps) {
 			String gpsFile = filename.replace(".yuv", ".log");

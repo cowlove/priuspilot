@@ -301,7 +301,8 @@ class BufferedImageDisplayWithInputs extends BufferedImageDisplay {
         super.redraw();
         if (takeFocus) {
         	frame.setVisible(true);
-        	canv.requestFocus();
+			if (!panel.cb.isPopupVisible())
+        		panel.typingArea.requestFocus();
         }
         textrow = 0;
     }
