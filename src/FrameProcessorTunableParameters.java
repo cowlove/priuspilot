@@ -13,11 +13,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		fp = f;
 		
 		
-		add("dither.magnitude", 'K', 0.01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.magnitude += i; }} );
-		add("dither.period", 'L', 0.01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.duration += i; }} );
-
 		add("PID P gain", 'P', 0.05, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
 		add("PID I gain", 'I', 0.001, 
@@ -36,11 +31,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.period.l += i; }} );
 				*/
 
-		add("Reset input zero point", (char)127/**/, 0, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					fp.inputZeroPoint.setAutoZero(); return 0;
-				}});
-				
 		/*
 		add("Debug Lines", 'F', 1, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
@@ -69,20 +59,20 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.manualTrim += i; }} );
 		add("FP manualLanePosTrim", 'M', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.manualLanePosTrim += i; }} );
-		add("FP select finder param group", 'X', 1, 
-					new TunableParameter.Adjust() { public double adjust(double i) { 
-						fp.tfparamIndex += i;
-						if (fp.tfparamIndex >= fp.tfparams.size())
-							fp.tfparamIndex = 0;
-						if (fp.tfparamIndex < 0)
-							fp.tfparamIndex = fp.tfparams.size() - 1;
-						fp.tfparam = fp.tfparams.get(fp.tfparamIndex);
-						if (i != 0) 
-							System.out.print("tfparam " + fp.tfparam.name + " selected\n");
-						return fp.tfparamIndex;
-					}} );
+		//add("FP select finder param group", 'X', 1, 
+		//			new TunableParameter.Adjust() { public double adjust(double i) { 
+		//				fp.tfparamIndex += i;
+		//				if (fp.tfparamIndex >= fp.tfparams.size())
+		//					fp.tfparamIndex = 0;
+		//				if (fp.tfparamIndex < 0)
+		//					fp.tfparamIndex = fp.tfparams.size() - 1;
+		//				fp.tfparam = fp.tfparams.get(fp.tfparamIndex);
+		//				if (i != 0) 
+		//					System.out.print("tfparam " + fp.tfparam.name + " selected\n");
+		//				return fp.tfparamIndex;
+		//			}} );
 
-		add("fp.steer.trim", 'Y', .01, 
+		add("steer.trim", 'Y', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.steering.trim += i; }} );
 		add("fp.epsSteeringGain", 'C', .1, 
@@ -115,7 +105,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 
 		// Available  - shift (16) ctrl (17) alt (18) windows (524) 
 		
-		add("FP select different PID", 'E', 1,
+		add("FP select PID", 'E', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					if (i != 0) {
 						int idx = fp.pids.indexOf(fp.selectedPid) + (int)i;
@@ -135,18 +125,24 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//add("PID derrDegree", 'T', 1,
 		//		new TunableParameter.Adjust() { public double adjust(double i) {
 		//			return fp.pid.derrDegree += i; }} );
-		add("FD displayMode (bitwise 1-text, 2-PID, 4-background, 8-PID-D graph)", 'B', 1,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.displayMode = (fp.displayMode + (int)i) % 16 ; }} );
+		add("dither.magnitude", 'K', 0.01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.magnitude += i; }} );
+		add("dither.period", 'L', 0.01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.duration += i; }} );
 
-		add("ST steer.maxSteer", (char)59, .01,
+
+		add("displayMode (bitwise 1-text, 2-PID, 4-background, 8-PID-D graph)", 'B', 1,
+			new TunableParameter.Adjust() { public double adjust(double i) {
+				return fp.displayMode = (fp.displayMode + (int)i) % 16 ; }} );
+
+		add("steer.maxSteer", (char)59, .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.maxSteer += i; }});
 
-		add("FP steer.maxChange", '[', .001,
+		add("steer.maxChange", '[', .001,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.maxChange += i; }});
-		add("FP steer.deadband", ']', .01,
+		add("steer.deadband", ']', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.deadband += i; }});
 
@@ -172,13 +168,13 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 					return fp.tf.param.L.high += i; }});
 	*/
 	
-		add("FP testPulse magnitude", '6', .05,
+		add("testPulse magnitude", '6', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.magnitude += i; }});
-		add("FP testPulse duration", '7', .05,
+		add("testPulse duration", '7', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.duration += i; }});
-		add("FP testPulse type", '0', 1,
+		add("testPulse type", '0', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.changeTestType((int) i); }},
 				new TunableParameter.Print() { public String print() { 
@@ -189,7 +185,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.selectedPid.gain.i.loGain += i;  }});
 */
-		add("FP selectedPid.gain.i.max", 'U', .005,
+		add("PID gain.i.max", 'U', .005,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.selectedPid.gain.i.max += i;  }});
 	/*	add("FP steering.lag.basisFactor", 'C', .01, 
@@ -215,7 +211,13 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.lineIntensityDelta += i; }});
 
-		// Placeholders for hardcoded keys in FP class 
+		add("Reset input zero point", (char)127/**/, 0, 
+				new TunableParameter.Adjust() { public double adjust(double i) { 
+					fp.inputZeroPoint.setAutoZero(); return 0;
+				}});
+				
+
+				// Placeholders for hardcoded keys in FP class 
 		add("QUIT", 'Q', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		add("RESET", 'R', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		add("LOOP", 'T', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
