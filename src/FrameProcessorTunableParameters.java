@@ -75,7 +75,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("steer.trim", 'Y', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.steering.trim += i; }} );
-		add("fp.epsSteeringGain", 'C', .1, 
+		add("fp.epsSteeringGain", 'C', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.epsSteeringGain += i; }} );
 //		add("detector.threshold1", 'Y', 1, 
