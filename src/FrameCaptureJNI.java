@@ -3,7 +3,7 @@ import java.nio.ByteBuffer;
 public class FrameCaptureJNI {
 	public native void configure(int id, String dev, int resWidth, int resHeight, int windX, int windY, int windWidth, int
 			windHeight, boolean flip, String captureFile, int captureFileSize, int captureFileCount,
-			int maxFramePeriod, int rawRecordSkip, boolean useSystemClock);
+			int maxFrameMs, int minFrameMs, boolean useSystemClock);
 	public native int grabFrame(int id, ByteBuffer ib);
 	public native long getFrameTimestamp(int id); 
 	public native void close(int id);
@@ -15,9 +15,9 @@ public class FrameCaptureJNI {
 
 	public void configure(String dev, int resWidth, int resHeight, int windX, int windY, int windWidth, int
 			windHeight, boolean flip, String captureFile, int captureFileSize, int captureFileCount, 
-			int maxFramePeriod, int rawRecordSkip, boolean useSystemClock) { 
+			int maxFrameMs, int minFrameMs, boolean useSystemClock) { 
 		configure(id, dev, resWidth, resHeight, windX, windY, windWidth, windHeight, flip, captureFile,
-				captureFileSize, captureFileCount, maxFramePeriod, rawRecordSkip, useSystemClock);
+				captureFileSize, captureFileCount, maxFrameMs, minFrameMs, useSystemClock);
 	}
 	public int grabFrame(ByteBuffer ib) { return grabFrame(id, ib); } 
 	public long getFrameTimestamp() { return getFrameTimestamp(id); } 

@@ -166,7 +166,7 @@ struct config {
 	int lastDroppedFrames;
 	int lastMs;
 	int maxFrameMs; /* max ms per frame before switching to night mode */
-	int rawRecordSkip; /* skip rate for reading frames */
+	int minMsBetweenFrames; /* limit rate to this by dropping frames */
 	//struct aiocbp aio;
 	struct {
 		long timestamp;
@@ -209,7 +209,7 @@ JNIEXPORT void JNICALL Java_FrameCaptureJNI_espnowSend
 JNIEXPORT void JNICALL Java_FrameCaptureJNI_configure
   (JNIEnv *env, jobject o, jint cameraIndex, jstring fname, jint resWidth, jint resHeight, jint windX, jint windY, 
 	jint windWidth, jint windHeight, jboolean flip, jstring capfname, jint capsize, 
-	jint capcount, jint maxms, jint recordSkip, jboolean useSystemClock) {
+	jint capcount, jint maxms, jint minms, jboolean useSystemClock) {
 
 		config *conf = getCameraObject(cameraIndex);
 		bzero(conf, sizeof(*conf));
@@ -233,7 +233,7 @@ JNIEXPORT void JNICALL Java_FrameCaptureJNI_configure
 		conf->captureFileSize = capsize;
 		conf->reopenCaptureFile = false;
 		conf->maxFrameMs = maxms;
-		conf->rawRecordSkip = recordSkip;
+		conf->minMsBetweenFrames = minms;
 		
 		conf->captureFd = -1;
 		conf->fd = -1;
@@ -317,22 +317,9 @@ extern "C" void process_image(config *conf, const unsigned char *in, unsigned ch
 	}
 		
 	if (conf->captureFd > 0) {
-			// TODO - nonblocking AIO
-			/*
-			int r = write(conf->captureFd, &conf->frameTimestamp, 8);
-			conf->currentCapFileSize += r;
-			r = write(conf->captureFd, in, conf->windHeight * conf->windWidth * 2);
-			conf->currentCapFileSize += r;
-			//fsync(conf->captureFd);
-			*/
-
 			memcpy((void *)in, (void *)&conf->frameTimestamp, 8); // stash the timestamp in the first bytes of the image
 			memcpy((void *)(in + 8), (void *)&conf->logData, sizeof(conf->logData)); // and the logged steering data 
-
-			asynch_write(conf->captureFd, in, PAGE_ROUND(conf->windHeight * conf->windWidth * 2));
-			//if (write(conf->captureFd, in, AGE_ROUND(conf->windHeight * conf->windWidth * 2))
-			//	perror("write()");
-			
+			asynch_write(conf->captureFd, in, PAGE_ROUND(conf->windHeight * conf->windWidth * 2));			
 	}
 
 
@@ -529,16 +516,13 @@ JNIEXPORT jint JNICALL Java_FrameCaptureJNI_grabFrame
 		if (conf->obuf == NULL) 
 			conf->obuf = (unsigned char *)malloc(PAGE_ROUND(h * w * 2));
 		
-		if (conf->rawRecordSkip < 1) conf->rawRecordSkip = 1;
-		for (int skip = 0; skip <= conf->rawRecordSkip; skip++) { 
-			int needed = PAGE_ROUND(w * h * 2);
-			unsigned char *p = conf->obuf;
-			do { 
-				n = read(conf->fd, p, needed);
-				needed -= n;
-				p += n;
-			} while(needed > 0 && n > 0);
-		}
+		int needed = PAGE_ROUND(w * h * 2);
+		unsigned char *p = conf->obuf;
+		do { 
+			n = read(conf->fd, p, needed);
+			needed -= n;
+			p += n;
+		} while(needed > 0 && n > 0);
 		memcpy((void *)&conf->frameTimestamp, (void *)conf->obuf, 8);
 		process_image(conf, conf->obuf, buf, 0);
 	} else {
@@ -842,50 +826,38 @@ read_frame                      (config *conf, unsigned char *arg)
 
 		int errors = 0;
 		int skipped = 0;
+		bool done = false;
 
-		if (conf->rawRecordSkip < 1) conf->rawRecordSkip = 1;
-		for (int skipped = 1; skipped < conf->rawRecordSkip; skipped++) {
+		while(!done) { 
 			CLEAR (buf);
 			buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 			buf.memory = V4L2_MEMORY_MMAP;
 			while(xioctl (conf->fd, VIDIOC_DQBUF, &buf) == -1) {
-				//perror("VIDIOC_DQBUF1");
 				v4l2mmap_poll(conf, 10000);
 				if (errors++ > 30) {
 					v4l2mmap_close(conf);
 					v4l2mmap_open(conf);
-						errno_exit("VIDIOC_DQBUF()");
 				}
-			}	
-			if (xioctl (conf->fd, VIDIOC_QBUF, &buf) == -1) {
-				fprintf(stderr, "VIDIOC_QBUF failed for device '%s'\n", conf->filename);
-				errno_exit ("VIDIOC_QBUF1");
 			}
-		} 
-		CLEAR (buf);
-		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		buf.memory = V4L2_MEMORY_MMAP;
-		while(xioctl (conf->fd, VIDIOC_DQBUF, &buf) == -1) {
-			v4l2mmap_poll(conf, 10000);
-			if (errors++ > 30) {
-				v4l2mmap_close(conf);
-				v4l2mmap_open(conf);
-			}
-		}
-	
-		assert (buf.index < n_buffers);
-		conf->totalFrames++;
-		if (v4l2mmap_poll(conf) != 0) {
-			// ugly: others waiting, just discard this one 
-			//printf("v4l2.c: %d frames dropped out of %d\n", conf->droppedFrames++, conf->totalFrames);
-		} else { 
-			process_image(conf, (const unsigned char *)conf->buffers[buf.index].start, 
-				arg, &buf.timestamp);
-		}
 		
-		if (xioctl (conf->fd, VIDIOC_QBUF, &buf) == -1) {
-				fprintf(stderr, "VIDIOC_QBUF failed for device '%s'\n", conf->filename);
-				errno_exit ("VIDIOC_QBUF");
+			assert (buf.index < n_buffers);
+			conf->totalFrames++;
+			long ts = (long)buf.timestamp.tv_usec / 1000 + (long)buf.timestamp.tv_sec * 1000;
+
+			if (v4l2mmap_poll(conf) != 0 || 
+				(conf->minMsBetweenFrames > 0 && ts - conf->lastFrameTimestamp < conf->minMsBetweenFrames)) {
+				// ugly: others waiting, just discard this one 
+				//printf("v4l2.c: %d frames dropped out of %d\n", conf->droppedFrames++, conf->totalFrames);
+			} else { 
+				process_image(conf, (const unsigned char *)conf->buffers[buf.index].start, arg, &buf.timestamp);
+				conf->lastFrameTimestamp = ts;
+				done = true;
+			}
+			
+			if (xioctl (conf->fd, VIDIOC_QBUF, &buf) == -1) {
+					fprintf(stderr, "VIDIOC_QBUF failed for device '%s'\n", conf->filename);
+					errno_exit ("VIDIOC_QBUF");
+			}
 		}
         return 1;
 }

@@ -3,7 +3,7 @@
 while true; do
  	VIDEODEV=`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
 	$HOME/src/priuspilot/scripts/ppr \
-	/dev/video0 -skipratio 1 -rescale 1 -displayratio 30 $@
+	/dev/video0 -minms 60 -rescale 1 -displayratio 30 $@
 
 	sleep 1
 done

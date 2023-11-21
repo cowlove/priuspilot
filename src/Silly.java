@@ -123,6 +123,11 @@ public class Silly {
 	static long now() { 
 		return Calendar.getInstance().getTimeInMillis();
 	}
+	static double getargDouble(String[] args, String f, double def) {
+        for(int i = 0; i < args.length; i++) 
+            if (args[i].compareTo(f) == 0) return Double.parseDouble(args[++i]);
+		return def;
+	}
 	
 	/*
 	public static int debugFlags = 0;
@@ -153,7 +158,6 @@ public class Silly {
         int frameCount = 0, pauseFrame = 0, exitFrame = 0, displayratio = 1;
         int displayMode = 63;
         int volume = 10;
-        int frameInterval = 0; // minimum interval between captured frames
 		String steerCmdHost = "255.255.255.255";
         boolean jni = false;
 		boolean gps = false;
@@ -166,7 +170,6 @@ public class Silly {
         // same as copyout loop 
         HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
         HashMap<Object,Point> clickMap = new HashMap<Object,Point>();
-        int skipRatio = 0;
         int targx = 0, targy = 0, targh = 0, targw = 0;
                 
         for(int i = 0; i < args.length; i++) {
@@ -182,8 +185,7 @@ public class Silly {
             else if (a.compareTo("-rgb32") == 0) rgb32 = true;
             else if (a.compareTo("-cannyDebug") == 0) cannyDebug = true;
             else if (a.compareTo("-jni") == 0) jni = true;
-			else if (a.compareTo("-skipratio") == 0) skipRatio = Integer.parseInt(args[++i]);
-            else if (a.compareTo("-nosteer") == 0) noSteer = true;
+	        else if (a.compareTo("-nosteer") == 0) noSteer = true;
             else if (a.compareTo("-fps") == 0) framerate = Integer.parseInt(args[++i]);
             else if (a.compareTo("-rescale") == 0) rescale = Integer.parseInt(args[++i]);
             else if (a.compareTo("-skip") == 0) skipFrames = Integer.parseInt(args[++i]);
@@ -196,7 +198,6 @@ public class Silly {
             //else if (a.compareTo("-capfile") == 0) capFile = args[++i];
             else if (a.compareTo("-capcount") == 0) capCount = Integer.parseInt(args[++i]);
             else if (a.compareTo("-capsize") == 0) capSize = Integer.parseInt(args[++i]);
-            else if (a.compareTo("-frameinterval") == 0) frameInterval = Integer.parseInt(args[++i]);
             else if (a.compareTo("-gstreamer") == 0) gstreamer = true;
             else if (a.compareTo("-flip") == 0) flipVideo = true;
             else if (a.compareTo("-night") == 0) nightMode = true;
@@ -294,9 +295,11 @@ public class Silly {
             else if (a.compareTo("-chart") == 0) chartFile = args[++i];
             else if (a.compareTo("-raw") == 0) rawOutputFile = args[++i];
             else if (a.compareTo("-logspec") == 0) logspec = args[++i];
+            else if (a.compareTo("-minms") == 0) ++i; // handled by getargDouble below, fix this 
             else if (a.startsWith("-"))	usage();
             else filename = a;
         }
+		int minFrameMs = (int)getargDouble(args, "-minms", 0);
 
         /*
         ImageDisplay id = new ImageDisplay(256,256);
@@ -523,7 +526,7 @@ public class Silly {
         	fc = new FrameCaptureJNI();
         	fc.configure(filename, width, height, windx, windy, windw, windh, 
         			flipVideo, capFile, capSize, capCount, 10000/*max ms per frame*/,
-        			skipRatio /*raw record skip interval*/, useSystemClock);
+        			minFrameMs, useSystemClock);
         	if (fp.writer != null) 
         		fp.writer.fc = fc; 
 	    	
