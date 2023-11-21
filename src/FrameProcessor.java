@@ -1106,6 +1106,9 @@ class FrameProcessor {
 		
 
         if (displayRatio > 0 && (count % displayRatio) == 0) {
+			display.panel.butRec.setBackground((writer != null && writer.active) ? Color.RED : null);
+			display.panel.butArm.setBackground(armButton ? Color.RED : null);
+	
 			if (tdFindResult != null) {  
 	            	//display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
 				td.draw(coi, rescale);
@@ -1530,12 +1533,8 @@ class FrameProcessor {
 		String s = ae.getActionCommand();
 		if (s.equals("RECORD")) { 
 			keyPressed('A');
-			display.panel.butRec.setBackground((writer != null && writer.active) ? Color.RED : null);
-			
-
 		} else if (s.equals("ARM")) { 
 			armButton = !armButton;
-			display.panel.butArm.setBackground(armButton ? Color.RED : null);
 		} else if (s.equals("EXIT")) { 
 			keyPressed('Q');				
 		} else if (s.equals("FASTER")) { 
