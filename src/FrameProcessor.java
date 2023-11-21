@@ -158,7 +158,9 @@ class FrameProcessor {
 			display.g2.setFont(myFont);
 
 			for(TunableParameter f : tp.ps) { 
-				display.panel.cb.addItem(f.desc.substring(0, Math.min(15, f.desc.length())));
+				String item = "X";
+				item = f.desc.substring(0, Math.min(10, f.desc.length()));
+				display.panel.cb.addItem(item);
 			}
 		}
     	if (outFile != null) 
