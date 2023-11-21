@@ -1,6 +1,7 @@
 #!/bin/bash -x 
 
-sudo apt-get install openjdk-11-jdk-headless 
+sudo apt-get install openjdk-11-jdk-headless openjdk-11-jdk xfce4-terminal
+
 
 make -C joystick/linux
 cp joystick/lib/*.so pplib/

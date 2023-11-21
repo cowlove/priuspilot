@@ -10,7 +10,8 @@ export XKL_XMODMAP_DISABLE=1
 if [ "$DISPLAY" == ":1" ]; then
 	x-terminal-emulator &
 	sleep .2
-	x-terminal-emulator -geometry 120x24+10+150 -e $HOME/src/priuspilot/scripts/pploop &
+	xfce4-terminal --color-bg=white --color-text=black --fullscreen \
+ 		-e $HOME/src/priuspilot/scripts/pploop &
 	x-window-manager &
 else
 	/etc/X11/Xsession
