@@ -159,7 +159,7 @@ class FrameProcessor {
 
 			for(TunableParameter f : tp.ps) { 
 				String item = "X";
-				item = f.desc.substring(0, Math.min(10, f.desc.length()));
+				item = f.desc.substring(0, Math.min(15, f.desc.length()));
 				display.panel.cb.addItem(item);
 			}
 		}
