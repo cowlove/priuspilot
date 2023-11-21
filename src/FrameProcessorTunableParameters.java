@@ -12,15 +12,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 	public FrameProcessorTunableParameters(FrameProcessor f) { 
 		fp = f;
 		
-		// Placeholders for hardcoded keys in FP class 
-		add("QUIT", 'Q', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
-		add("RESET", 'R', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
-		add("LOOP", 'T', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
-		add("NEXT", 'N', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
-		add("PAUSE", 'Z', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
-		add("CAPTURE", 'A', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
-		add("DECREASE", ',', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
-		add("INCREASE", '.', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		
 		add("dither.magnitude", 'K', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.magnitude += i; }} );
@@ -223,6 +214,16 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("TF fp.lineIntensityDelta", 'V', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.lineIntensityDelta += i; }});
+
+		// Placeholders for hardcoded keys in FP class 
+		add("QUIT", 'Q', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+		add("RESET", 'R', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+		add("LOOP", 'T', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+		add("NEXT", 'N', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+		add("PAUSE", 'Z', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+		add("CAPTURE", 'A', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+		add("DECREASE", ',', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+		add("INCREASE", '.', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 
 		selectParam('X');		
 	}

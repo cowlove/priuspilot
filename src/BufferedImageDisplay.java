@@ -44,14 +44,14 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 
 	JTextField   typingArea = new JTextField();
 	Box box = Box.createVerticalBox();
-	JComboBox cb = new JComboBox();
+	JComboBox<String> cb = new JComboBox<String>();
 	
 	FrameProcessor fp = null;
 
 	void addButton(String s) { 
 		JButton b = new JButton(s);
 		b.addActionListener(this);
-		b.setPreferredSize(new Dimension(120, 80));
+		b.setPreferredSize(new Dimension(120, 40));
 		box.add(b);
 	}
 	
@@ -66,7 +66,9 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 	    
 	    box.add(typingArea);
 		addButton("RECORD");
-		addButton("ARM");
+		addButton("INCREASE");
+		addButton("DECREASE");
+		//addButton("ARM");
 		//addButton("EXIT");
 		
 //		addButton("FASTER");
@@ -83,7 +85,7 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 	
 	@Override
 	public void actionPerformed(ActionEvent ae) {
-		fp.onButtonPressed(ae);
+		fp.actionPerformed(ae);
 		typingArea.requestFocus();
 	}
 	@Override

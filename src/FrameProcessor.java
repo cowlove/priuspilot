@@ -156,6 +156,10 @@ class FrameProcessor {
 			attributes.put(TextAttribute.SIZE, (int) (currentFont.getSize() * rescale));
 			Font myFont = Font.getFont(attributes);
 			display.g2.setFont(myFont);
+
+			for(TunableParameter f : tp.ps) { 
+				display.panel.cb.addItem(f.desc.substring(0, Math.min(15, f.desc.length())));
+			}
 		}
     	if (outFile != null) 
     		writer = new ImageFileWriter(outFile, Silly.fc);
@@ -1502,7 +1506,15 @@ class FrameProcessor {
     	System.out.println("Outputfile datestring is now " + dateString);
     }
 
-	synchronized public void onButtonPressed(ActionEvent ae) {
+	synchronized public void actionPerformed(ActionEvent ae) {
+		int current = tp.current;
+		int i = display.panel.cb.getSelectedIndex();
+		tp.selectIndex(i);
+		if (tp.current != current) { 
+			tp.printCurrent();
+		}
+
+
 		String s = ae.getActionCommand();
 		if (s.equals("RECORD")) { 
 			keyPressed('A');
@@ -1514,6 +1526,12 @@ class FrameProcessor {
 			setCruise(true);
 		} else if (s.equals("SLOWER")) { 
 			setCruise(false);
+		} else if (s.equals("INCREASE")) { 
+			tp.adjustParam(+1);
+			tp.printCurrent();
+		} else if (s.equals("DECREASE")) { 
+			tp.adjustParam(-1);
+			tp.printCurrent();
 		} 		
 	}
 	

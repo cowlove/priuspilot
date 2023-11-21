@@ -47,6 +47,10 @@ class TunableParameterList {
     TunableParameter currentParam() {
         return findParam(current);
     }
+	void selectIndex(int i) { 
+		if (i >= 0 && i < ps.size()) 
+			current = ps.get(i).key;
+	}
 	void selectNext(int dir) { 
 		TunableParameter p = currentParam();
 		if (p == null) { 
