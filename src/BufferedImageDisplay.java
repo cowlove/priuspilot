@@ -285,7 +285,7 @@ class BufferedImageDisplayWithInputs extends BufferedImageDisplay {
 	public BufferedImageDisplayWithInputs(FrameProcessor fp, int w, int h) {
     	super(w, h, 200, 40, BufferedImage.TYPE_3BYTE_BGR);
     	panel = new MyPanel(fp, w, h);
-        frame.setBounds(xpos,ypos, width + 160, height + 40);
+        frame.setBounds(xpos,ypos, width + 200, height + 40);
         frame.getContentPane().add(panel, BorderLayout.EAST);
 		frame.addMouseListener(panel);
 		frame.addMouseMotionListener(panel);
