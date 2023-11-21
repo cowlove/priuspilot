@@ -1105,9 +1105,11 @@ class FrameProcessor {
 		*/
 		
 
-        if (displayRatio > 0 && (count % displayRatio) == 0) {
+		if (display != null) { 
 			display.panel.butRec.setBackground((writer != null && writer.active) ? Color.RED : null);
 			display.panel.butArm.setBackground(armButton ? Color.RED : null);
+		}
+        if (displayRatio > 0 && (count % displayRatio) == 0) {
 	
 			if (tdFindResult != null) {  
 	            	//display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
