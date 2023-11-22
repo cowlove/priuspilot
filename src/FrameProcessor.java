@@ -1147,6 +1147,7 @@ class FrameProcessor {
 				drawTruncatedLine(rx + 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
 				
 	            setLineColorAndWidth(Color.green, 1 * rescale);
+				// scale the midline rectangle to indicate line quality 
 				final int lodot = (int)(10.0 - pidLL.quality * 7);
 				final int rodot = (int)(10.0 - pidRL.quality * 7);
 
