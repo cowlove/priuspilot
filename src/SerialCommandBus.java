@@ -3,6 +3,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,7 +67,7 @@ class SerialCommandBus {
         }
 	}
 
-	long startMs = 0;
+	long startMs = 0, curTime = 0;
 	void update(long ms) { 
 		if (startMs == 0)
 			startMs = ms;
@@ -133,6 +134,14 @@ class SerialCommandBus {
 	Double lat = 0.0, lon = 0.0, hdg = 0.0, siv = 0.0, speed = 0.0, hdop = 0.0, nsat = 0.0; 
 	int updates = 0;
 
+	double lastHdg = 0;
+	long lastMs = 0;
+	double maxCurve = 0.25;
+	double curveGain = 0.020;
+	double curve = 0.0;
+	RunningQuadraticLeastSquares avgCurve = 
+		new RunningQuadraticLeastSquares(1, (int)(PidControl.EXPECTED_FPS * 3),
+		2.0);
     Thread reader = new Thread (new Runnable() {
         public void run() {
         	while(true) { 
@@ -170,6 +179,8 @@ class SerialCommandBus {
 					
 					String st[] = s.split(",");
 					try { 
+						long time = Calendar.getInstance().getTimeInMillis();
+
 						if (st[0].equals("$GPRMC")) {
 							lat = Double.parseDouble(st[3]) / 100.0;
 							lon = Double.parseDouble(st[5]) / 100.0;
@@ -183,14 +194,21 @@ class SerialCommandBus {
 							else 
 								hdg = 0.0;
 							updates++;
+							double timeD = time - lastMs;
+							double hdgD = hdgDiff(hdg, lastHdg);
+							double c = hdgD * 100000 / (timeD * speed);
+							c = Math.max(-25, Math.min(25, c));
+							if (Double.isNaN(c) || Double.isInfinite(c))
+								c = 0;
+							avgCurve.add((double)time / 1000.0, c);
+							lastHdg = hdg;
+							lastMs = time;
 						} else if (st[0].equals("$GPGGA")) {
 							nsat = Double.parseDouble(st[7]);
 							hdop = Double.parseDouble(st[8]);
 						} 
 						//System.out.printf("GPS %+12.08f %+12.08f %05.1f %05.1f %05.1f %.0f\n", 
 						//	lat, lon, hdg, speed, hdop, nsat);
-						
-						
 					} catch(Exception e) {
 						//e.printStackTrace();
 					}
@@ -198,6 +216,14 @@ class SerialCommandBus {
         	}
         }
     });
+
+	double getCurveCorrection(long ms) {
+		avgCurve.removeAged((double)ms / 1000.0);
+		avgCurve.validate();
+		curve = avgCurve.calculate() * curveGain;
+		curve = Math.max(-maxCurve, Math.min(maxCurve, curve));
+		return curve;
+	}
     String lastDebugString = "";
     int ignitionOffCount = 0;
     void writeCmd(String s) {
@@ -214,7 +240,13 @@ class SerialCommandBus {
         	} while(tty == null);
     	}
     }    	
-    
+	double hdgDiff(double a, double b) {
+		double d = a - b;
+		if (d > 180) d = 360 - d;
+		if (d < -180) d = d + 360;
+		return d;
+	}
+
     void writeCmd(char cmd, int arg) {
     	writeCmd(String.format("%c%d %d\n", cmd, arg, arg));
     }

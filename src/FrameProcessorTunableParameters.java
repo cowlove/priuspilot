@@ -12,6 +12,12 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 	public FrameProcessorTunableParameters(FrameProcessor f) { 
 		fp = f;
 		
+		add("GPS curve gain", '1', 0.01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.gps.curveGain += i; }} );
+		add("GPS curve period", '2', 0.1, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.gps.avgCurve.maxAge += i; }} );
+		add("GPS curve max", '3', 0.01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.gps.maxCurve += i; }} );
 		
 		add("PID P gain", 'P', 0.05, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
@@ -211,7 +217,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.lineIntensityDelta += i; }});
 
-		add("Reset input zero point", (char)127/**/, 0, 
+		add("Reset input zero point", (char)127/*delete key*/, 0, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					fp.inputZeroPoint.setAutoZero(); return 0;
 				}});

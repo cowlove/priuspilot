@@ -139,7 +139,7 @@ class JoystickControl {
 	}
 	
 	boolean safetyButton() { 
-		return (buttonBits & (L2 | R2 | L1)) != 0;
+		return (buttonBits & (L2 | R2 | L1 | R2)) != 0;
 	}
 
 	ButtonDebounce buttonDebounce[];

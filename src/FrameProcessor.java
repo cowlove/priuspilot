@@ -159,7 +159,7 @@ class FrameProcessor {
 
 			for(TunableParameter f : tp.ps) { 
 				String item = "X";
-				item = f.desc.substring(0, Math.min(15, f.desc.length()));
+				item = f.desc.substring(0, Math.min(16, f.desc.length()));
 				display.panel.cb.addItem(item);
 			}
 		}
@@ -1035,7 +1035,8 @@ class FrameProcessor {
         
         steer += steeringTestPulse.currentPulse(time);
 		gps.update(time);
-		steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
+		//steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
+		steer += gps.getCurveCorrection(t);
         steer = joystick.steer(steer);
         steer += steeringDitherPulse.currentPulse(time);
 		steer = steering.steer(time, steer);
@@ -1078,21 +1079,25 @@ class FrameProcessor {
 			tp.adjustParam('M', -1);
 			tp.printParam('M');
 		} 
-		if (joystick.getButtonPressed(10)) { 
+		if (joystick.getButtonPressed(12)) { 
 			tp.adjustParam(-1);
 			tp.printCurrent();
 		}
-		if (joystick.getButtonPressed(11)) { 
+		if (joystick.getButtonPressed(13)) { 
 			tp.adjustParam(1);
 			tp.printCurrent();
 		}
-		if (joystick.getButtonPressed(12)) { 
+		if (joystick.getButtonPressed(10)) { 
 			tp.selectNext(1);
 			tp.printCurrent();
 		}
-		if (joystick.getButtonPressed(13)) { 
+		if (joystick.getButtonPressed(11)) { 
 			tp.selectNext(-1);
 			tp.printCurrent();
+		}
+		if (joystick.getButtonPressed(17)) { 
+			reset();
+			System.out.printf("fp.reset()\n");
 		}
 		
 
@@ -1179,9 +1184,9 @@ class FrameProcessor {
                 double yoff = 0.80;
 	            double yspace = 0.05;
     			final double bWidth = 0.06;
-	   	        display.rectangle((trimCheat.buttons & 0x5) == 0 ? Color.blue : Color.cyan, String.format("%d", (int)trimCheat.count), trimCheat.trim + trimCheat.curve + 0.5, yoff, bWidth, 0.05);
-	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
+	   	        //display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.magenta, "ST", steer + 0.5, yoff, bWidth, 0.05);
+	   	        display.rectangle(Color.blue, String.format("%d", (int)gps.avgCurve.size()), gps.curve + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 
 	            	yoff += yspace;
 	            	display.text(pid.description, 0, yoff + 0.05);
@@ -1449,7 +1454,7 @@ class FrameProcessor {
 	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");
 	    			s = s.replace("%TEST1", 
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
-		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim curve %curve " +
+		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim but %buttons stass %stass %pidrl %pidll %pidpv " +
 		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x ");
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
@@ -1466,7 +1471,8 @@ class FrameProcessor {
 	    			s = s.replace("%tde", String.format("%d", tdFindResult == null ? 0 : tdFindResult.score));
 	    			s = s.replace("%tdv", String.format("%d", tdFindResult == null ? 0 : tdFindResult.var));
 	    			s = s.replace("%tddelta", String.format("%.1f", tdAvg.delta));
-	    			s = s.replace("%curve", String.format("%f", trimCheat.curve));
+	    			s = s.replace("%tcurve", String.format("%f", trimCheat.curve));
+	    			s = s.replace("%gcurve", String.format("%f", gps.curve));
 
 	    			s = s.replace("%tfx", String.format("%d", tfResult == null ? 0 : tfResult.x));
 	    			s = s.replace("%tfy", String.format("%d", tfResult == null ? 0 : tfResult.y));
