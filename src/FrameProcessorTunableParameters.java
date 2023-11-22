@@ -12,7 +12,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 	public FrameProcessorTunableParameters(FrameProcessor f) { 
 		fp = f;
 		
-		add("GPS curve gain", '1', 0.01, 
+		add("GPS curve gain", '1', 0.001, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.gps.curveGain += i; }} );
 		add("GPS curve period", '2', 0.1, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.gps.avgCurve.maxAge += i; }} );

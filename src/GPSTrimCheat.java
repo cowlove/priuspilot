@@ -135,6 +135,6 @@ public class GPSTrimCheat {
     double maxTrim = .15;
     double maxCurve = .20;
     double trimThresh = 0.10;
-    int buttons = 0xffff;
+    int buttons = 0;
 }
 

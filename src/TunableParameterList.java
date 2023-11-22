@@ -63,7 +63,7 @@ class TunableParameterList {
 			if (i < 0) i = ps.size() - 1;
 			if (i >= ps.size()) i = 0;
 		}
-		i = Math.min(0, Math.max(ps.size() - 1, i));
+		i = Math.max(0, Math.min(ps.size() - 1, i));
 		current = ps.get(i).key;
 	}
 	TunableParameter findParam(int c) {
