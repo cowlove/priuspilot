@@ -1147,9 +1147,12 @@ class FrameProcessor {
 				drawTruncatedLine(rx + 10, height, inputZeroPoint.zeroPoint.vanX, inputZeroPoint.zeroPoint.vanY, height, height * 2 / 3);
 				
 	            setLineColorAndWidth(Color.green, 1 * rescale);
-    			TargetFinderLines.displayLinePairToOutsideVanRec(tflo, tfro, display.g2);
-	            setLineColorAndWidth(Color.red, 2 * rescale);
-    			TargetFinderLines.displayLinePair(tfl, tfr, display.g2);
+				final int lodot = (int)(10.0 - pidLL.quality * 7);
+				final int rodot = (int)(10.0 - pidRL.quality * 7);
+
+    			TargetFinderLines.displayLinePairToOutsideVanRec(tflo, tfro, display.g2, 2, 2);
+	            setLineColorAndWidth(Color.red, 3 * rescale);
+    			TargetFinderLines.displayLinePair(tfl, tfr, display.g2, lodot, rodot);
 	            setLineColorAndWidth(Color.blue, 2);
        			caL.display(display.g2);
     			caR.display(display.g2);

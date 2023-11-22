@@ -60,7 +60,7 @@ class SteeringWheelResolverCam implements Runnable {
 	
 		dd.g2.setStroke(new BasicStroke(4));
         dd.g2.setColor(Color.green);
-		tf.display(dd.g2, new Rectangle(0, 0, width, height), width);
+		tf.display(dd.g2, new Rectangle(0, 0, width, height), width, 3);
 		
 		dd.redraw();
 		

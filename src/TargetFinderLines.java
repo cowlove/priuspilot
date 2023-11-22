@@ -932,18 +932,23 @@ class TargetFinderLines extends TargetFinder {
 	}
 	
 	// display line, if it interstects the side of the vanLimits rect
-	public void display(Graphics2D g2, Rectangle r, int x1) {
+	public void display(Graphics2D g2, Rectangle r, int x1, int oDot) {
 		
 		Point midLine = findMiddleOfLine(h.origin, h.bestRadius(), focus.getLastAngle(), sa);
 		final int txtOffset = 0;
 
 		g2.drawString(String.format("%d %.1f/%d %.1f", focus.getQuality(), 
 			getAngle(), getOffsetX(), h.getAngSpread()), (midLine.x + sa.x + txtOffset) * rescaleDisplay, 
-			(midLine.y + sa.y + txtOffset) * rescaleDisplay);
+			(sa.height / 4 + sa.y + txtOffset) * rescaleDisplay);
+
+		//final int oDot = 3;
+		//Point p = new Point((midLine.x + sa.x) * rescaleDisplay, (sa.height / 4 + sa.y) * rescaleDisplay);
+		//g2.draw(new Rectangle((p.x - oDot) * rescaleDisplay,
+		// (p.y - oDot) * rescaleDisplay, 
+		// oDot * 2 * rescaleDisplay, oDot * 2 * rescaleDisplay));
 		
 		drawLine(g2, r, x1, 0);
 
-		final int oDot = 3;
 		g2.draw(new Rectangle((sa.x + h.origin.x - oDot) * rescaleDisplay,
 		 (sa.y + h.origin.y - oDot) * rescaleDisplay, 
 		 oDot * 2 * rescaleDisplay, oDot * 2 * rescaleDisplay));
@@ -968,7 +973,7 @@ class TargetFinderLines extends TargetFinder {
 		return new Point(x, y);
 	}
 	
-	static void displayLinePair(TargetFinderLines l1, TargetFinderLines l2, Graphics2D g2) {
+	static void displayLinePair(TargetFinderLines l1, TargetFinderLines l2, Graphics2D g2, int odotl, int odotr) {
 		Point p = linePairIntercept(l1, l2);
 		int rad = 5;
 		Rectangle r = l1.vanLimits;
@@ -978,14 +983,14 @@ class TargetFinderLines extends TargetFinder {
 			(rad * 2 + 1) * l1.rescaleDisplay);
 			g2.draw(r);
 		}
-		l1.display(g2, l1.sa, 0);
-		l2.display(g2, l2.sa, l2.width);
+		l1.display(g2, l1.sa, 0, odotl);
+		l2.display(g2, l2.sa, l2.width, odotr);
 		//System.out.printf("l weight %d\n", l1.focus.angle.weight);
 	}
 
-	static void displayLinePairToOutsideVanRec(TargetFinderLines l1, TargetFinderLines l2, Graphics2D g2) {
-		l1.display(g2, l1.sa, 0);
-		l2.display(g2, l2.sa, l1.width);
+	static void displayLinePairToOutsideVanRec(TargetFinderLines l1, TargetFinderLines l2, Graphics2D g2, int odot1, int odot2) {
+		l1.display(g2, l1.sa, 0, odot1);
+		l2.display(g2, l2.sa, l1.width, odot2);
 	}
 	
 	public void markup(OriginalImage coi) {
