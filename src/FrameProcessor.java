@@ -1039,7 +1039,7 @@ class FrameProcessor {
 		steer += gps.getCurveCorrection(t);
         steer = joystick.steer(steer);
         steer += steeringDitherPulse.currentPulse(time);
-		steer = steering.steer(time, steer);
+		steer = steering.steer(time, steer, gps.curve, gps.speed);
 
 		if (!joystick.safetyButton() && !armButton)
 			steer = 0;
