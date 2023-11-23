@@ -136,12 +136,12 @@ class SerialCommandBus {
 
 	double lastHdg = 0;
 	long lastMs = 0;
-	double maxCurve = 0.25;
-	double curveGain = 0.020;
+	double maxCurve = 0.30;
+	double curveGain = 0.024;
 	double curve = 0.0;
 	RunningQuadraticLeastSquares avgCurve = 
 		new RunningQuadraticLeastSquares(1, (int)(PidControl.EXPECTED_FPS * 3),
-		2.0);
+		1.8);
     Thread reader = new Thread (new Runnable() {
         public void run() {
         	while(true) { 

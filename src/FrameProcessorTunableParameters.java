@@ -18,7 +18,19 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.gps.avgCurve.maxAge += i; }} );
 		add("GPS curve max", '3', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.gps.maxCurve += i; }} );
-		
+
+		add("steer.maxSteer", (char)59, .01,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.steering.maxSteer += i; }});
+
+		add("steer.maxChange", '[', .001,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.steering.maxChange += i; }});
+
+		add("fp.epsSteeringGain", 'C', .01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { 
+					return fp.epsSteeringGain += i; }} );
+					
 		add("PID P gain", 'P', 0.05, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
 		add("PID I gain", 'I', 0.001, 
@@ -81,9 +93,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("steer.trim", 'Y', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.steering.trim += i; }} );
-		add("fp.epsSteeringGain", 'C', .01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.epsSteeringGain += i; }} );
 //		add("detector.threshold1", 'Y', 1, 
 //				new TunableParameter.Adjust() { public double adjust(double i) { 
 //					return fp.tfparam.threshold1 = (fp.tfparam.threshold1 += i); }} );
@@ -136,18 +145,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("dither.period", 'L', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.duration += i; }} );
 
-
 		add("displayMode (bitwise 1-text, 2-PID, 4-background, 8-PID-D graph)", 'B', 1,
 			new TunableParameter.Adjust() { public double adjust(double i) {
-				return fp.displayMode = (fp.displayMode + (int)i) % 16 ; }} );
-
-		add("steer.maxSteer", (char)59, .01,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.maxSteer += i; }});
-
-		add("steer.maxChange", '[', .001,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steering.maxChange += i; }});
+				return fp.displayMode = (fp.displayMode + (int)i) % 64 ; }} );
 		add("steer.deadband", ']', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.deadband += i; }});
