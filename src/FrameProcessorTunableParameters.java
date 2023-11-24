@@ -217,11 +217,6 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.lineIntensityDelta += i; }});
 
-		add("Reset input zero point", (char)127/*delete key*/, 0, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					fp.inputZeroPoint.setAutoZero(); return 0;
-				}});
-				
 		add("fp.keepFocus", 'F', 0, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					fp.keepFocus = !fp.keepFocus; return fp.keepFocus ? 1.0 : 0.0;
@@ -236,6 +231,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("CAPTURE", 'A', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		add("DECREASE", ',', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		add("INCREASE", '.', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
+		add("RESETVP", (char)127, 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 
 		selectParam('X');		
 	}

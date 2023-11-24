@@ -172,11 +172,18 @@ public class Silly {
         HashMap<Object,Point> clickMap = new HashMap<Object,Point>();
         int targx = 0, targy = 0, targh = 0, targw = 0;
 		boolean keepFocus = false;
+		BufferedReader logDiffFile = null;
+
         for(int i = 0; i < args.length; i++) {
             String a = args[i];
             if (a.compareTo("-nodrop") == 0) dropFrames = false;
             else if (a.compareTo("-displayratio") == 0) displayratio = Integer.parseInt(args[++i]);
             else if (a.compareTo("-headless") == 0) displayratio = 0;
+	        else if (a.compareTo("-logdiff") == 0) {
+				String ldFile = args[++i];
+				logDiffFile = new BufferedReader(new FileReader(ldFile));
+			}
+			else if (a.compareTo("-logdiff") == 0) displayratio = 0;
 			else if (a.compareTo("-volume") == 0) volume = Integer.parseInt(args[++i]);
             else if (a.compareTo("-repeat") == 0) repeat = true;
             else if (a.compareTo("-gps") == 0) gps = true;
@@ -343,6 +350,8 @@ public class Silly {
 		fp.noSteering = noSteer;
 		fp.steerCmdHost = steerCmdHost;
 		fp.keepFocus = keepFocus;
+		fp.logDiffFile = logDiffFile;
+
 		if (gps) fp.gps.start();
 		else if (fakeGps) {
 			String gpsFile = filename.replace(".yuv", ".log");

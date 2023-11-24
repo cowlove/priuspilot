@@ -8,7 +8,9 @@ import java.awt.event.ActionEvent;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -21,6 +23,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class HistoryArray { 
 	double []values;
@@ -75,14 +79,15 @@ class InputZeroPointTrim {
 		rLaneAvg.clear();
 	}
 	void setAutoZero() { 
-		System.out.printf("Setting autoZero\n");
-		if (vanXAvg.count != historySize)
+		if (vanXAvg.count != historySize) {
+			System.out.printf("setAutoZero() failed\n");
 			return;
+		}
 		zeroPoint.vanX = (int)vanXAvg.calculate();
 		zeroPoint.vanY = (int)vanYAvg.calculate();
 		zeroPoint.rLane = (int)rLaneAvg.calculate();
 		zeroPoint.lLane = (int)lLaneAvg.calculate();
-		System.out.printf("new zero points vx=%d, vy=%d, ll=%d, rl=%d\n", zeroPoint.vanX,
+		System.out.printf("setAutoZero(): new zero points vx=%d, vy=%d, ll=%d, rl=%d\n", zeroPoint.vanX,
 				zeroPoint.vanY, zeroPoint.lLane, zeroPoint.rLane);
 	
 	}
@@ -97,6 +102,7 @@ class FrameProcessor {
     int displayMode = 63; 
     //LaneAnalyzer la = null;
     TemplateDetect td = null;
+	BufferedReader logDiffFile = null;
     
     BufferedImageDisplayWithInputs display = null;
     public PidControl ccPid = null; //new PidControl("Cruise Control PID");
@@ -414,22 +420,22 @@ class FrameProcessor {
         } else if (keyCode == ',' || keyCode == 40) { // down arrow  
         	tp.adjustParam(-1);
         	tp.printCurrent();
-        } else if (tp.findParam(keyCode) != null) {
-                tp.selectParam(keyCode);
-                tp.printCurrent();
         } else if (keyCode == 37) { // left arrow
         	//tp.adjustParam(-10);
     		//tp.printCurrent();
     		//logPidSettings();	
         	steeringTestPulse.startPulse(time, -1);
-        }
-        else if (keyCode == 39) { // right arrow 
+        } else if (keyCode == 39) { // right arrow 
          	//tp.adjustParam(10);
          	//tp.printCurrent();
          	//logPidSettings();
          	steeringTestPulse.startPulse(time, 1);
-        }
-        else 
+        } else if (keyCode == 127) { // delete
+			inputZeroPoint.setAutoZero(); 
+        } else if (tp.findParam(keyCode) != null) {
+                tp.selectParam(keyCode);
+                tp.printCurrent();
+		} else 
         	System.out.println("Unknown key pressed - " + keyCode);
         this.notifyAll();
     }
@@ -1041,7 +1047,7 @@ class FrameProcessor {
         steer += steeringDitherPulse.currentPulse(time);
 		steer = steering.steer(time, steer, gps.curve, gps.speed);
 
-		if (!joystick.safetyButton() && !armButton)
+		if (Silly.fc != null && !joystick.safetyButton() && !armButton)
 			steer = 0;
 
 		if (joystick.safetyButton() && armButton) { 
@@ -1084,15 +1090,15 @@ class FrameProcessor {
 			tp.printCurrent();
 		}
 		if (joystick.getButtonPressed(13)) { 
-			tp.adjustParam(1);
+			tp.adjustParam(+1);
 			tp.printCurrent();
 		}
 		if (joystick.getButtonPressed(10)) { 
-			tp.selectNext(1);
+			tp.selectNext(-1);
 			tp.printCurrent();
 		}
 		if (joystick.getButtonPressed(11)) { 
-			tp.selectNext(-1);
+			tp.selectNext(+1);
 			tp.printCurrent();
 		}
 		if (joystick.getButtonPressed(17)) { 
@@ -1401,12 +1407,12 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.7f %.7f %.7f, RL=%.7f %.7f %.7f, VP=%.7f %.7f %.7f, avgAction=%.7f\n",
+ 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, VP=%.5f %.5f %.5f, avgAction=%.5f avgLogDiff=%.5f\n",
 			avgMs != 0 ? 1000.0 / avgMs : 0,  
 			pidLL.getAvgRmsErr(), (double)pidLL.lowQualityCount/count, pidLL.avgQuality.calculate(),
 			pidRL.getAvgRmsErr(), (double)pidRL.lowQualityCount/count, pidRL.avgQuality.calculate(),
 			pidPV.getAvgRmsErr(), (double)pidPV.lowQualityCount/count, pidPV.avgQuality.calculate(),
-			steering.totalAction / count);
+			steering.totalAction / count, totalLogDiff / count);
     }
      
 
@@ -1414,7 +1420,31 @@ class FrameProcessor {
     long logFileStartTime = 0;
 	public String logSpec = null;
 	
+	String re(String pat, String s) { 
+        try { 
+            Pattern p = Pattern.compile(pat);
+            Matcher m = p.matcher(s);
+            m.find();
+            return m.group(1);
+        } catch(Exception e) { 
+            return "";
+        }
+    }
+    double reDouble(String p, String s) { 
+        return Double.parseDouble(re(p, s));
+    }
+ 
+	double totalLogDiff = 0.0;
     void logData() {
+		double logDiffSteer = 0.0;
+		if (logDiffFile != null) {
+			try { 
+				String s= logDiffFile.readLine();
+				double ls = reDouble(".*\\sst\\s+([-+]?[0-9.]+)", s);
+				logDiffSteer = ls - steer;
+				totalLogDiff += Math.abs(logDiffSteer);
+			} catch(Exception e) {}
+		}
     	if (logFileStartTime == 0)
     		logFileStartTime = time;
     	if (logfile != null) { 
@@ -1460,7 +1490,7 @@ class FrameProcessor {
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim but %buttons stass %stass %pidrl %pidll %pidpv " +
-		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x ");
+		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff");
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 					s = s.replace("%pidll", pidLL.toString("pidll-"));
 					s = s.replace("%pidpv", pidPV.toString("pidvp-"));
@@ -1477,6 +1507,7 @@ class FrameProcessor {
 	    			s = s.replace("%tddelta", String.format("%.1f", tdAvg.delta));
 	    			s = s.replace("%tcurve", String.format("%f", trimCheat.curve));
 	    			s = s.replace("%gcurve", String.format("%f", gps.curve));
+	    			s = s.replace("%logdiff", String.format("%f", logDiffSteer));
 
 	    			s = s.replace("%tfx", String.format("%d", tfResult == null ? 0 : tfResult.x));
 	    			s = s.replace("%tfy", String.format("%d", tfResult == null ? 0 : tfResult.y));
