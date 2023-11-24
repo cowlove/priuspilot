@@ -108,19 +108,46 @@ public class GPSTrimCheat {
             }	
         }  
     }
+
+    double gpsLookahead = 30;
+
     double get(double lat, double lon, double hdg) {
         Entry cl = new Entry(lat, lon, hdg);
         Average steerAvg = new Average();
         Average curveAvg = new Average();
         //Entry f = null;
         buttons = 0;
-        for (Entry f : list) { 
-            if (Math.abs(f.hdgDiff(cl)) < 30 && f.distance(cl) < rad) {
-                steerAvg.add(f.trim); 
-                curveAvg.add(f.curve); 
-                buttons = buttons | f.buttons;
+        double radNorth, radSouth;
+        if (hdg > 90 && hdg < 270) {
+            radNorth = rad - gpsLookahead;
+            radSouth = rad + gpsLookahead;
+        } else { 
+            radNorth = rad + gpsLookahead;
+            radSouth = rad - gpsLookahead;
+        }
+
+        List<Entry> pts = new ArrayList<Entry>();
+        Entry f = list.ceiling(cl);
+        while(f != null && f.distance(cl) < radNorth) {
+            pts.add(f);
+            f = list.higher(f);
+        }
+
+        f = list.ceiling(cl);
+        if(f != null) f = list.lower(f); 
+        while(f != null && f.distance(cl) < radSouth) {
+            pts.add(f);
+            f = list.lower(f);
+        }
+
+        for(Entry e : pts) {
+            if (Math.abs(e.hdgDiff(cl)) < 30) {
+                steerAvg.add(e.trim); 
+                curveAvg.add(e.curve); 
+                buttons = buttons | e.buttons;
             }
-        } 
+        }
+
         trim = steerAvg.calculate() * 0.4;
         curve = curveAvg.calculate() * -0.012;
         count = steerAvg.count;

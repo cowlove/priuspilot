@@ -1041,7 +1041,7 @@ class FrameProcessor {
         
         steer += steeringTestPulse.currentPulse(time);
 		gps.update(time);
-		//steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
+		steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
 		steer += gps.getCurveCorrection(t);
         steer = joystick.steer(steer);
         steer += steeringDitherPulse.currentPulse(time);
