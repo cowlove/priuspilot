@@ -1262,6 +1262,7 @@ class FrameProcessor {
         if ((Silly.debug("SHOW_FPS")) && count % intTimer.av.size == 0) {
         	System.out.printf("Frame %05d FPS %.1f\n", count, fps);
         }
+		//System.out.printf("%.5f %.5f\n", (float)gps.avgCurve.getCount(), trimCheat.count);
         if (pendingKeyCode != 0) { 
         	int key = pendingKeyCode;
         	pendingKeyCode = 0;

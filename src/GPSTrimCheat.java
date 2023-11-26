@@ -109,7 +109,7 @@ public class GPSTrimCheat {
         }  
     }
 
-    double gpsLookahead = 30;
+    double gpsLookahead = 0;
 
     double get(double lat, double lon, double hdg) {
         Entry cl = new Entry(lat, lon, hdg);
@@ -119,11 +119,11 @@ public class GPSTrimCheat {
         buttons = 0;
         double radNorth, radSouth;
         if (hdg > 90 && hdg < 270) {
-            radNorth = rad - gpsLookahead;
-            radSouth = rad + gpsLookahead;
-        } else { 
             radNorth = rad + gpsLookahead;
             radSouth = rad - gpsLookahead;
+        } else { 
+            radNorth = rad - gpsLookahead;
+            radSouth = rad + gpsLookahead;
         }
 
         List<Entry> pts = new ArrayList<Entry>();

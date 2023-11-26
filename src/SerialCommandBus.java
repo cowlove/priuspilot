@@ -80,7 +80,7 @@ class SerialCommandBus {
                 hdg = reDouble(".*hdg\\s+([-+]?[0-9.]+)", s);
                 speed = reDouble(".*speed\\s+([-+]?[0-9.]+)", s);
 				long t = (long)reDouble("t\\s+([-+]?[0-9.]+)", s);	
-				updates++;
+				processNewState(t);
 				if (t > ms - startMs) 
 					break;				
 			} catch(Exception e) { 
@@ -179,7 +179,6 @@ class SerialCommandBus {
 					
 					String st[] = s.split(",");
 					try { 
-						long time = Calendar.getInstance().getTimeInMillis();
 
 						if (st[0].equals("$GPRMC")) {
 							lat = Double.parseDouble(st[3]) / 100.0;
@@ -193,16 +192,8 @@ class SerialCommandBus {
 								hdg = Double.parseDouble(st[8]);
 							else 
 								hdg = 0.0;
-							updates++;
-							double timeD = time - lastMs;
-							double hdgD = hdgDiff(hdg, lastHdg);
-							double c = hdgD * 100000 / (timeD * speed);
-							c = Math.max(-25, Math.min(25, c));
-							if (Double.isNaN(c) || Double.isInfinite(c))
-								c = 0;
-							avgCurve.add((double)time / 1000.0, c);
-							lastHdg = hdg;
-							lastMs = time;
+							long time = Calendar.getInstance().getTimeInMillis();
+							processNewState(time);
 						} else if (st[0].equals("$GPGGA")) {
 							nsat = Double.parseDouble(st[7]);
 							hdop = Double.parseDouble(st[8]);
@@ -217,6 +208,19 @@ class SerialCommandBus {
         }
     });
 
+	void processNewState(long time) { 
+		updates++;
+		double timeD = time - lastMs;
+		double hdgD = hdgDiff(hdg, lastHdg);
+		double c = hdgD * 100000 / (timeD * speed);
+		c = Math.max(-25, Math.min(25, c));
+		if (Double.isNaN(c) || Double.isInfinite(c))
+			c = 0;
+		avgCurve.add((double)time / 1000.0, c);
+		lastHdg = hdg;
+		lastMs = time;
+
+	}
 	double getCurveCorrection(long ms) {
 		avgCurve.removeAged((double)ms / 1000.0);
 		avgCurve.validate();
