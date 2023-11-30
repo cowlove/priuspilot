@@ -6,12 +6,15 @@ class SteeringTestPulseGenerator {
     final static int TEST_TYPE_SINE = 1;
     final static int TEST_TYPE_SAWTOOTH = 2;
     final static int TEST_TYPE_SQUARE = 3;
-    final static int TEST_TYPE_LAST = 3;	    
+    final static int TEST_TYPE_FLIPFLOP = 4;
+	final static int TEST_TYPE_LAST = 4;	
+	    
     int testType = TEST_TYPE_SINE;
 	final String [] testTypeNames = {"TEST_TYPE_CONSTANT_OFFSET", 
 			"TEST_TYPE_SINE",
 			"TEST_TYPE_SAWTOOTH",
-			"TEST_TYPE_SQUARE"};
+			"TEST_TYPE_SQUARE",
+			"TEST_TYPE_FLIPFLOP"};
 	
     double duration = 0.15;
     double magnitude = 0.15; //0.10;
@@ -35,8 +38,7 @@ class SteeringTestPulseGenerator {
     	}
     }
     
-    double currentPulse(long ms) {
-
+    double currentPulse(long ms, long frames) {
     	double t = (1.0 * ms - startTime) / 1000;
     	if ((count >= 0 && t >= duration * count)  || testType == TEST_TYPE_CONSTANT_OFFSET)
     		return offset; 
@@ -60,6 +62,11 @@ class SteeringTestPulseGenerator {
     		if ((t / duration) % 2 > 1)
     			r *= -1;
     		return r + offset;
+		case TEST_TYPE_FLIPFLOP:
+			// flip between -magnitude/+magnitude every <duration> frames
+			r = ((frames / (int)Math.floor(duration)) % 2) == 0.0 ? -magnitude : magnitude;
+			if (Double.isNaN(r) || Double.isInfinite(r)) r = 0;
+			return r + offset;
     	}
     }
    

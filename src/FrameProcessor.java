@@ -235,9 +235,17 @@ class FrameProcessor {
         steeringTestPulse.count = 0;
         steeringTestPulse.offset = -0.00;
        
-        steeringDitherPulse.magnitude = 0.20;
-        
-		double lx = Silly.debugDouble("LX", 36)/ 20.0;
+		if (Silly.debugInt("DITHERFF", 0) == 1) { 
+			steeringDitherPulse.duration = 2.0; // frames not seconds for FLIPFLOP
+			steeringDitherPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_FLIPFLOP;
+			steeringDitherPulse.magnitude = 0.20;
+		} else { 
+			steeringDitherPulse.duration = .15;
+	    	steeringDitherPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_SINE;
+        	steeringDitherPulse.magnitude = 0.20;
+		}
+
+		//double lx = Silly.debugDouble("LX", 36)/ 20.0;
 
 		pidRL.setGains(2.50, 0.04, 2.00, 0, 1.8);
 		pidRL.period.l = 0.15;
@@ -1039,12 +1047,12 @@ class FrameProcessor {
         else
             steer = 0;
         
-        steer += steeringTestPulse.currentPulse(time);
+        steer += steeringTestPulse.currentPulse(time, count);
 		gps.update(time);
 		steer += trimCheat.get(gps.lat, gps.lon, gps.hdg);
 		steer += gps.getCurveCorrection(t);
         steer = joystick.steer(steer);
-        steer += steeringDitherPulse.currentPulse(time);
+        steer += steeringDitherPulse.currentPulse(time, count);
 		steer = steering.steer(time, steer, gps.curve, gps.speed);
 
 		if (Silly.fc != null && !joystick.safetyButton() && !armButton)

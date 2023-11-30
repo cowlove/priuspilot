@@ -34,6 +34,8 @@ class CarSim {
     double steer = 0.0;
     double ang = 0, pos = 0;
 
+    int steeringDelay = 5, positionDelay = 5;
+
     void setSteer(double s) { 
         steer = s;
     }
@@ -54,7 +56,7 @@ class CarSim {
 
     ByteBuffer getFrame(long ms) { 
         delaySteer.addLast(steer);
-        if (delaySteer.size() > 15) {
+        if (delaySteer.size() > steeringDelay) {
             double s = delaySteer.removeFirst();
             if (Math.abs(s) < .1) 
                 s = 0;
@@ -62,7 +64,7 @@ class CarSim {
 
         }
         delayAng.addLast(ang);
-        if (delayAng.size() > 15) { 
+        if (delayAng.size() > positionDelay) { 
             pos += delayAng.removeFirst() * 0.25;
         }
 

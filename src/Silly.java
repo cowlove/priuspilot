@@ -390,6 +390,7 @@ public class Silly {
 
 			while(exitFrame == 0 || --exitFrame > 0) { 
 				ByteBuffer bb = sim.getFrame(ms); 
+      			fp.processFrame(ms, new OriginalImage(bb, width, height));
 				int x = (int)intTimer.tick();
 				if (realtime && x < 35) {
 					Thread.sleep(35 - x);

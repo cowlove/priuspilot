@@ -23,8 +23,9 @@
             "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
             "mainClass": "Silly",
             "args": [
-                "/dev/video2", "-size","432x240","-displayratio","10","-out","/host/lanedumps/%s.yuv","-gps","-log","/host/lanedumps/%s.log","-debug","EXPECTED_FPS=15","-debug","SZ_PERIOD=5","-debug","minSz=33","-debug","defLAng=65","-rescale","2","-debug","LASTEP=-0.9","-skipratio","2","-rescale","2","-displayratio","5"
-
+//                "/dev/video2", "-size","432x240","-displayratio","10","-out","/host/lanedumps/%s.yuv","-gps","-log","/host/lanedumps/%s.log","-debug","EXPECTED_FPS=15","-debug","SZ_PERIOD=5","-debug","minSz=33","-debug","defLAng=65","-rescale","2","-debug","LASTEP=-0.9","-skipratio","2","-rescale","2","-displayratio","5"
+                "../lanedumps/20231114.181221.yuv","-trimCheat", "../gpstrim.log"
+                //        "SIM"
             ] 
 
         },
