@@ -8,14 +8,12 @@ import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
-
-class SerialCommandBus { 
+class GPSSerial { 
     FileWriter tty = null;
 	BufferedReader fakeFile = null; 
     String devName; 
     FrameProcessor fp; // TODO- make a clean callback interface rather than a fp member
-    SerialCommandBus(String d, FrameProcessor f) { devName = d; fp = f;  }
+    GPSSerial(String d, FrameProcessor f) { devName = d; fp = f;  }
 
     private void open() {
     	boolean complained = false;

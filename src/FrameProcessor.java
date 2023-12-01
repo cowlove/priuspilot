@@ -148,7 +148,7 @@ class FrameProcessor {
 	public double manualLanePosTrim = 0.005;
 	GnuplotWrapper gp = new GnuplotWrapper();
 
-	SerialCommandBus gps = new SerialCommandBus("/dev/ttyACM0", this);
+	GPSSerial gps = new GPSSerial("/dev/ttyACM0", this);
 
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
     		int displayRatio, String serialDevice, String swCam) throws IOException {
