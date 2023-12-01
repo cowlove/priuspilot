@@ -170,7 +170,7 @@ class FrameProcessor {
 			}
 		}
     	if (outFile != null) 
-    		writer = new ImageFileWriter(outFile, Silly.fc);
+    		writer = new ImageFileWriter(outFile, Main.fc);
         if (dumpFile != null) 
         	logfile = new Logfile(dumpFile);
         
@@ -183,14 +183,14 @@ class FrameProcessor {
         //td = new TemplateDetectCannyCorrelation(w, h);
         td = new TemplateDetectRGB(w, h);
         
-        int minSz = Silly.debugInt("minSz", 33); // min/max radius
+        int minSz = Main.debugInt("minSz", 33); // min/max radius
         int maxSz = 130;
-		int minAng = Silly.debugInt("minAng", 6);
-		int maxAng = Silly.debugInt("maxAng", 55);
-        int houghSize = Silly.debugInt("HOUGH_SIZE", 80);
-		double vertPct = Silly.debugInt("SA_VERT_PERCENT",80) / 100.0;
-        tfl = new TargetFinderLines(w, h, null, true, Silly.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
-        tfr = new TargetFinderLines(w, h, null, false, Silly.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+		int minAng = Main.debugInt("minAng", 6);
+		int maxAng = Main.debugInt("maxAng", 55);
+        int houghSize = Main.debugInt("HOUGH_SIZE", 80);
+		double vertPct = Main.debugInt("SA_VERT_PERCENT",80) / 100.0;
+        tfl = new TargetFinderLines(w, h, null, true, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfr = new TargetFinderLines(w, h, null, false, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tflo = new TargetFinderLines(w, h, null, true, 77, 60, minSz, maxSz, 12, 35, .85);
         tfro = new TargetFinderLines(w, h, null, false, 77, 60, minSz, maxSz, 12, 35, .85);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
@@ -208,9 +208,9 @@ class FrameProcessor {
         tflo.useLuminanceCheck = tfro.useLuminanceCheck = false;
         tflo.focus.minWeight = tfro.focus.minWeight = 1000;
 
-        if (Silly.debug("GK_RAD"))
+        if (Main.debug("GK_RAD"))
         	tfl.param.gaussianKernelRadius = tfr.param.gaussianKernelRadius =
-        	(float)Silly.debugDouble("GK_RAD");
+        	(float)Main.debugDouble("GK_RAD");
         
        	tf = new TargetFinderRed(w, h);
         tfparams.add(tf.param);
@@ -235,7 +235,7 @@ class FrameProcessor {
         steeringTestPulse.count = 0;
         steeringTestPulse.offset = -0.00;
        
-		if (Silly.debugInt("DITHERFF", 0) == 1) { 
+		if (Main.debugInt("DITHERFF", 0) == 1) { 
 			steeringDitherPulse.duration = 2.0; // frames not seconds for FLIPFLOP
 			steeringDitherPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_FLIPFLOP;
 			steeringDitherPulse.magnitude = 0.20;
@@ -306,8 +306,8 @@ class FrameProcessor {
         tdStartY = (int)(h * 0.33);
         tfSearchArea = new Rectangle(tdStartX, tdStartY, w/5, h/4);
         
-        inputZeroPoint.zeroPoint.vanX = Silly.debugInt("VANX", 219); 
-        inputZeroPoint.zeroPoint.vanY = Silly.debugInt("VANY", 32);
+        inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
+        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 32);
         inputZeroPoint.zeroPoint.rLane = 490;
         inputZeroPoint.zeroPoint.lLane = 1;
 
@@ -515,14 +515,14 @@ class FrameProcessor {
 				e.printStackTrace();
 			}
 		}
-		if (Silly.sim != null) 
-			Silly.sim.setSteer(x);
+		if (Main.sim != null) 
+			Main.sim.setSteer(x);
 
         x = x * epsSteeringGain;
 
 		String s = String.format("PPDEG %.3f %.3f\n", x, x);
-		if (Silly.fc != null) { 
-			Silly.fc.espnowSend(s);	
+		if (Main.fc != null) { 
+			Main.fc.espnowSend(s);	
 		}
 		if (cmdLink != null) {
 			try {
@@ -705,7 +705,7 @@ class FrameProcessor {
     	corr = 0;
     	
     	coi = oi;
-   		if (Silly.debug("COPY_IMAGE"))
+   		if (Main.debug("COPY_IMAGE"))
    			coi = oi.deepCopy();
    		
    		if (!noProcessing) { 
@@ -716,7 +716,7 @@ class FrameProcessor {
 	   				tfrc.hslThresh;
 	   		tflo.tfrc = tfro.tfrc = tfl.tfrc = tfr.tfrc = tfrc;
 	   		
-	   		if (Silly.debug("xDEBUG_COLOR_SEGMENTATION")) { 
+	   		if (Main.debug("xDEBUG_COLOR_SEGMENTATION")) { 
 		   		BufferedImageDisplay.nextX = 640;
 		   		BufferedImageDisplay.nextY = 20;
 		   		tfrc.hh.draw(1);
@@ -787,7 +787,7 @@ class FrameProcessor {
 	   		for(int i = 0; i < vp.length; i++)  
 	   			vp[i] = vpL[i] + vpR[i];
 	   		
-			double gr = Silly.debugDouble("VP_GR", 7) / vpScale;
+			double gr = Main.debugDouble("VP_GR", 7) / vpScale;
 			GaussianKernel gk = new GaussianKernel(gr, (int)(gr * 10), r.width / vpScale, 
 					r.height / vpScale);
 			gk.blur(vp);
@@ -810,7 +810,7 @@ class FrameProcessor {
 			//display.g2.draw(scaleRect(tfex.vanRec, rescale));
 
 			
-	   		if (Silly.debug("DEBUG_VAN")) {
+	   		if (Main.debug("DEBUG_VAN")) {
 				// flip chart to make it easier to read
 	   			int w = tfr.vanLimits.width / vpScale;
 	   			int h = tfr.vanLimits.height / vpScale;
@@ -930,7 +930,7 @@ class FrameProcessor {
 			if (pidCA != null) 
 				corr += -pidCA.add(curve, time);
 	
-			if (tfFindTargetNow || Silly.debug("CONT_TF")) {
+			if (tfFindTargetNow || Main.debug("CONT_TF")) {
 				// try to set tdFindResult to new template.  If fails, tdFindResult will be left null
 				tdStartX = 152;
 				tdStartY = 105;
@@ -1026,7 +1026,7 @@ class FrameProcessor {
 			
 			predHist.addExtrapolate(pred, extrapolate);
 				
-			if (Silly.debug("FFT")) {
+			if (Main.debug("FFT")) {
 				double [][]x = new double[5][];
 				x[0] = corrHist.values;
 				x[1] = predHist.values;
@@ -1055,7 +1055,7 @@ class FrameProcessor {
         steer += steeringDitherPulse.currentPulse(time, count);
 		steer = steering.steer(time, steer, gps.curve, gps.speed);
 
-		if (Silly.fc != null && !joystick.safetyButton() && !armButton)
+		if (Main.fc != null && !joystick.safetyButton() && !armButton)
 			steer = 0;
 
 		if (joystick.safetyButton() && armButton) { 
@@ -1067,7 +1067,7 @@ class FrameProcessor {
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
 	    avgFrameDelay.add(frameResponseMs);
 
-	    if (Silly.debug("RESET_PIDS") && (count % Silly.debugInt("RESET_PIDS")) == 0) 
+	    if (Main.debug("RESET_PIDS") && (count % Main.debugInt("RESET_PIDS")) == 0) 
 	    	resetPIDs();
         
         double tc = joystick.getThrottleChange();
@@ -1267,7 +1267,7 @@ class FrameProcessor {
         }
         lastFrameTime = time;
 
-        if ((Silly.debug("SHOW_FPS")) && count % intTimer.av.size == 0) {
+        if ((Main.debug("SHOW_FPS")) && count % intTimer.av.size == 0) {
         	System.out.printf("Frame %05d FPS %.1f\n", count, fps);
         }
 		//System.out.printf("%.5f %.5f\n", (float)gps.avgCurve.getCount(), trimCheat.count);
@@ -1605,7 +1605,7 @@ class FrameProcessor {
 	synchronized public void onMouseClick(int x, int y, int clickCount) {
 		System.out.printf("Mouse click %d,%d,%d\n", x, y, clickCount);
 		
-		if (Silly.debug("DEBUG_ORIGIN")) { 
+		if (Main.debug("DEBUG_ORIGIN")) { 
 			this.tfr.hOriginOverride = new Point(x,y);
 		}
 		//tdStartX  = x - 2; // TODO - figure out why these constant offsets are needed

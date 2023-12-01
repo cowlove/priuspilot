@@ -186,7 +186,7 @@ class Focus {
 	int defaultIntercept = 0;
 	double radZoneOffset = 0.50; // verticle center of the scan strip
 	double angZoneOffset = 0.50;
-	int averagePeriod = Silly.debugInt("SZ_PERIOD", 5); // TODO: RAW_FPS
+	int averagePeriod = Main.debugInt("SZ_PERIOD", 5); // TODO: RAW_FPS
 	public RunningLeastSquares angle = new RunningLeastSquares(averagePeriod);
 	public RunningLeastSquares intercept = new RunningLeastSquares(averagePeriod);
 	
@@ -214,7 +214,7 @@ class Focus {
 			lastOY = o.y;
 			lastRadius = r;
 			count++;
-			detune = Math.max(0.0, detune - Silly.debugDouble("TFL_DETUNE", .6));
+			detune = Math.max(0.0, detune - Main.debugDouble("TFL_DETUNE", .6));
 		} else { 
 			if (detune++ >= angle.count) 
 				clear(); // TODO make gradual 
@@ -359,7 +359,7 @@ class TargetFinderLines extends TargetFinder {
 			focus.defaultAngle = 90 - defAngle;
 		}
 		h = new HoughTransform(houghAngSz, houghRadSz);
-		h.blurRadius = Silly.debugDouble("HOUGH_BLUR", 0.06);
+		h.blurRadius = Main.debugDouble("HOUGH_BLUR", 0.06);
 
 		h2 = new HoughTransform(houghAngSz, houghRadSz);
 		h2.blurRadius = h.blurRadius;	
@@ -476,7 +476,7 @@ class TargetFinderLines extends TargetFinder {
         
 		if (false) { 
 			if (c.results.l.size() > cannyMaxPoints && param.threshold1 
-				< Silly.debugInt("CANNY_MAX_THR", 15))
+				< Main.debugInt("CANNY_MAX_THR", 15))
 				param.threshold1 = param.threshold2 += 1;
 			if (c.results.l.size() < cannyMinPoints && param.threshold1 > 1)
 				param.threshold1 = param.threshold2 -= 1;
@@ -493,7 +493,7 @@ class TargetFinderLines extends TargetFinder {
 			int xe = xend(y);
 			for(int x = xstart(y); x < xe; x++) {
 				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
-					if (++continuousHorizontalPixels > Silly.debugInt("HPIXEL_FILTER", 2)) { 
+					if (++continuousHorizontalPixels > Main.debugInt("HPIXEL_FILTER", 2)) { 
 						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
 							c.results.gradResults[y*sa.width+dx] = 0;
 							//c.results.l.remove(new Point(dx,y));
@@ -511,7 +511,7 @@ class TargetFinderLines extends TargetFinder {
         // that the pixel is in. 
         double [] ar = null;
 
-		if (Silly.debug("DEBUG_LUM") && Silly.debugInt("DEBUG_LUM") == h.id) 
+		if (Main.debug("DEBUG_LUM") && Main.debugInt("DEBUG_LUM") == h.id) 
 			ar = new double[sa.height * sa.width];
 
 		for(int x = 0; x < sa.width; x++) {
@@ -548,7 +548,7 @@ class TargetFinderLines extends TargetFinder {
 					}
 				}
 			}
-			double lumPercentile = Silly.debugDouble("PCTLUM", 0.12);
+			double lumPercentile = Main.debugDouble("PCTLUM", 0.12);
 			for (lum90 = 0; lum90 < 256 && lumSum < lumCount * lumPercentile; lum90++) { 
 				lumSum += lumDist[lum90];
 			}
@@ -593,7 +593,7 @@ class TargetFinderLines extends TargetFinder {
 		h.blur();   
 		
 		if (useLaneWidthFilter) {  
-			h.applyCorrelationRad(3, Silly.debugDouble("maxR", 11), leftSide, ang, intercept);
+			h.applyCorrelationRad(3, Main.debugDouble("maxR", 11), leftSide, ang, intercept);
 		}
 		
 		// search for a nearby max, giving slight preference to inside and 
@@ -604,7 +604,7 @@ class TargetFinderLines extends TargetFinder {
 		h.findClosest(ca, leftSide ? h.radSz : 0, 0.7f);
 		//h.findCG(ca);
 
-		if (Silly.debug("DEBUG_LINES") && Silly.debugInt("DEBUG_LINES") == h.id) {
+		if (Main.debug("DEBUG_LINES") && Main.debugInt("DEBUG_LINES") == h.id) {
 			gp.startNew();
 			gp.title = String.format("Hough Transform Line %d", h.id);
 			//h.suppressNonmax(20, 5);
@@ -656,7 +656,7 @@ class TargetFinderLines extends TargetFinder {
 			}
 		}
 
-		if (Silly.debug("DEBUG_COLOR_SEGMENTATION") && Silly.debugInt("DEBUG_COLOR_SEGMENTATION") == h.id) { 
+		if (Main.debug("DEBUG_COLOR_SEGMENTATION") && Main.debugInt("DEBUG_COLOR_SEGMENTATION") == h.id) { 
 			// examine the area near each lane line, trying to figure out some color
 			// segmentation tricks. 
 			nearPixels1.clear();
@@ -996,7 +996,7 @@ class TargetFinderLines extends TargetFinder {
 	public void markup(OriginalImage coi) {
 		// dim the search area
 		//if ((Silly.debugInt("MARKUP") & (1 << h.id)) != 0) { 
-		if (Silly.debug("MARKUP") && Silly.debugInt("MARKUP") == h.id) { 
+		if (Main.debug("MARKUP") && Main.debugInt("MARKUP") == h.id) { 
 			for (int y = 0; y < sa.height; y++) { 
 				int startX = leftSide ? sa.width - 1 : 0;
 				int endX = leftSide ? -1 : sa.width;

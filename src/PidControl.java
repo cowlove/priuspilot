@@ -12,7 +12,7 @@ class AverageNO {
 }
 
 public class PidControl {
-	static int EXPECTED_FPS = Silly.debugInt("EXPECTED_FPS", 15);
+	static int EXPECTED_FPS = Main.debugInt("EXPECTED_FPS", 15);
 	Average avgRmsErr = new Average();
     class PID {
         PID(double ap, double ai, double ad, double aj, double al) {

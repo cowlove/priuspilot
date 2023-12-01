@@ -86,7 +86,7 @@ class JoystickControl {
 	        if (joystick != null) {
 	        	joystick.poll();
 	        	buttonBits = joystick.getButtons();
-	    		if (Silly.debug("PRINT_JOYSTICK_BUTTONS") && buttonBits != 0x0){ 
+	    		if (Main.debug("PRINT_JOYSTICK_BUTTONS") && buttonBits != 0x0){ 
 	        		System.out.printf("buttons 0x%x\n", buttonBits);
 	    			System.out.printf("%f %f %f %f %f %f %f\n", joystick.getX(), 
 	    					joystick.getY(), joystick.getZ(), 

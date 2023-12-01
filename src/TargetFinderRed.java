@@ -48,7 +48,7 @@ class TargetFinderRed extends TargetFinder {
 		param.S = new ByteSpan(70, 256);
 		param.L = new ByteSpan(70, 230);
 
-		if (Silly.debug("SHOW_TF"))
+		if (Main.debug("SHOW_TF"))
 			dd = new BufferedImageDisplay(w, h, BufferedImage.TYPE_INT_ARGB);
 	}
 	
@@ -253,7 +253,7 @@ class TargetFinderRed extends TargetFinder {
         if (best != null && bestScore > param.maxSymErr) // add best if it wasn't already added
         	rects.add(best);
 
-        if (Silly.debug("CONT_TF")) {  // we're doing TF debugging, go ahead and mess up the image 
+        if (Main.debug("CONT_TF")) {  // we're doing TF debugging, go ahead and mess up the image 
         	//drawCannyLines(orig);        
         	//copyout(orig, oi, sa);
         }

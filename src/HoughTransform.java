@@ -95,7 +95,7 @@ class HoughTransform {
 		//	System.out.printf("r %d a %.3f a %.3f\n", intercept, ang, (angMin + angMax) / 2);
 
 		double aStep = leftSide ? 
-			Silly.debugDouble("LASTEP", -1.1) : Silly.debugDouble("RASTEP", -1.3);;
+			Main.debugDouble("LASTEP", -1.1) : Main.debugDouble("RASTEP", -1.3);;
 
 		int rStart = (int)Math.floor(minR / radStep);
 		int rEnd = (int)Math.ceil(maxR / radStep);

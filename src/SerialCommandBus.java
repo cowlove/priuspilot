@@ -173,7 +173,7 @@ class SerialCommandBus {
 						} catch (IOException e) {}
 						break;
 					}
-					if (Silly.debug("DEBUG_SERIAL"))
+					if (Main.debug("DEBUG_SERIAL"))
 						System.out.println("Serial read: " + s);	
 
 					

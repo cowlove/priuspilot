@@ -30,7 +30,7 @@ class TargetFinderExperimental extends TargetFinder {
 	}
 
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
-		if (Silly.debug("EXP")) { 
+		if (Main.debug("EXP")) { 
 			//c.reset();
 			c.zones.height = sa.height;
 			c.zones.clear();
@@ -83,7 +83,7 @@ class TargetFinderExperimental extends TargetFinder {
 	}
 
 	public void markup(OriginalImage coi, int rescale) {
-		if (Silly.debug("MARKUP_EXP") && Silly.debug("EXP")) { 
+		if (Main.debug("MARKUP_EXP") && Main.debug("EXP")) { 
 			for( Point p : c.results.l )  
 				coi.putPixel(p.x + sa.x, p.y + sa.y, -1);		
 		}	
