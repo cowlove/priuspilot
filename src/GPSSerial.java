@@ -13,7 +13,7 @@ class GPSSerial {
 	BufferedReader fakeFile = null; 
     String devName; 
     FrameProcessor fp; // TODO- make a clean callback interface rather than a fp member
-    GPSSerial(String d, FrameProcessor f) { devName = d; fp = f;  }
+    GPSSerial(String d, FrameProcessor f) { devName = d; fp = f; }
 
     private void open() {
     	boolean complained = false;
