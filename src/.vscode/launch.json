@@ -5,37 +5,60 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "args":  [ "<", "/home/jim/src/priuspilot/x.log"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "type": "java",
             "name": "Launch 20231116.131526.yuv",
             "request": "launch",
-            "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
+            "env": {
+                "LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"
+            },
             "mainClass": "Silly",
-                "args": ["/home/jim/src/priuspilot/lanedumps/20231116.141353.yuv", 
-                "-fakeGps","-trimCheat", 
+            "args": [
+                "/home/jim/src/priuspilot/lanedumps/20231116.141353.yuv",
+                "-fakeGps",
+                "-trimCheat",
                 "/home/jim/src/priuspilot/lanedumps/20231116.141353.log"
-                    
-             ]
+            ]
         },
         {
             "type": "java",
             "name": "Launch PRIUSPILOT SIM",
             "request": "launch",
-            "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
+            "env": {
+                "LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"
+            },
             "mainClass": "Silly",
             "args": [
-//                "/dev/video2", "-size","432x240","-displayratio","10","-out","/host/lanedumps/%s.yuv","-gps","-log","/host/lanedumps/%s.log","-debug","EXPECTED_FPS=15","-debug","SZ_PERIOD=5","-debug","minSz=33","-debug","defLAng=65","-rescale","2","-debug","LASTEP=-0.9","-skipratio","2","-rescale","2","-displayratio","5"
-                "../lanedumps/20231114.181221.yuv","-trimCheat", "../gpstrim.log"
+                //                "/dev/video2", "-size","432x240","-displayratio","10","-out","/host/lanedumps/%s.yuv","-gps","-log","/host/lanedumps/%s.log","-debug","EXPECTED_FPS=15","-debug","SZ_PERIOD=5","-debug","minSz=33","-debug","defLAng=65","-rescale","2","-debug","LASTEP=-0.9","-skipratio","2","-rescale","2","-displayratio","5"
+                "../lanedumps/20231114.181221.yuv",
+                "-trimCheat",
+                "../gpstrim.log"
                 //        "SIM"
-            ] 
-
+            ]
         },
         {
             "type": "java",
             "name": "Launch PRIUSPILOT 640x480",
             "request": "launch",
-            "env": {"LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"},
+            "env": {
+                "LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"
+            },
             "mainClass": "Silly",
-            "args": ["/host/lanedumps/20221016.120744.yuv", "-size", "640x480", "-exit",  "500" ]
+            "args": [
+                "/host/lanedumps/20221016.120744.yuv",
+                "-size",
+                "640x480",
+                "-exit",
+                "500"
+            ]
         },
         {
             "type": "java",

@@ -12,6 +12,10 @@ def hdgDiff(h1, h2):
     if (r > 180): r = r - 360
     return r
 
+def latDistance(p1, p2):
+    return math.fabs(p1.lat - p2.lat) * 60 * 1852   
+
+
 def distance(p1, p2):
     R = 6371e3
     dlat = (p2.lat - p1.lat) * math.pi / 180.0
@@ -44,19 +48,19 @@ class Entry:
         
     def getCurve(self, e):
         if e == None:
-            return 0 
+            return 0.0 
         timeD = self.tim - e.tim
         hdgD = hdgDiff(self.hdg, e.hdg)
         if timeD * self.spd == 0:
-            c = 0
+            c = 0.0
         else:
-            c = hdgD * 100000 / (timeD * self.spd);
-        c = max(-25, min(25, c));
+            c = hdgD * 100000 / (timeD * self.spd)
+        c = max(-25.0, min(25.0, c))
         return c
       
     def print(self):
         print("lat %+012.8f lon %+012.8f speed %06.2f hdg %07.3f" 
-              " gcurve %+08.3f but %04.0f %03.0f" % (
+              " gcurve %+08.3f but %04.0f weight %03.0f" % (
             self.lat, self.lon, self.spd, self.hdg, 
             self.crv, self.but, self.weight))
 
@@ -68,8 +72,19 @@ for line in sys.stdin:
     m = {}
     for i in range(0, len(tok) - 1, 2):
         m[tok[i]] = tok[i + 1]
-    e = Entry(m["t"], m["lat"], m["lon"], m["speed"], m["hdg"], m["but"], 1)
-    e.crv = e.getCurve(lastEntry)
+    if "weight" in m: 
+        w = float(m["weight"]) 
+    else: 
+        w = 1.0
+    if "t" in m:
+        t = float(m["t"])
+    else:
+        t = 0.0
+    e = Entry(t, m["lat"], m["lon"], m["speed"], m["hdg"], m["but"], w)
+    if "gcurve" in m:
+        e.crv = float(m["gcurve"])
+    else:
+        e.crv = e.getCurve(lastEntry)
     entries.append(e)
     lastEntry = e
 
@@ -79,7 +94,7 @@ entries.sort(key = lambda x : (x.lat, x.hdg, x.lon))
 radius = 5
 for e in entries:
     i = entries.index(e) + 1
-    while i < entries.__len__() - 1 and math.fabs(entries[i].lat - e.lat) * 60 * 1852  <= radius:
+    while i < entries.__len__() - 1 and latDistance(e, entries[i])  <= radius:
         ne = entries[i]
         if distance(ne, e) < radius and math.fabs(hdgDiff(ne.hdg, e.hdg)) < 5:
             e.average(ne)
