@@ -2,7 +2,7 @@
 //#include "AsyncUDP.h"
 #include <esp_now.h>
 #include <esp_wifi.h>
-#include <esp_wifi_internal.h>
+#include <esp_private/esp_wifi_private.h>
 
 JStuff j;
 
@@ -26,7 +26,7 @@ void EspNowInit() {
         TRY_ESP_ACTION(esp_wifi_init(&my_config), "Disable AMPDU");
         TRY_ESP_ACTION(esp_wifi_start(), "Restart WiFi");
         TRY_ESP_ACTION(esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE), "Set channel");
-        TRY_ESP_ACTION(esp_wifi_internal_set_fix_rate(ESP_IF_WIFI_STA, true, DATARATE), "Fixed rate set up");
+        TRY_ESP_ACTION(esp_wifi_config_espnow_rate(WIFI_IF_AP, DATARATE), "Fixed rate set up");
         TRY_ESP_ACTION(esp_now_init(), "ESPNow Init");
         TRY_ESP_ACTION(esp_now_register_send_cb(EspNowOnDataSent), "Attach send callback");
         TRY_ESP_ACTION(esp_now_register_recv_cb(EspNowOnDataRecv), "Attach recv callback");
@@ -55,7 +55,7 @@ struct {
 	int pwm2 = 16;
 } pins;
 
-AsyncUDP udpCmd;
+//AsyncUDP udpCmd;
 
 PwmChannel pwm1(pins.pwm1, 1200/*hz*/, 2/*chan*/, 0/*gradual*/);
 PwmChannel pwm2(pins.pwm2, 1200/*hz*/, 1/*chan*/, 0/*gradual*/);
@@ -99,6 +99,7 @@ void setDeg(float d) {
 	d = min(limit, max(-limit, d)); 
 	int t1 = ex.extrapolate(2.50 - d);
 	int t2 = ex.extrapolate(2.50 + d);
+	OUT("set pwm %d %d", t1, t2);
 	pwm1.setMs(t1);
 	pwm2.setMs(t2);
 }
@@ -108,7 +109,7 @@ float steerCmd = 0;
 
 void EspNowOnDataRecv(const uint8_t * mac, const uint8_t *in, int len) {
 	string s((const char *)in, len);
-	//OUT("Got %s", s.c_str());
+	OUT("Got %s", s.c_str());
 	float f1, f2;
 	if (sscanf(s.c_str(), "PPDEG %f %f", &f1, &f2) == 2) { 
 		//OUT("PPDEG %f %f", f1, f2);
@@ -128,13 +129,24 @@ void setup() {
 	j.cliEcho = false;
 	j.mqtt.active = false;
 	j.onConn = []{};
-	j.cli.on("BLINK", [](){ j.led.setPattern(200, 3, 1.0, 1); });
+	j.cli.on("PPDEG ([-0-9.]+)", [](const char *s, smatch m){ 
+		float f = 0;
+		OUT("cli got %s", s);
+		if (m.size() > 1 && sscanf(m.str(1).c_str(), "%f", &f) == 1) {
+			setDeg(-f);
+		}
+		return "";
+	});
 	j.begin();
-	j.led.setPattern(100, 1, 1.0, 1); 
+	//j.led.setPattern(100, 1, 1.0, 1); 
 	EspNowInit();
 
 }
 
+void EspNowSend(const String x) { 
+	esp_now_send(broadcastAddress, (uint8_t *) x.c_str(), x.length());
+
+}
 void loop() {
 	j.run();
 	delay(1);
@@ -143,6 +155,9 @@ void loop() {
 		steerCmd = steerCmd * 0.8;
 		setDeg(steerCmd);
 	}  
+	if (j.hz(1)) {
+		EspNowSend("HI!");
+	}
 }
 #if 0 
 void setupOLD() {
