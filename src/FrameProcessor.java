@@ -235,7 +235,7 @@ class FrameProcessor {
         steeringTestPulse.count = 0;
         steeringTestPulse.offset = -0.00;
        
-		if (Main.debugInt("DITHERFF", 0) == 1) { 
+		if (Main.debugInt("DITHERFF", 1) == 1) { 
 			steeringDitherPulse.duration = 2.0; // frames not seconds for FLIPFLOP
 			steeringDitherPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_FLIPFLOP;
 			steeringDitherPulse.magnitude = 0.20;
@@ -483,7 +483,7 @@ class FrameProcessor {
     
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.25;	
+    double epsSteeringGain = 1.00;	
     double trq1 = 0, trq2 = 0;
     
     long lastCruiseSet = 0; // time of last cruise control command in ms
