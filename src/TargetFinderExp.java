@@ -37,14 +37,54 @@ class TargetFinderExperimental extends TargetFinder {
 
 			setCanny(param);
 
-			c.zones.lsz.b1 = -sa.height;
-			c.zones.lsz.b2 = +sa.height;
-			c.zones.lsz.m1 = 1;
-			c.zones.lsz.m2 = 1;
-			c.zones.midX = sa.width;
+			//c.zones.lsz.b1 = -sa.height;
+			//c.zones.lsz.b2 = +sa.height;
+			c.zones.lsz.m1 = c.zones.lsz.m2 = Double.NaN;
+			//c.zones.midX = sa.width;
 
 			c.processData(oi, sa);
 			canny = c.getData();
+
+			// Filter for magnitudes perpendicular to the vanishing point lines 
+			for(int y = 0; y < height; y++) { 
+				for(int x = 0; x < width; x++) { 
+					final int i = x + y * width;
+					double gdir = Math.atan2(c.xGradient[i], c.yGradient[i]);
+					double pdir = Math.atan2(x - vanRec.x, y - vanRec.y);
+					c.results.gradResults[i] = (float)(	
+						c.results.gradResults[i] * Math.cos(gdir - pdir + Math.PI / 2)); 
+				}
+			} 
+			c.results.gradResults[0] = 110;
+			c.results.gradResults[1] = -110;
+
+			// rotate a few degrees and add 
+			float [] gr = new float[width * height];
+			for(int y = 0; y < height; y++) { 
+				for(int x = 0; x < width; x++) { 
+					double pang = Math.atan2(y - vanRec.y, x - vanRec.x);
+					double pdis = Math.sqrt((x - vanRec.x) * (x - vanRec.x) + (y - vanRec.y) *(y - vanRec.y));
+					
+					double lwAng = 1.5;
+					int x2 = (int)Math.round(Math.cos(pang + Math.PI / 180 * lwAng) * pdis) + vanRec.x;
+					int y2 = (int)Math.round(Math.sin(pang + Math.PI / 180 * lwAng) * pdis) + vanRec.y;
+
+					gr[x + y * width] = 0;
+					if (x2 >= 0 && x2 < width && y2 >= 0 && y2 < height) 
+						gr[x + y * width] = c.results.gradResults[x + y * width] - 
+						c.results.gradResults[x2 + y2 * width];
+				}
+			}
+			c.results.clear();
+			for(int y = 0; y < height; y++) { 
+				for(int x = 0; x < width; x++) {
+					final int i = x + y * width; 
+					c.results.gradResults[i] = Math.abs(gr[i]);
+					if (c.results.gradResults[i] > c.threshold) { 
+						c.results.add(x, y);
+					} 
+				}
+			}
 
 			h.clear();
 			h.setAngleRange(0,180);
@@ -67,12 +107,18 @@ class TargetFinderExperimental extends TargetFinder {
 			int[] vp = new int[vanRec.width * vanRec.height];
 			h.projectIntoRect(vp, vanRec, 1);
 
-			if (true) { 
+			if (Main.debugInt("EXP") == 2) { 
+				gp.startNew();
+				gp.add3DGridF(gr, sa.width, sa.height, true);
+				gp.draw();
+				
+			}
+			if (false) { 
 				gp.startNew();
 				gp.add3DGrid(vp, vanRec.width, vanRec.height);
 				gp.draw();
 			}
-			if (true) { 
+			if (false) { 
 				gp2.startNew();
 				gp2.add3DGrid(h.hough, h.angSz, h.radSz);
 				gp2.draw();

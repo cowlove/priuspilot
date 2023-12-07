@@ -179,7 +179,7 @@ class PeriodicityDetector {
 }
 class Focus { 
 	//double minWeight = 185000; // TODO RAW_FPS // TODO needs to be normalized, values change with useLuminance, etc
-	double minWeight = 9000; // TODO needs to be normalized, values change with useLuminance, etc
+	double minWeight = Main.debugDouble("MINWT", 3000); // TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -469,7 +469,13 @@ class TargetFinderLines extends TargetFinder {
 		
 		// scan zones are now set up, proceed with canny and hough processing 
 		c.processData(oi, sa);
-        canny = c.getData();
+		boolean newFilt = Main.debugDouble("LWANG", 0) > 0.0;
+
+		if (newFilt) {
+			filterVP(222 - sa.x,22 - sa.y);
+			//useLuminanceCheck = false;
+		}
+		canny = c.getData();
 		
         // auto-tune canny thresholds to try and keep a reasonable number of edge points
         // TODO- normalize the point count to the scan area
@@ -488,20 +494,22 @@ class TargetFinderLines extends TargetFinder {
         ArrayList<Point> nonLumPoints = new ArrayList<Point>();
 
 
-		for (int y = 0; y < sa.height; y++) { 
-			int continuousHorizontalPixels = 0;
-			int xe = xend(y);
-			for(int x = xstart(y); x < xe; x++) {
-				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
-					if (++continuousHorizontalPixels > Main.debugInt("HPIXEL_FILTER", 2)) { 
-						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
-							c.results.gradResults[y*sa.width+dx] = 0;
-							//c.results.l.remove(new Point(dx,y));
+		if (!newFilt) {
+			for (int y = 0; y < sa.height; y++) { 
+				int continuousHorizontalPixels = 0;
+				int xe = xend(y);
+				for(int x = xstart(y); x < xe; x++) {
+					if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
+						if (++continuousHorizontalPixels > Main.debugInt("HPIXEL_FILTER", 2)) { 
+							for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
+								c.results.gradResults[y*sa.width+dx] = 0;
+								//c.results.l.remove(new Point(dx,y));
+							}
 						}
-					}
-				} else {
-					continuousHorizontalPixels = 0;
-				}			
+					} else {
+						continuousHorizontalPixels = 0;
+					}			
+				}
 			}
 		}
 
@@ -514,19 +522,22 @@ class TargetFinderLines extends TargetFinder {
 		if (Main.debug("DEBUG_LUM") && Main.debugInt("DEBUG_LUM") == h.id) 
 			ar = new double[sa.height * sa.width];
 
-		for(int x = 0; x < sa.width; x++) {
-			int continuousPixels = 0;
-			final int ye = Math.min(sa.height, c.zones.yend(x));
-			for (int y = Math.max(0, c.zones.ystart(x)); y < ye; y++) { 
-				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
-					if (++continuousPixels > 5) { 
-						for (int y1 = y - continuousPixels; y1 < y; y1++) { 
-							c.results.gradResults[y1*sa.width+x] = 0;
+		if (!newFilt) {
+			for(int x = 0; x < sa.width; x++) {
+				int continuousPixels = 0;
+				final int ye = Math.min(sa.height, c.zones.yend(x));
+				for (int y = Math.max(0, c.zones.ystart(x)); y < ye; y++) { 
+					if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
+						if (++continuousPixels > 5) { 
+							for (int y1 = y - continuousPixels; y1 < y; y1++) { 
+								if (y1 > 0) 
+									c.results.gradResults[y1*sa.width+x] = 0;
+							}
 						}
-					}
-				} else {
-					continuousPixels = 0;
-				}			
+					} else {
+						continuousPixels = 0;
+					}			
+				}
 			}
 		}
 
@@ -558,7 +569,7 @@ class TargetFinderLines extends TargetFinder {
 			int continuousHorizontalPixels = 0;
 			final int xe = xend(y);
 			for(int x = xstart(y); x < xe; x++) {
-				if (c.results.gradResults[y*sa.width+x] > param.threshold1) { 
+				if (!newFilt && c.results.gradResults[y*sa.width+x] > param.threshold1) { 
 					if (++continuousHorizontalPixels > 5) { 
 						for (int dx = x - continuousHorizontalPixels; dx < x; dx++) { 
 							c.results.gradResults[y*sa.width+dx] = 0;
@@ -567,11 +578,11 @@ class TargetFinderLines extends TargetFinder {
 				} else {
 					continuousHorizontalPixels = 0;
 				}			
-        		double wt =  c.results.gradResults[y*sa.width+x];
-	    		if (useLuminanceCheck) {
+				double wt =  c.results.gradResults[y*sa.width+x];
+				if (useLuminanceCheck) {
 					double rlum = (float)getLuminance(oi, sa, x, y, 1);
 					if (rlum >= lum90) { 
-	        			//wt *= rlum * rlum;
+						//wt *= rlum * rlum;
 					} else {
 						wt = 0;
 					}
@@ -579,20 +590,22 @@ class TargetFinderLines extends TargetFinder {
 					//	wt = 0;
 					//}
 				}	
-        		if (ar != null) 
-        			ar[(sa.height - y - 1) * sa.width + x] = wt;
-        		h.add(x, y, (float)wt);
+				if (ar != null) 
+					ar[(sa.height - y - 1) * sa.width + x] = wt;
+				h.add(x, y, (float)wt);
 			}
 		}
+
 		if (ar != null) { // from DEBUG_LUM above 
 			gp.startNew();
 			gp.add3DGrid(ar, sa.width, sa.height);
 			gp.draw();
 		}
+	
 
 		h.blur();   
 		
-		if (useLaneWidthFilter) {  
+		if (!newFilt && useLaneWidthFilter) {  
 			h.applyCorrelationRad(3, Main.debugDouble("maxR", 11), leftSide, ang, intercept);
 		}
 		
@@ -1011,6 +1024,49 @@ class TargetFinderLines extends TargetFinder {
 			for( Point p : c.results.l )  
 				coi.putPixel(p.x + sa.x, p.y + sa.y, -1);		
 		}	
+	}
+
+	public void filterVP(int vpX, int vpY) { 
+		// Filter for magnitudes perpendicular to the vanishing point lines 
+		for(int y = 0; y < sa.height; y++) { 
+			for(int x = 0; x < sa.width; x++) { 
+				final int i = x + y * sa.width;
+				double gdir = Math.atan2(c.xGradient[i], c.yGradient[i]);
+				double pdir = Math.atan2(x - vpX, y - vpY);
+				c.results.gradResults[i] = (float)(	
+					c.results.gradResults[i] * Math.cos(gdir - pdir + Math.PI / 2)); 
+			}
+		} 
+		c.results.gradResults[0] = 110;
+		c.results.gradResults[1] = -110;
+
+		// rotate a few degrees and add 
+		float [] gr = new float[width * height];
+		for(int y = 0; y < sa.height; y++) { 
+			for(int x = 0; x < sa.width; x++) { 
+				double pang = Math.atan2(y - vpY, x - vpX);
+				double pdis = Math.sqrt((x - vpX) * (x - vpX) + (y - vpY) *(y - vpY));
+				
+				double lwAng = Main.debugDouble("LWANG", 1.5);
+				int x2 = (int)Math.round(Math.cos(pang + Math.PI / 180 * lwAng) * pdis) + vpX;
+				int y2 = (int)Math.round(Math.sin(pang + Math.PI / 180 * lwAng) * pdis) + vpY;
+
+				gr[x + y * sa.width] = 0;
+				if (x2 >= 0 && x2 < sa.width && y2 >= 0 && y2 < sa.height) 
+					gr[x + y * sa.width] = c.results.gradResults[x + y * sa.width] - 
+					c.results.gradResults[x2 + y2 * sa.width];
+			}
+		}
+		c.results.clear();
+		for(int y = 0; y < sa.height; y++) { 
+			for(int x = 0; x < sa.width; x++) {
+				final int i = x + y * sa.width; 
+				c.results.gradResults[i] = Math.max(0, gr[i]);
+				if (c.results.gradResults[i] > c.threshold) { 
+					c.results.add(x, y);
+				} 
+			}
+		}
 	}
 
 }

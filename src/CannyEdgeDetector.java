@@ -81,10 +81,12 @@ public class CannyEdgeDetector {
 	public ScanZonePair zones = new ScanZonePair();
 
 	int yend(int x) {  
+		if (zones == null) return height;
 		int y = zones.yend(x) - kwidth;
 		return Math.max(Math.min(y, height - kwidth), kwidth); // limit between kwidth and height - kwidth
 	}
 	int ystart(int x) {
+		if (zones == null) return 0;
 		int y = zones.ystart(x) + kwidth;
 		return Math.max(Math.min(y, height - kwidth), kwidth); // limit between kwidth and height - kwidth
 	}
@@ -109,10 +111,10 @@ public class CannyEdgeDetector {
 	public float threshold;
 	public int gaussianKernelWidth;
 
-	private float[] xConv;
-	private float[] yConv;
-	private float[] xGradient;
-	private float[] yGradient;
+	public float[] xConv;
+	public float[] yConv;
+	public float[] xGradient;
+	public float[] yGradient;
 	
 	// constructors
 	

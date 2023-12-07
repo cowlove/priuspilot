@@ -180,6 +180,19 @@ public class GnuplotWrapper{
 		
 	}
 
+	public void add3DGridF(float[] data, int xs, int ys, boolean invert) {
+		try {
+			for(int x = 0; x < xs; x++) { 
+				for(int y = 0; y < ys; y++) { 
+					writer.write(String.format("%d %d %f\n", x, - y, data[x + y * xs]));
+				}
+				writer.write("\n");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void add3DGrid(double[] data, int xs, int ys) {
 		try {
 			for(int x = 0; x < xs; x++) { 
