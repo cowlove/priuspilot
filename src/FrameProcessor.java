@@ -188,7 +188,7 @@ class FrameProcessor {
 		int minAng = Main.debugInt("minAng", 6);
 		int maxAng = Main.debugInt("maxAng", 55);
         int houghSize = Main.debugInt("HOUGH_SIZE", 80);
-		double vertPct = Main.debugInt("SA_VERT_PERCENT",80) / 100.0;
+		double vertPct = Main.debugDouble("SA_VERT_PERCENT",80) / 100.0;
         tfl = new TargetFinderLines(w, h, null, true, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tfr = new TargetFinderLines(w, h, null, false, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tflo = new TargetFinderLines(w, h, null, true, 77, 60, minSz, maxSz, 12, 35, .85);

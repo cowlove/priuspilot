@@ -617,7 +617,13 @@ class TargetFinderLines extends TargetFinder {
 		h.findClosest(ca, leftSide ? h.radSz : 0, 0.7f);
 		//h.findCG(ca);
 
-		if (Main.debug("DEBUG_LINES") && Main.debugInt("DEBUG_LINES") == h.id) {
+		if (Main.debug("SHOW_GRADS") && Main.debugInt("SHOW_GRADS") == h.id) {
+			gp.startNew();
+			gp.title = String.format("Gradients Line #d", h.id);
+			gp.add3DGridF(c.results.gradResults, sa.width, sa.height, true);
+			gp.draw();
+		}
+		else if (Main.debug("DEBUG_LINES") && Main.debugInt("DEBUG_LINES") == h.id) {
 			gp.startNew();
 			gp.title = String.format("Hough Transform Line %d", h.id);
 			//h.suppressNonmax(20, 5);
@@ -1029,7 +1035,7 @@ class TargetFinderLines extends TargetFinder {
 	public void filterVP(int vpX, int vpY) { 
 		// Filter for magnitudes perpendicular to the vanishing point lines 
 		for(int y = 0; y < sa.height; y++) { 
-			for(int x = 0; x < sa.width; x++) { 
+			for(int x = xstart(y); x < xend(y); x++) { 
 				final int i = x + y * sa.width;
 				double gdir = Math.atan2(c.xGradient[i], c.yGradient[i]);
 				double pdir = Math.atan2(x - vpX, y - vpY);
@@ -1037,29 +1043,41 @@ class TargetFinderLines extends TargetFinder {
 					c.results.gradResults[i] * Math.cos(gdir - pdir + Math.PI / 2)); 
 			}
 		} 
-		c.results.gradResults[0] = 110;
-		c.results.gradResults[1] = -110;
 
 		// rotate a few degrees and add 
 		float [] gr = new float[width * height];
 		for(int y = 0; y < sa.height; y++) { 
-			for(int x = 0; x < sa.width; x++) { 
+			for(int x = xstart(y); x < xend(y); x++) { 
 				double pang = Math.atan2(y - vpY, x - vpX);
 				double pdis = Math.sqrt((x - vpX) * (x - vpX) + (y - vpY) *(y - vpY));
 				
 				double lwAng = Main.debugDouble("LWANG", 1.5);
-				int x2 = (int)Math.round(Math.cos(pang + Math.PI / 180 * lwAng) * pdis) + vpX;
-				int y2 = (int)Math.round(Math.sin(pang + Math.PI / 180 * lwAng) * pdis) + vpY;
+				double maxGrad = 0;
 
-				gr[x + y * sa.width] = 0;
-				if (x2 >= 0 && x2 < sa.width && y2 >= 0 && y2 < sa.height) 
-					gr[x + y * sa.width] = c.results.gradResults[x + y * sa.width] - 
-					c.results.gradResults[x2 + y2 * sa.width];
+				for (double a = lwAng - .2; a <= lwAng + .2; a += .1) {
+					int x2 = (int)Math.round(Math.cos(pang + Math.PI / 180 * a) * pdis) + vpX;
+					int y2 = (int)Math.round(Math.sin(pang + Math.PI / 180 * a) * pdis) + vpY;
+
+					if (x2 >= 0 && x2 < sa.width && y2 >= 0 && y2 < sa.height) {
+						if (Math.abs(c.results.gradResults[x2 + y2 * sa.width]) > Math.abs(maxGrad))
+							maxGrad = c.results.gradResults[x2 + y2 * sa.width];
+					}
+				}
+				gr[x + y * sa.width] = (float)(c.results.gradResults[x + y * sa.width] - maxGrad);
 			}
 		}
+		gr[0] = -100; gr[1] = 100;
+		if (Main.debug("SHOW_IGRADS") && Main.debugInt("SHOW_IGRADS") == h.id) {
+			gp.startNew();
+			gp.title = String.format("Gradients Line #d", h.id);
+			gp.add3DGridF(gr, sa.width, sa.height, true);
+			gp.draw();
+		}
+
+
 		c.results.clear();
 		for(int y = 0; y < sa.height; y++) { 
-			for(int x = 0; x < sa.width; x++) {
+			for(int x = xstart(y); x < xend(y); x++) { 
 				final int i = x + y * sa.width; 
 				c.results.gradResults[i] = Math.max(0, gr[i]);
 				if (c.results.gradResults[i] > c.threshold) { 
