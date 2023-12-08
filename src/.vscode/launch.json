@@ -20,7 +20,7 @@
             "env": {
                 "LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"
             },
-            "mainClass": "Silly",
+            "mainClass": "Main",
             "args": [
                 "/home/jim/src/priuspilot/lanedumps/20231116.141353.yuv",
                 "-fakeGps",

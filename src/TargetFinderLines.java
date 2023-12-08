@@ -396,6 +396,9 @@ class TargetFinderLines extends TargetFinder {
 	int xend(int y) { 
 		return Math.min(sa.width, Math.max(c.zones.xend(y), c.zones.xstart(y)));
 	}
+
+	float []lastMags = null;
+	double vpX, vpY;
 	int cannyMaxPoints = 800, cannyMinPoints = 400;
 	@Override 
 	Rectangle []findAll(OriginalImage oi, Rectangle recNO) {
@@ -403,6 +406,8 @@ class TargetFinderLines extends TargetFinder {
 		c.zones.clear();
 
 		setCanny(param);
+		vpX = vanLimits.x + vanLimits.width / 2 - sa.x;
+		vpY = vanLimits.y + vanLimits.height / 2 - sa.y;
 
 		int intercept = 0;
 		double ang = 0;
@@ -472,8 +477,14 @@ class TargetFinderLines extends TargetFinder {
 		boolean newFilt = Main.debugDouble("LWANG", 0) > 0.0;
 
 		if (newFilt) {
-			filterVP(222 - sa.x,22 - sa.y);
-			//useLuminanceCheck = false;
+			filterVP();
+		}
+		if (lastMags == null) {
+			lastMags = new float[sa.height * sa.width];
+			for(int i = 0; i < sa.height * sa.width; i++) lastMags[i] = 0.0F;
+		}
+		for(int i = 0; i < sa.height * sa.width; i++) {
+			c.results.gradResults[i] += lastMags[i];
 		}
 		canny = c.getData();
 		
@@ -596,13 +607,24 @@ class TargetFinderLines extends TargetFinder {
 			}
 		}
 
+		double gradMem = Main.debugDouble("GRADMEM", .6);
+		if (gradMem > 0) { 
+			for(int i = 0; i < sa.height * sa.width; i++)
+				lastMags[i] = (float)(c.results.gradResults[i] * gradMem);
+		}
+
+		// sprinkle in a little bit of fake weight at the vanishing point and at the 
+		// last line intercept point. 
+		h.add((int)vpX, (int)vpY, (float)Main.debugDouble("HVW1", 100));
+		int ix = getInstantaneousX(height) - sa.x + 5; // 5 to keep it from drift left?   
+		h.add(ix, height - sa.y, (float)Main.debugDouble("HVW2", 50)); 
+
 		if (ar != null) { // from DEBUG_LUM above 
 			gp.startNew();
 			gp.add3DGrid(ar, sa.width, sa.height);
 			gp.draw();
 		}
 	
-
 		h.blur();   
 		
 		if (!newFilt && useLaneWidthFilter) {  
@@ -765,7 +787,6 @@ class TargetFinderLines extends TargetFinder {
 	}
 	
 	double csX = 0; // color segmentation X value 
-	
 	HslHistogram nearPixels1 = new HslHistogram();
 	HslHistogram nearPixels2 = new HslHistogram();
 	HslHistogram hslRoad = new HslHistogram();
@@ -1032,7 +1053,7 @@ class TargetFinderLines extends TargetFinder {
 		}	
 	}
 
-	public void filterVP(int vpX, int vpY) { 
+	public void filterVP() { 
 		// Filter for magnitudes perpendicular to the vanishing point lines 
 		for(int y = 0; y < sa.height; y++) { 
 			for(int x = xstart(y); x < xend(y); x++) { 
@@ -1055,8 +1076,8 @@ class TargetFinderLines extends TargetFinder {
 				double maxGrad = 0;
 
 				for (double a = lwAng - .2; a <= lwAng + .2; a += .1) {
-					int x2 = (int)Math.round(Math.cos(pang + Math.PI / 180 * a) * pdis) + vpX;
-					int y2 = (int)Math.round(Math.sin(pang + Math.PI / 180 * a) * pdis) + vpY;
+					int x2 = (int)(Math.round(Math.cos(pang + Math.PI / 180 * a) * pdis) + vpX);
+					int y2 = (int)(Math.round(Math.sin(pang + Math.PI / 180 * a) * pdis) + vpY);
 
 					if (x2 >= 0 && x2 < sa.width && y2 >= 0 && y2 < sa.height) {
 						if (Math.abs(c.results.gradResults[x2 + y2 * sa.width]) > Math.abs(maxGrad))
@@ -1066,7 +1087,7 @@ class TargetFinderLines extends TargetFinder {
 				gr[x + y * sa.width] = (float)(c.results.gradResults[x + y * sa.width] - maxGrad);
 			}
 		}
-		gr[0] = -100; gr[1] = 100;
+		//gr[0] = -100; gr[1] = 100;
 		if (Main.debug("SHOW_IGRADS") && Main.debugInt("SHOW_IGRADS") == h.id) {
 			gp.startNew();
 			gp.title = String.format("Gradients Line #d", h.id);

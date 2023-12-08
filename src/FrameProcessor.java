@@ -183,7 +183,7 @@ class FrameProcessor {
         //td = new TemplateDetectCannyCorrelation(w, h);
         td = new TemplateDetectRGB(w, h);
         
-        int minSz = Main.debugInt("minSz", 33); // min/max radius
+        int minSz = Main.debugInt("minSz", 38); // min/max radius
         int maxSz = 130;
 		int minAng = Main.debugInt("minAng", 6);
 		int maxAng = Main.debugInt("maxAng", 55);

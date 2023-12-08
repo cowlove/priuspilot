@@ -1,9 +1,15 @@
-#!/bin/bash -x
-ARGS="-fakeGps -displayratio 0"
-./scripts/pp lanedumps/20231109.152233.yuv $ARGS -skip 2300 -exit 4500 -log regression/1.log | grep RMS | tee regression/rms.out
-./scripts/pp lanedumps/20231109.152651.yuv $ARGS -skip 1200 -log regression/2.log |  grep RMS | tee -a regression/rms.out
-./scripts/pp lanedumps/20231111.123744.yuv $ARGS -log regression/3.log |  grep RMS | tee -a regression/rms.out 
-./scripts/pp lanedumps/20231111.124126.yuv $ARGS -log regression/4.log |  grep RMS | tee -a regression/rms.out
-./scripts/pp lanedumps/20231111.141703.yuv $ARGS -log regression/5.log |  grep RMS | tee -a regression/rms.out
-./scripts/pp lanedumps/20231111.142046.yuv $ARGS -log regression/6.log |  grep RMS | tee -a regression/rms.out
+#!/bin/bash
+ARGS="-headless -nodither"
 
+cat /dev/null > ./regression/rms.out
+for f in \
+	./lanedumps/20231114.181221.yuv \
+	./lanedumps/20231114.181623.yuv \
+	./lanedumps/20231116.140744.yuv \
+	./lanedumps/20231116.141353.yuv \
+	./lanedumps/20231117.174827.yuv \
+	./lanedumps/20231117.175518.yuv \
+	./lanedumps/20231119.101920.yuv \
+;
+do ./scripts/pp $f $ARGS -log ./regression/`basename -s .yuv $f`.log  | grep RMS | tee -a ./regression/rms.out
+done

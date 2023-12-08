@@ -171,7 +171,7 @@ public class Main {
         HashMap<Object,Object> keypressMap = new HashMap<Object,Object>();
         HashMap<Object,Point> clickMap = new HashMap<Object,Point>();
         int targx = 0, targy = 0, targh = 0, targw = 0;
-		boolean keepFocus = false;
+		boolean keepFocus = false, noDither = false;
 		BufferedReader logDiffFile = null;
 
         for(int i = 0; i < args.length; i++) {
@@ -304,6 +304,7 @@ public class Main {
             else if (a.compareTo("-logspec") == 0) logspec = args[++i];
             else if (a.compareTo("-minms") == 0) ++i; // handled by getargDouble below, fix this 
             else if (a.compareTo("-keepfocus") == 0) keepFocus = true; // handled by getargDouble below, fix this 
+            else if (a.compareTo("-nodither") == 0) noDither = true; // handled by getargDouble below, fix this 
             else if (a.startsWith("-"))	usage();
             else filename = a;
         }
@@ -352,6 +353,8 @@ public class Main {
 		fp.keepFocus = keepFocus;
 		fp.logDiffFile = logDiffFile;
 
+		if (noDither) fp.steeringDitherPulse.magnitude = 0;
+		
 		if (gps) fp.gps.start();
 		else if (fakeGps) {
 			String gpsFile = filename.replace(".yuv", ".log");
