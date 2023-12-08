@@ -17,33 +17,6 @@
 good north/south I-5 with bright glare, direct sun, dapples 
 20231116.141353.yuv 20231116.140744.yuv 
 
-for f in \
-	./lanedumps/20231114.181221.yuv \
-	./lanedumps/20231114.181623.yuv \
-	./lanedumps/20231116.140744.yuv \
-	./lanedumps/20231116.141353.yuv \
-	./lanedumps/20231117.174827.yuv \
-	./lanedumps/20231117.175518.yuv \
-	./lanedumps/20231119.101920.yuv \
-;do ./scripts/pp $f -headless | grep RMS; done
-
-# ./lanedumps/20231114.181221.yuv frames 00000-02481 FPS=070.42 RMS errs: LL=0.01143 0.00806 0.99264, RL=0.00775 0.00846 0.99164, VP=0.00806 0.00161 0.99189, avgAction=0.14695 avgLogDiff=0.00000
-# ./lanedumps/20231114.181623.yuv frames 00000-03611 FPS=072.25 RMS errs: LL=0.01131 0.00305 0.99457, RL=0.00945 0.00222 0.99603, VP=0.01034 0.05566 0.94193, avgAction=0.16231 avgLogDiff=0.00000
-# ./lanedumps/20231116.140744.yuv frames 00000-04570 FPS=059.10 RMS errs: LL=0.01531 0.01554 0.97691, RL=0.01107 0.02035 0.97332, VP=0.01178 0.08228 0.92179, avgAction=0.17873 avgLogDiff=0.00000
-# ./lanedumps/20231116.141353.yuv frames 00000-04211 FPS=081.37 RMS errs: LL=0.01428 0.02351 0.97976, RL=0.01023 0.03206 0.97191, VP=0.01049 0.06554 0.93653, avgAction=0.15849 avgLogDiff=0.00000
-# ./lanedumps/20231117.174827.yuv frames 00000-04900 FPS=084.03 RMS errs: LL=0.01464 0.02510 0.97372, RL=0.01171 0.04551 0.96081, VP=0.01133 0.08061 0.92472, avgAction=0.18780 avgLogDiff=0.00000
-# ./lanedumps/20231117.175518.yuv frames 00000-04280 FPS=057.01 RMS errs: LL=0.01290 0.02477 0.97564, RL=0.01071 0.05164 0.95532, VP=0.00963 0.03762 0.96095, avgAction=0.18313 avgLogDiff=0.00000
-# ./lanedumps/20231119.101920.yuv frames 00000-03028 FPS=078.49 RMS errs: LL=0.01039 0.00198 0.99648, RL=0.00959 0.00066 0.99821, VP=0.00973 0.03666 0.96325, avgAction=0.12278 avgLogDiff=0.00000
-
-for f in ./lanedumps/20231114.181221.yuv ./lanedumps/20231114.181623.yuv \
-	./lanedumps/20231116.140744.yuv         ./lanedumps/20231116.141353.yuv \
-	./lanedumps/20231117.174827.yuv    ./lanedumps/20231117.175518.yuv   \
-	./lanedumps/20231119.101920.yuv ; 
-	do echo $f; for p in .12 .85 .95; do echo -n "$p: ";
-	 	./scripts/pp $f  -debug PCTLUM=$p -headless | grep RMS; done ; done
-
-
-
 failures for this commit:
 # crack distractor
 ./scripts/pp ./lanedumps/20231116.141353.yuv -skip 1250 -exit 300
