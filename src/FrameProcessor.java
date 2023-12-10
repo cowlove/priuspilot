@@ -196,7 +196,7 @@ class FrameProcessor {
 		tfex = new TargetFinderExperimental(w, h, null, 100);
 
 
-		tfl.toeIn = tfr.toeIn = 0;
+		tfl.toeIn = tfr.toeIn = Main.debugDouble("TOEIN", 0);
 
     	caR = new CurvatureAnalyzer(false, w, h); 
     	caL = new CurvatureAnalyzer(true, w, h); 
@@ -251,7 +251,7 @@ class FrameProcessor {
 		pidRL.period.l = 0.15;
 		pidRL.delays.l.delay = 1.75;
         pidRL.gain.p.hiGain = 1.52;
-        pidRL.gain.i.max = 0.50; // I control has minor oscillating problems 
+        pidRL.gain.i.max = 0.60; // I control has minor oscillating problems 
         pidRL.finalGain = 0.54;
         pidRL.qualityFadeThreshold = .022;
         pidRL.qualityFadeGain = 2;
@@ -483,7 +483,7 @@ class FrameProcessor {
     
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.00;	
+    double epsSteeringGain = 1.10;	
     double trq1 = 0, trq2 = 0;
     
     long lastCruiseSet = 0; // time of last cruise control command in ms
@@ -710,11 +710,6 @@ class FrameProcessor {
    		
    		if (!noProcessing) { 
 	   		tfrc.findAll(coi, tfrcRect);
-	   		tflo.minLineIntensity = tfro.minLineIntensity = tfl.minLineIntensity = tfr.minLineIntensity = 
-	   		tfrc.roadIntensity + lineIntensityDelta;
-	   		tflo.hslThresh = tfro.hslThresh = tfl.hslThresh = tfr.hslThresh =
-	   				tfrc.hslThresh;
-	   		tflo.tfrc = tfro.tfrc = tfl.tfrc = tfr.tfrc = tfrc;
 	   		
 	   		if (Main.debug("xDEBUG_COLOR_SEGMENTATION")) { 
 		   		BufferedImageDisplay.nextX = 640;

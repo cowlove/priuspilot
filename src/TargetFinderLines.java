@@ -203,7 +203,7 @@ class Focus {
 	}
 	void update(double weight, Point o, double r, double a, double i) {
 		if (id == 0) { 
-			//System.out.printf("%04d %f/%f\n", count, weight, minWeight);
+			//System.out.printf("%04d %08.1f/%08.1f\n", count, weight, minWeight);
 		}
 		if (weight > minWeight) { 
 			angle.add(count, a, weight);
@@ -305,11 +305,8 @@ class TargetFinderLines extends TargetFinder {
 	boolean leftSide = false;
 	double toeIn = 10; // TODO -broken?   
 	int rawPeakHough = 0;
-	TargetFinderRoadColor tfrc = null;
 	HslHistogram hhist = null;
-	int minLineIntensity = 0;
 	int houghAngSz, houghRadSz; 
-	int [] hslThresh = new int[3];
 	
 	GnuplotWrapper gp = new GnuplotWrapper();
 	GnuplotWrapper gp2 = new GnuplotWrapper();
@@ -421,9 +418,7 @@ class TargetFinderLines extends TargetFinder {
 		double angMin = ((ang - 90) % 360) - focus.getAngWidth() * (1 - angOffset);
 		h.setAngleRange(angMin, angMax);
 		
-		// TODO - scan zones width is measured at the left side of the scan zone, 
-		// or the wide part of the L zone and the narrow part of the RH zone
-		// makes it stupidy hard to calculate  
+		// build scan zones out of ang, intercept, and toeIn values
 		int szWidth = focus.getSzWidth();
 		double toe = leftSide ? toeIn : -toeIn;
 		//toe = 0;
@@ -1054,14 +1049,17 @@ class TargetFinderLines extends TargetFinder {
 	}
 
 	public void filterVP() { 
+		double maxGrad = Main.debugDouble("MAXGRAD", 100);
+
 		// Filter for magnitudes perpendicular to the vanishing point lines 
 		for(int y = 0; y < sa.height; y++) { 
 			for(int x = xstart(y); x < xend(y); x++) { 
 				final int i = x + y * sa.width;
 				double gdir = Math.atan2(c.xGradient[i], c.yGradient[i]);
 				double pdir = Math.atan2(x - vpX, y - vpY);
-				c.results.gradResults[i] = (float)(	
-					c.results.gradResults[i] * Math.cos(gdir - pdir + Math.PI / 2)); 
+				double cosa = Math.cos(gdir - pdir + Math.PI / 2);
+				double mag = c.results.gradResults[i] * cosa * Math.abs(cosa);
+				c.results.gradResults[i] = (float)mag;
 			}
 		} 
 
@@ -1073,18 +1071,18 @@ class TargetFinderLines extends TargetFinder {
 				double pdis = Math.sqrt((x - vpX) * (x - vpX) + (y - vpY) *(y - vpY));
 				
 				double lwAng = Main.debugDouble("LWANG", 1.5);
-				double maxGrad = 0;
+				double maxG = 0;
 
-				for (double a = lwAng - .2; a <= lwAng + .2; a += .1) {
+				for (double a = lwAng - .0; a <= lwAng + .0; a += .1) {
 					int x2 = (int)(Math.round(Math.cos(pang + Math.PI / 180 * a) * pdis) + vpX);
 					int y2 = (int)(Math.round(Math.sin(pang + Math.PI / 180 * a) * pdis) + vpY);
 
 					if (x2 >= 0 && x2 < sa.width && y2 >= 0 && y2 < sa.height) {
-						if (Math.abs(c.results.gradResults[x2 + y2 * sa.width]) > Math.abs(maxGrad))
-							maxGrad = c.results.gradResults[x2 + y2 * sa.width];
+						if (Math.abs(c.results.gradResults[x2 + y2 * sa.width]) > Math.abs(maxG))
+							maxG = c.results.gradResults[x2 + y2 * sa.width];
 					}
 				}
-				gr[x + y * sa.width] = (float)(c.results.gradResults[x + y * sa.width] - maxGrad);
+				gr[x + y * sa.width] = (float)(c.results.gradResults[x + y * sa.width] - maxG);
 			}
 		}
 		//gr[0] = -100; gr[1] = 100;
@@ -1100,7 +1098,7 @@ class TargetFinderLines extends TargetFinder {
 		for(int y = 0; y < sa.height; y++) { 
 			for(int x = xstart(y); x < xend(y); x++) { 
 				final int i = x + y * sa.width; 
-				c.results.gradResults[i] = Math.max(0, gr[i]);
+				c.results.gradResults[i] = Math.max(0F, Math.min((float)maxGrad, gr[i]));
 				if (c.results.gradResults[i] > c.threshold) { 
 					c.results.add(x, y);
 				} 

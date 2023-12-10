@@ -44,19 +44,24 @@ class TargetFinderExperimental extends TargetFinder {
 
 			c.processData(oi, sa);
 			canny = c.getData();
-
+			if ((Main.debugInt("EXP") & 2) == 2) { 
+				gp2.startNew();
+				gp2.add3DGridF(c.results.gradResults, sa.width, sa.height, true);
+				gp2.draw();
+			}
 			// Filter for magnitudes perpendicular to the vanishing point lines 
 			for(int y = 0; y < height; y++) { 
 				for(int x = 0; x < width; x++) { 
 					final int i = x + y * width;
 					double gdir = Math.atan2(c.xGradient[i], c.yGradient[i]);
 					double pdir = Math.atan2(x - vanRec.x, y - vanRec.y);
+					double cosa = Math.cos(gdir - pdir + Math.PI / 2);
 					c.results.gradResults[i] = (float)(	
-						c.results.gradResults[i] * Math.cos(gdir - pdir + Math.PI / 2)); 
+						c.results.gradResults[i] * cosa * Math.abs(cosa)); 
 				}
 			} 
-			c.results.gradResults[0] = 110;
-			c.results.gradResults[1] = -110;
+			c.results.gradResults[0] = 250;
+			c.results.gradResults[1] = -250;
 
 			// rotate a few degrees and add 
 			float [] gr = new float[width * height];
@@ -65,12 +70,12 @@ class TargetFinderExperimental extends TargetFinder {
 					double pang = Math.atan2(y - vanRec.y, x - vanRec.x);
 					double pdis = Math.sqrt((x - vanRec.x) * (x - vanRec.x) + (y - vanRec.y) *(y - vanRec.y));
 					
-					double lwAng = 1.5;
+					double lwAng = Main.debugDouble("LWANG", 1.5);
 					int x2 = (int)Math.round(Math.cos(pang + Math.PI / 180 * lwAng) * pdis) + vanRec.x;
 					int y2 = (int)Math.round(Math.sin(pang + Math.PI / 180 * lwAng) * pdis) + vanRec.y;
 
-					gr[x + y * width] = 0;
-					if (x2 >= 0 && x2 < width && y2 >= 0 && y2 < height) 
+					gr[x + y * width] = c.results.gradResults[x + y * width];
+					if (lwAng > 0 && x2 >= 0 && x2 < width && y2 >= 0 && y2 < height) 
 						gr[x + y * width] = c.results.gradResults[x + y * width] - 
 						c.results.gradResults[x2 + y2 * width];
 				}
@@ -107,7 +112,7 @@ class TargetFinderExperimental extends TargetFinder {
 			int[] vp = new int[vanRec.width * vanRec.height];
 			h.projectIntoRect(vp, vanRec, 1);
 
-			if (Main.debugInt("EXP") == 2) { 
+			if ((Main.debugInt("EXP") & 1) == 1) { 
 				gp.startNew();
 				gp.add3DGridF(gr, sa.width, sa.height, true);
 				gp.draw();
