@@ -674,9 +674,9 @@ class TemplateDetectRGB extends TemplateDetect {
 				int px = best.x - t.loc.width / 2 + x1;
 				int py = best.y - t.loc.height /2 + y1;
 				int pi = (px + py * width) * bpp;
-				if (px >= 0 && px < width && py >= 0 && py < height) { 
+				if (px >= 0 && px < width && py >= 0 && py < height && t.mask[y1 * t.loc.width + x1] == true) { 
 					for (int b = 0; b < bpp; b++) {
-						//picX[pi + b] = (t.mask[y1 * t.loc.width + x1] == true) ? -1 : (byte)0;
+						picX[pi + b] = -1;
 					}
 				}
 			}

@@ -13,6 +13,11 @@
 
 11/17/2023 excellent results with these changes
 
+truck tracking examples:
+pp /host/lanedumps/20231211.161217.yuv -key 1,10 
+pp /host/lanedumps/20231211.124404.yuv -key 1,10 
+
+
 
 good north/south I-5 with bright glare, direct sun, dapples 
 20231116.141353.yuv 20231116.140744.yuv 

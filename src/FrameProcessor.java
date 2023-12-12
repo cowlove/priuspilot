@@ -106,12 +106,13 @@ class FrameProcessor {
 	SerialReaderThread espNow = new SerialReaderThread();
     
     BufferedImageDisplayWithInputs display = null;
-    public PidControl ccPid = null; //new PidControl("Cruise Control PID");
+    public PidControl pidCC = new PidControl("Cruise Control PID");
     //public ControlLagLogic ccLag = new ControlLagLogic();
     public PidControl pidLL = new PidControl("Left Line PID");         
     public PidControl pidRL = new PidControl("Right Line PID");
     public PidControl pidPV = new PidControl("Perspective PID");
     public PidControl pidLV = new PidControl("Line X PID");
+    public PidControl pidTX = new PidControl("Template Match PID");
     public PidControl pidCA = null; //new PidControl("Curvature PID");
     //public PidControl pid = new PidControl("Main PID");
     //public PidControl pidCSR = new PidControl("Right Lane Color Segment PID");
@@ -228,7 +229,8 @@ class FrameProcessor {
         pids.add(pidPV);
         if (pidLV != null) pids.add(pidLV);
         if (pidCA != null) pids.add(pidCA);
-        if (ccPid != null) pids.add(ccPid);
+        if (pidCC != null) pids.add(pidCC);
+		if (pidTX != null) pids.add(pidTX);
         
         steeringTestPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_SQUARE;
         steeringTestPulse.magnitude = 0.30;
@@ -284,6 +286,11 @@ class FrameProcessor {
 		pidPV.reset();
         //pidLV.setGains(0,0,0,0,0);
 		
+		pidTX.copySettings(pidPV);
+		pidTX.finalGain = .8;
+		pidTX.qualityFadeThreshold = 0.015;
+        pidTX.qualityFadeGain = 2;
+		
         if (pidCA != null) { 
 			pidCA.setGains(10.0, 0, 0, 0, 0);
 			pidCA.finalGain = 0; //:1.55;
@@ -293,12 +300,13 @@ class FrameProcessor {
 			pidCA.finalGain = 0; // disable
 		}
         
-		if (ccPid != null) {
-			ccPid.setGains(.06, 0, .34, 0, 1);
-			ccPid.finalGain = 0.9;
-			ccPid.period = ccPid.new PID(3, 1, 4.5, 1, 1);     
-			ccPid.qualityFadeGain = 0;
-			ccPid.reset();
+		if (pidCC != null) {
+			pidCC.setGains(.06, 0, .34, 0, 1);
+			pidCC.finalGain = 1.0;
+			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 1);     
+			pidCC.qualityFadeThreshold = 1.0;
+			pidCC.qualityFadeGain = 0;
+			pidCC.reset();
 		}
 		//	ccLag.actuationTime = 0;
 		//	ccLag.deadTime = 1000;
@@ -671,8 +679,8 @@ class FrameProcessor {
 	RunningAverage avgRLCorr = new RunningAverage(PidControl.EXPECTED_FPS);
 
     long ccLastCorrectionTime = 0;
-	long ccMinCorrectionInterval = 400; // milliseconds
-    int ccSetPoint = 15;
+	long ccMinCorrectionInterval = 1000; // milliseconds
+    int ccSetPoint = 0;
 	RunningAveragePoint houghVan = new RunningAveragePoint(1);
 	
 	void drawLine(int x1, int y1, int x2, int y2) { 
@@ -963,25 +971,32 @@ class FrameProcessor {
 		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
 		        	if (tdFindResult.score > tdMaxErr) {
 		        		if (++badTdCount > 600) {
-			        		//System.out.printf("Large error %d\n", (int)tdFindResult.score);
+			        		System.out.printf("Large error %d\n", (int)tdFindResult.score);
 			        		//corr = 0;
 			        		//td.active = false;
 			        		//noProcessing = true;
 			        		//tdFindResult = null;
 		        		}
 		      
-		        	} else if (ccPid != null) {
+		        	} else {
 		        		badTdCount = 0;
-		        		double ccDist = (tdFindResult.scale - ccSetPoint) / 2;
-		        		double cc = -ccPid.add(ccDist, time);		        		
-		        		if (time - ccLastCorrectionTime > ccMinCorrectionInterval && Math.abs(cc) > 0.25) { 
-		        			boolean up = cc < 0;
-		        			// TODO - ccPid.correctionFeedback(time, up ? -0.25 : 0.25);
-		        			setCruise(up);
-		        			ccLastCorrectionTime = time;
-		        		}
-		        	}
-	        	}
+						if (pidCC != null) {
+							double ccDist = (tdFindResult.scale - ccSetPoint);
+							double cc = -pidCC.add(ccDist, time);		        		
+							if (time - ccLastCorrectionTime > ccMinCorrectionInterval && Math.abs(cc) > 0.25) { 
+								boolean up = cc < 0;
+								// TODO - ccPid.correctionFeedback(time, up ? -0.25 : 0.25);
+								setCruise(up);
+								ccLastCorrectionTime = time;
+							}
+						}
+						if (pidTX != null) { 
+							double x = ((double)tdFindResult.x - tdStartX) / width;
+							pidTX.add(x, time);
+						}
+					}
+
+	        	}	
 	        } 
 
         }
@@ -1295,7 +1310,7 @@ class FrameProcessor {
     		/*
     		if (repeatFrame > 0 && repeatFrame == count)
 				try {
-					Thread.sleep(1);
+					Thread.sleep(1);	
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -1426,6 +1441,9 @@ class FrameProcessor {
 			pidRL.getAvgRmsErr(), (double)pidRL.lowQualityCount/count, pidRL.avgQuality.calculate(),
 			pidPV.getAvgRmsErr(), (double)pidPV.lowQualityCount/count, pidPV.avgQuality.calculate(),
 			steering.totalAction / count, totalLogDiff / count);
+ 	  	System.out.printf("CC=%.5f %.5f %.5f, TX=%.5f %.5f %.5f\n",
+			pidCC.getAvgRmsErr(), (double)pidCC.lowQualityCount/count, pidCC.avgQuality.calculate(),
+			pidTX.getAvgRmsErr(), (double)pidTX.lowQualityCount/count, pidTX.avgQuality.calculate());
     }
      
 
@@ -1481,10 +1499,10 @@ class FrameProcessor {
 				 	s += String.format("tfr.raw=%d ", tfr.rawPeakHough); 
 				 	s += String.format("tfl.period=%d ", tfl.pd.getPeriod()); 
 			    	s += String.format("tfr.period=%d ", tfr.pd.getPeriod()); 
-   					if (ccPid != null) { 
+   					if (pidCC != null) { 
 						s += String.format("ccScale=%d, ccCorr=%.2f, ", 
 			    			tdFindResult != null ? tdFindResult.scale : 0,
-			    			ccPid.corr) + ccPid.err.toString(new String("ccpid-")) + ", ";
+			    			pidCC.corr) + pidCC.err.toString(new String("ccpid-")) + ", ";
 					}
 					s += String.format("trqdiff=%.3f, ", trq1 - trq2);
 			       	s += String.format("caL=%.4f, caR=%.4f, caLR=%.08f, caSum=%.04f, ", caL.getCurve(), caR.getCurve(), 
