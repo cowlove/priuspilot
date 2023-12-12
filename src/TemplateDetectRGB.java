@@ -170,7 +170,8 @@ class TemplateDetectRGB extends TemplateDetect {
 		return out;
 	}
 	byte [] convertOI(OriginalImage oi, Rectangle r) {
-		return yuv2canny(oi,r);
+		//return yuv2canny(oi,r);
+		return yuvToRgb(oi);
 	}
 
 	CannyEdgeDetector c = new CannyEdgeDetector();

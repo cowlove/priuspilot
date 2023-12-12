@@ -946,7 +946,7 @@ class FrameProcessor {
 	    	
 	        if (td != null) {
 				td.newFrame(coi);
-		    	td.setSearchDist(3, 2, 2);
+		    	td.setSearchDist(4, 1, 2);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
@@ -1501,7 +1501,7 @@ class FrameProcessor {
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim but %buttons stass %stass %pidrl %pidll %pidpv " +
-		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar");
+		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx");
 					s = s.replace("%lidar", String.format("%.0f", lidar));
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 					s = s.replace("%pidll", pidLL.toString("pidll-"));
@@ -1511,20 +1511,20 @@ class FrameProcessor {
 	    			s = s.replace("%ts", String.format("%d", time));
 	    			s = s.replace("%delay", String.format("%d", (int)frameResponseMs));
 	    			s = s.replace("%fps", String.format("%.2f", fps));
-	    			s = s.replace("%tdx", String.format("%d", tdFindResult == null ? 0 : tdFindResult.x));
-	    			s = s.replace("%tdy", String.format("%d", tdFindResult == null ? 0 : tdFindResult.y));
-	    			s = s.replace("%tds", String.format("%d", tdFindResult == null ? 0 : tdFindResult.scale));
-	    			s = s.replace("%tde", String.format("%d", tdFindResult == null ? 0 : tdFindResult.score));
-	    			s = s.replace("%tdv", String.format("%d", tdFindResult == null ? 0 : tdFindResult.var));
+	    			s = s.replace("%tdx", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.x));
+	    			s = s.replace("%tdy", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.y));
+	    			s = s.replace("%tds", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.scale));
+	    			s = s.replace("%tde", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.score));
+	    			s = s.replace("%tdv", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.var));
 	    			s = s.replace("%tddelta", String.format("%.1f", tdAvg.delta));
 	    			s = s.replace("%tcurve", String.format("%f", trimCheat.curve));
 	    			s = s.replace("%gcurve", String.format("%f", gps.curve));
 	    			s = s.replace("%logdiff", String.format("%f", logDiffSteer));
 
-	    			s = s.replace("%tfx", String.format("%d", tfResult == null ? 0 : tfResult.x));
-	    			s = s.replace("%tfy", String.format("%d", tfResult == null ? 0 : tfResult.y));
-	    			s = s.replace("%tfw", String.format("%d", tfResult == null ? 0 : tfResult.width));
-	    			s = s.replace("%tfh", String.format("%d", tfResult == null ? 0 : tfResult.height));
+	    			s = s.replace("%tfx", String.format("%f", tfResult == null ? Double.NaN : tfResult.x));
+	    			s = s.replace("%tfy", String.format("%f", tfResult == null ? Double.NaN : tfResult.y));
+	    			s = s.replace("%tfw", String.format("%f", tfResult == null ? Double.NaN : tfResult.width));
+	    			s = s.replace("%tfh", String.format("%f", tfResult == null ? Double.NaN : tfResult.height));
 
 	    			s = s.replace("%tfl-ang", String.format("%.3f", tfl.getAngle()));
 	    			s = s.replace("%tfl-x", String.format("%.3f", (double)tfl.getOffsetX()));
