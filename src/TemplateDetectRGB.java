@@ -78,7 +78,7 @@ abstract class TemplateDetect {
 	float gaussianKernelRadius = 1.5F;
 	int gaussianKernelWidth = 8;
 
-	// returns a rectangle describing the provided FineResult, suitable for display on a screen
+	// returns a rectangle describing the provided FindResult, suitable for display on a screen
 	Rectangle targetRect(FindResult f) { 
 		int xs = (template.loc.width + f.scale);
 		int ys = (template.loc.height + f.scale * template.loc.height / template.loc.width);
@@ -170,15 +170,15 @@ class TemplateDetectRGB extends TemplateDetect {
 		return out;
 	}
 	byte [] convertOI(OriginalImage oi, Rectangle r) {
-		return yuv2canny(oi, r);
+		return yuv2canny(oi,r);
 	}
 
 	CannyEdgeDetector c = new CannyEdgeDetector();
 	
 	byte [] yuv2canny(OriginalImage oi, Rectangle r) { 
 		byte [] p = new byte[width * height * bpp];
-		c.threshold = 2.0F;
-		c.setGaussianKernelRadius(0.3F);
+		c.threshold = 1.0F;
+		c.setGaussianKernelRadius(0.2F);
 		c.setGaussianKernelWidth(6);
 		c.zones.lsz.m1 = Double.NaN;
 		c.processData(oi, new Rectangle(0, 0, width, height));
@@ -186,13 +186,20 @@ class TemplateDetectRGB extends TemplateDetect {
 		GaussianKernel gk = new GaussianKernel(.2, 6, width, height);
 
 		int [] c2data = new int[width * height];
+		final int minContinuous = 0;
+
+
+		for(int i = 0; i < width * height; i++) {
+			if (cdata[i] != 0) cdata[i] = 255;
+		}
+
 		//select for and copy only horizontal lines
-		if (false) { 
+		if (true) { 
 			for(int y = 0; y < height; y++) {
 				int continuous = 0;
 				for(int x = 0; x < width; x++) {
 					if (cdata[y * width + x] != 0) { 
-						if (++continuous > 3) {
+						if (++continuous > minContinuous) {
 							for(int dx = x - continuous + 1; dx <= x; dx++) {
 								c2data[y * width + dx] = cdata[y * width + dx];
 							} 
@@ -203,59 +210,76 @@ class TemplateDetectRGB extends TemplateDetect {
 				}
 			}
 		}
+
 		// copy for any copy only vertical lines
-		for(int x = 0; x < width; x++) {
-			int continuous = 0;
-			for(int y = 0; y < height; y++) {
-				if (cdata[y * width + x] != 0) { 
-					if (++continuous > 2) {
-						for(int dy = y - continuous + 1; dy <= y; dy++) {
-							c2data[dy * width + x] = cdata[dy * width + x];
-						} 
+		if (true) { 
+			for(int x = 0; x < width; x++) {
+				int continuous = 0;
+				for(int y = 0; y < height; y++) {
+					if (cdata[y * width + x] != 0) { 
+						if (++continuous > minContinuous) {
+							for(int dy = y - continuous + 1; dy <= y; dy++) {
+								c2data[dy * width + x] = cdata[dy * width + x];
+							} 
+						}
+					} else {
+						continuous = 0;
 					}
-				} else {
-					continuous = 0;
 				}
 			}
 		}
-		c2data = cdata;
-		// find best line of horizontal symmetry
-		int bestSymCount = 0, bestSymX = 0; 
-		for(int x = r.x; x < r.x + r.width; x++) { 
-			int symCount = 0; // sym pixels found
-			for (int x1 = 1; x1 < r.width / 2 && x1 < width; x1++) {
+		for(int i = 0; i < width * height; i++) {
+			cdata[i] = c2data[i];
+		}
+		//gk.blur(cdata);
+		for(int i = 0; i < width * height; i++) {
+			if (cdata[i] < 1) cdata[i] = 0;
+		}
+
+		if (false) { 
+			// find best line of horizontal symmetry
+			int bestSymCount = 0, bestSymX = 0; 
+			for(int x = r.x; x < r.x + r.width; x++) { 
+				int symCount = 0; // sym pixels found
+				for (int x1 = 1; x1 < r.width / 2; x1++) {
+					for(int y = r.y; y < r.y + r.height && y < height; y++) { 
+						int xl = x - x1;
+						int xr = x + x1;
+						if (xl > r.x && xr < r.x + r.width && y > 0 && cdata[y * width + xl] != 0 && 
+							cdata[y * width + xr] != 0)
+							symCount++;
+					}
+				}
+				if (symCount > bestSymCount) {
+					bestSymCount = symCount;
+					bestSymX = x;
+				}
+			}
+
+
+			if (bestSymCount > 0) { 
+				//System.out.printf("bsc %d\tbsx %d\n", bestSymCount, bestSymX);
 				for(int y = r.y; y < r.y + r.height && y < height; y++) { 
-					int xl = x - x1;
-					int xr = x + x1;
-					if (xl > r.x && xr < r.x + r.width && c2data[y * width + xl] != 0 && c2data[y * width + xr] != 0)
-						symCount++;
-				}
-			}
-			if (symCount > bestSymCount) {
-				bestSymCount = symCount;
-				bestSymX = x;
-			}
-		}
-		
-		if (bestSymCount > 0) { 
-			for(int y = r.y; y < r.y + r.height && y < height; y++) { 
-				for(int x = 1; x < r.x; x++) { 
-					int xl = bestSymX - x;
-					int xr = bestSymX + x;
-					if (xl > r.x && xr < r.x + r.width && xr < width 
-						&& (c2data[y * width + xl] == 0 || c2data[y * width + xr] == 0)) {
-						 c2data[y * width + xl] =  c2data[y * width + xr] = 0;
+					for(int x = 1; x < r.width / 2; x++) { 
+						int xl = bestSymX - x;
+						int xr = bestSymX + x;
+						if (xl >= r.x && xl >= 0 && xr < r.x + r.width && xr < width && y < height && y >= 0  
+							&& (cdata[y * width + xl] == 0 || cdata[y * width + xr] == 0)) {
+							cdata[y * width + xl] = cdata[y * width + xr] = 0;
+						}
+					}
+					if (y >= 0 && y < height) {
+						cdata[y * width + bestSymX] = 255;
 					}
 				}
-				c2data[y * width + bestSymX] = -1;
 			}
 		}
-		//gk.blur(c2data);
+
 		for(int y = 0; y < height; y++) {
 			for(int x = 0; x < width; x++) { 
 				for(int i = 0; i < bpp; i++) {
 					int pi = (y * width + x) * 3 + i;
-					p[pi] = (byte)c2data[y * width + x]; 
+					p[pi] = (byte)cdata[y * width + x]; 
 				}
 			}
 		} 
@@ -311,7 +335,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 	
 	class ScaledTilesArray { 
-		private Tile [] scaledTiles = new Tile[11];
+		private Tile [] scaledTiles = new Tile[55];
 		public Tile getTileByScale(int s) { 
 			int i = s + scaledTiles.length / 2;
 			if (i >= 0 && i < scaledTiles.length) 
@@ -394,7 +418,7 @@ class TemplateDetectRGB extends TemplateDetect {
 					int py = y - t.loc.height /2 + y1;
 					int pi = (px + py * width) * bpp;
 					int ti = (x1 + y1 * t.loc.width) * bpp;
-					if (legalIndex(pi)) {
+					if (px >= 0 && px < width && py >=0 && py < height) {
 						if (hsl != null)
 							hsl.verifyPixelConverted(px, py);				
 						for(int b = 0; b < bpp; b++) {
@@ -495,8 +519,8 @@ class TemplateDetectRGB extends TemplateDetect {
 		int x2 = x + (template.loc.width + s) / 2;
 		int y1 = y - (template.loc.height + s) / 2;
 		int y2 = y + (template.loc.height + s) / 2;
-			
-		if (x1  < 0 || y1 < 0 || x2 >= width || y2 >= height) 
+			 
+		if (x < 0 || y < 0 || x >= width || y >= height) 
 			return null;
 
 		if (hsl != null) 
@@ -696,9 +720,10 @@ class TemplateDetectRGB extends TemplateDetect {
 			rescale = 1; 
 			Rectangle r  = targetRect(lastResult);
 			for(int y = r.y; y < r.y + r.height; y++) { 
-				for(int x = r.x; x < r.x + r.width; x++) {
-					oi.putPixel(x * rescale, y * rescale, picX[pixelIndex(x, y)]); 
-				}
+				for(int x = r.x; x < r.x + r.width; x++) 
+					if (x >= 0 && x < width && y >= 0 && y < height) 
+						oi.putPixel(x * rescale, y * rescale, picX[pixelIndex(x, y)]); 
+				
 			}
 		}	
 	}

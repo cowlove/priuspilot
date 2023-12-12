@@ -8,12 +8,139 @@ import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
+//TODO factor all this out into a serial reader/writer 
+class SerialReaderThread {
+    FileWriter tty = null;
+	BufferedReader fakeFile = null; 
+    String devName; 
+	
+	public void open(String d) {
+    	boolean complained = false;
+		devName = d;
+    	if (tty != null) {
+    		try {
+				tty.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}	
+    	}
+    	tty = null;
+
+    	while(false && tty == null) { 
+	    	try {
+	    	    Process p = null;
+	    	    p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
+	    	    p.waitFor();
+	        	//tty = new FileWriter(devName);
+				System.out.println("Opened " + devName + " for writing at 9600bps");
+				complained = false;
+	        } catch(Exception e) { 
+	        	if (!complained) {
+	        		e.printStackTrace();
+	        		System.out.println("Could not open serial device " + devName + ", retrying...");
+	        	}
+	        	complained = true;
+				tty = null;
+				sleep();
+	        }   	
+    	}
+		reader.start();
+    }
+	String re(String pat, String s) { 
+		try { 
+			Pattern p = Pattern.compile(pat);
+			Matcher m = p.matcher(s);
+			m.find();
+			return m.group(1);
+		} catch(Exception e) { 
+			return "";
+		}
+	}
+    double reDouble(String p, String s) { 
+        return Double.parseDouble(re(p, s));
+    }
+	double lidar = 0;
+	boolean updated = false;
+
+	boolean available() { 
+		boolean r = updated;
+		updated = false;
+		return r;
+	}
+    Thread reader = new Thread (new Runnable() {
+        public void run() {
+        	while(true) { 
+        		BufferedReader fin;
+				try {
+					Process p = Runtime.getRuntime().exec("/home/jim/src/gpsd/gpsd-3.25.1~dev/clients/ubxtool -f " + devName + " -p CFG-RATE,100");
+					p.waitFor();
+					p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
+					p.waitFor();
+					fin = new BufferedReader(new FileReader(devName));
+				} catch (Exception e) {
+					//e.printStackTrace();
+					sleep();
+					continue;
+				}
+        		System.out.println("Opened " + devName + " for reading");
+                while(true) { 
+                	String s = null;
+					try {
+						s = fin.readLine();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}	
+					//System.out.println("done w read");
+					if (s == null) {
+						try {
+							fin.close();
+						} catch (IOException e) {}
+						break;
+					}
+					if (Main.debug("DEBUG_SERIAL"))
+						System.out.println("Serial read: " + s);	
+					
+					String st[] = s.split(" ");
+					try { 
+						if (st[0].equals("LIDAR")) {
+							lidar = Double.parseDouble(st[1]);
+							updated = true;
+						}
+					} catch(Exception e) {
+						//e.printStackTrace();
+					}
+                }
+        	}
+        }
+    });
+    void sleep() { 
+    	try {
+			Thread.sleep(50);
+		} catch (InterruptedException e) {}
+    }
+}
+
 class GPSSerial { 
     FileWriter tty = null;
 	BufferedReader fakeFile = null; 
     String devName; 
-    FrameProcessor fp; // TODO- make a clean callback interface rather than a fp member
-    GPSSerial(String d, FrameProcessor f) { devName = d; fp = f; }
+    GPSSerial(String d, FrameProcessor f) { devName = d; }
+
+	String re(String pat, String s) { 
+		try { 
+			Pattern p = Pattern.compile(pat);
+			Matcher m = p.matcher(s);
+			m.find();
+			return m.group(1);
+		} catch(Exception e) { 
+			return "";
+		}
+	}
+    double reDouble(String p, String s) { 
+        return Double.parseDouble(re(p, s));
+    }
 
     private void open() {
     	boolean complained = false;
@@ -57,6 +184,12 @@ class GPSSerial {
     	}
     }
 
+    void sleep() { 
+    	try {
+			Thread.sleep(50);
+		} catch (InterruptedException e) {}
+    }
+
 	void startFake(String fn) { 
 		try {
             fakeFile = new BufferedReader(new FileReader(fn));
@@ -86,26 +219,6 @@ class GPSSerial {
 			}
 		}
 	}
-
-	String re(String pat, String s) { 
-		try { 
-			Pattern p = Pattern.compile(pat);
-			Matcher m = p.matcher(s);
-			m.find();
-			return m.group(1);
-		} catch(Exception e) { 
-			return "";
-		}
-	}
-    double reDouble(String p, String s) { 
-        return Double.parseDouble(re(p, s));
-    }
-
-    void sleep() { 
-    	try {
-			Thread.sleep(50);
-		} catch (InterruptedException e) {}
-    }
     
     Thread timeout = new Thread (new Runnable() {
         public void run() {

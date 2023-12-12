@@ -31,7 +31,8 @@ void EspNowInit() {
         TRY_ESP_ACTION(esp_now_register_send_cb(EspNowOnDataSent), "Attach send callback");
         TRY_ESP_ACTION(esp_now_register_recv_cb(EspNowOnDataRecv), "Attach recv callback");
         esp_now_peer_info_t peerInfo;
-        memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+        bzero(&peerInfo, sizeof(peerInfo));
+	memcpy(peerInfo.peer_addr, broadcastAddress, 6);
         peerInfo.channel = CHANNEL;  
         peerInfo.encrypt = false;
         TRY_ESP_ACTION(esp_now_add_peer(&peerInfo), "esp_now_add_peer()");

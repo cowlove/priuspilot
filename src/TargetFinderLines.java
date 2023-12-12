@@ -179,7 +179,7 @@ class PeriodicityDetector {
 }
 class Focus { 
 	//double minWeight = 185000; // TODO RAW_FPS // TODO needs to be normalized, values change with useLuminance, etc
-	double minWeight = Main.debugDouble("MINWT", 3000); // TODO needs to be normalized, values change with useLuminance, etc
+	double minWeight = Main.debugDouble("MINWT", 6000); // TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -418,7 +418,9 @@ class TargetFinderLines extends TargetFinder {
 		double angMin = ((ang - 90) % 360) - focus.getAngWidth() * (1 - angOffset);
 		h.setAngleRange(angMin, angMax);
 		
-		// build scan zones out of ang, intercept, and toeIn values
+		// build scan zones out of ang, intercept, and toeIn, szWidth
+		// 1) calculate where sz line crosses the top boundary of the search area 
+		// 2) pick point orthoganal to szWidth 
 		int szWidth = focus.getSzWidth();
 		double toe = leftSide ? toeIn : -toeIn;
 		//toe = 0;

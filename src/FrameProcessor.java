@@ -103,6 +103,7 @@ class FrameProcessor {
     //LaneAnalyzer la = null;
     TemplateDetect td = null;
 	BufferedReader logDiffFile = null;
+	SerialReaderThread espNow = new SerialReaderThread();
     
     BufferedImageDisplayWithInputs display = null;
     public PidControl ccPid = null; //new PidControl("Cruise Control PID");
@@ -110,7 +111,7 @@ class FrameProcessor {
     public PidControl pidLL = new PidControl("Left Line PID");         
     public PidControl pidRL = new PidControl("Right Line PID");
     public PidControl pidPV = new PidControl("Perspective PID");
-    public PidControl pidLV = null; //new PidControl("Line X PID");
+    public PidControl pidLV = new PidControl("Line X PID");
     public PidControl pidCA = null; //new PidControl("Curvature PID");
     //public PidControl pid = new PidControl("Main PID");
     //public PidControl pidCSR = new PidControl("Right Lane Color Segment PID");
@@ -125,7 +126,7 @@ class FrameProcessor {
 		new RunningQuadraticLeastSquares(1, (int)(laneWidthPeriod * PidControl.EXPECTED_FPS),
 		laneWidthPeriod);
 
-
+	double lidar = Double.NaN;
 
     SteeringLogicSimpleLimits steering = new SteeringLogicSimpleLimits();
     int width, height, displayRatio;
@@ -212,7 +213,7 @@ class FrameProcessor {
         	tfl.param.gaussianKernelRadius = tfr.param.gaussianKernelRadius =
         	(float)Main.debugDouble("GK_RAD");
         
-       	tf = new TargetFinderRed(w, h);
+       	tf = new TargetFinderUnchanging(w, h);
         tfparams.add(tf.param);
         tfparamIndex = 0;
         tfparam = tfparams.get(0);
@@ -263,16 +264,18 @@ class FrameProcessor {
 		pidLL.reset();
 		        
         if (pidLV != null) {
-			pidLV.setGains(0,.00,0,0,0);
-			pidLV.finalGain = 0;//.90;
+			pidLV.setGains(2.0,.00,0.60,0,.40);
+			pidLV.finalGain = .80;
 			pidLV.gain.i.max = 0.0;
-			pidLV.qualityFadeThreshold = .084;
+			pidLV.period.l = 0.2;
+			pidLV.delays.l.delay = 1.55;
+			pidLV.qualityFadeThreshold = .020;
 			pidLV.qualityFadeGain = 2;
 		}
 		
         //pidPV.copySettings(pidLV);
         pidPV.setGains(2.0, 0, 0.60, 0, 0.40);
-		pidPV.finalGain = 1.80;
+		pidPV.finalGain = 1.00;
     	pidPV.period.l = 0.2;
 		pidPV.delays.l.delay = 1.55;
 	    pidPV.qualityFadeThreshold = 0.015;
@@ -302,9 +305,9 @@ class FrameProcessor {
 		//	ccLag.lagTime = 2000;
 	
         
-        tdStartX = (int)(w * 0.42);
-        tdStartY = (int)(h * 0.33);
-        tfSearchArea = new Rectangle(tdStartX, tdStartY, w/5, h/4);
+        tdStartX = (int)(w * 0.445);
+        tdStartY = (int)(h * 0.03);
+        tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * .13),(int)(h * .25));
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
         inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 32);
@@ -925,10 +928,8 @@ class FrameProcessor {
 			if (pidCA != null) 
 				corr += -pidCA.add(curve, time);
 	
-			if (tfFindTargetNow || Main.debug("CONT_TF")) {
+			if (tfFindTargetNow) {
 				// try to set tdFindResult to new template.  If fails, tdFindResult will be left null
-				tdStartX = 152;
-				tdStartY = 105;
 				tfResult = tf.findNearest(coi, tfSearchArea, tdStartX, tdStartY);
 		    	if (tfResult != null) { 
 	    	    	tdStartX = tfResult.x + tfResult.width / 2 + tf.fudge / 2;
@@ -939,11 +940,13 @@ class FrameProcessor {
 				tdAvg.add(tdFindResult);
 				tfFindTargetNow = false;
 			}
+			if (Main.debug("CONT_TF"))
+			 	tfFindTargetNow = true;
 	    	
 	    	
 	        if (td != null) {
 				td.newFrame(coi);
-		    	td.setSearchDist(5, 5, 2);
+		    	td.setSearchDist(5, 3, 3);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
@@ -959,10 +962,10 @@ class FrameProcessor {
 		        	if (tdFindResult.score > tdMaxErr) {
 		        		if (++badTdCount > 600) {
 			        		System.out.printf("Large error %d\n", (int)tdFindResult.score);
-			        		corr = 0;
-			        		td.active = false;
-			        		noProcessing = true;
-			        		tdFindResult = null;
+			        		//corr = 0;
+			        		//td.active = false;
+			        		//noProcessing = true;
+			        		//tdFindResult = null;
 		        		}
 		      
 		        	} else if (ccPid != null) {
@@ -1117,7 +1120,11 @@ class FrameProcessor {
 			}
 		}
 		*/
-		
+		if (espNow.available()) {
+			lidar = espNow.lidar; 
+		} else { 
+			lidar = Double.NaN;
+		}
 
 		if (display != null) { 
 			display.panel.butRec.setBackground((writer != null && writer.active) ? Color.RED : null);
@@ -1186,16 +1193,16 @@ class FrameProcessor {
             }
             if ((displayMode & 0x8) != 0) {
 				//displayPid(pidPV, Color.cyan);
-            	displayPid(pidLL, Color.yellow);
+            	//displayPid(pidLL, Color.yellow);
                	//displayPid(pidLV, Color.green);
-               	//displayPid(pidPV, Color.blue);
+               	displayPid(pidPV, Color.blue);
                	//displayPid(pidRL, Color.white);
             }
             	
 			final double pds = 0.315;
             if ((displayMode & 0x10) != 0) {
-                double yoff = 0.80;
 	            double yspace = 0.05;
+                double yoff = 1.0 - yspace * (pids.size() + 1);
     			final double bWidth = 0.06;
 	   	        //display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.magenta, "ST", steer + 0.5, yoff, bWidth, 0.05);
@@ -1494,7 +1501,8 @@ class FrameProcessor {
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim but %buttons stass %stass %pidrl %pidll %pidpv " +
-		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff");
+		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar");
+					s = s.replace("%lidar", String.format("%.0f", lidar));
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 					s = s.replace("%pidll", pidLL.toString("pidll-"));
 					s = s.replace("%pidpv", pidPV.toString("pidvp-"));

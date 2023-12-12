@@ -38,7 +38,8 @@ public class GnuplotWrapper{
 		}
 	}
 	
-	void draw() { 
+	void draw() { draw(""); }
+	void draw(String generalOptions) { 
 		try {
 			writer.close();
 			count++;
@@ -56,7 +57,7 @@ public class GnuplotWrapper{
 				out = new OutputStreamWriter(process.getOutputStream());
 	            out.write("set pm3d map\n");
 	            out.write("set colorbox\n");
-	            
+				out.write(generalOptions);
 	            setDisplay();
 
 	            out.write("splot \"" + filename + ".1\"" +
@@ -93,7 +94,11 @@ public class GnuplotWrapper{
 				process = Runtime.getRuntime().exec("gnuplot");
 	            out = new OutputStreamWriter(process.getOutputStream());
 	            out.write("set pm3d at b\nunset colorbox\n");
-	            out.write("splot \"" + filename + ".1\" with lines linecolor rgb #000000\n");
+		        if (generalOptions != null) {
+						out.write(generalOptions);						
+					
+				} 
+				out.write("splot \"" + filename + ".1\" with lines linecolor rgb #000000\n");
 	            out.flush();	            
 			}
             out.write("replot\n");
@@ -231,6 +236,8 @@ public class GnuplotWrapper{
 	}
 
 	String[] options = null;
+	public String generalOptions = null;
+
 	public void addOptions(String []strings) {
 		options = strings;
 	}

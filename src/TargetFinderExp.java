@@ -44,10 +44,11 @@ class TargetFinderExperimental extends TargetFinder {
 
 			c.processData(oi, sa);
 			canny = c.getData();
-			if ((Main.debugInt("EXP") & 2) == 2) { 
+			if ((Main.debugInt("EXP",0) & 1) == 1) { 
 				gp2.startNew();
 				gp2.add3DGridF(c.results.gradResults, sa.width, sa.height, true);
-				gp2.draw();
+				gp2.draw("set palette defined (-1 0 0 0, 1 1 1 0)\n");
+	
 			}
 			// Filter for magnitudes perpendicular to the vanishing point lines 
 			for(int y = 0; y < height; y++) { 
@@ -60,8 +61,8 @@ class TargetFinderExperimental extends TargetFinder {
 						c.results.gradResults[i] * cosa * Math.abs(cosa)); 
 				}
 			} 
-			c.results.gradResults[0] = 250;
-			c.results.gradResults[1] = -250;
+			//c.results.gradResults[0] = 250;
+			//c.results.gradResults[1] = -250;
 
 			// rotate a few degrees and add 
 			float [] gr = new float[width * height];
@@ -112,10 +113,10 @@ class TargetFinderExperimental extends TargetFinder {
 			int[] vp = new int[vanRec.width * vanRec.height];
 			h.projectIntoRect(vp, vanRec, 1);
 
-			if ((Main.debugInt("EXP") & 1) == 1) { 
+			if ((Main.debugInt("EXP") & 2) == 2) { 
 				gp.startNew();
 				gp.add3DGridF(gr, sa.width, sa.height, true);
-				gp.draw();
+				gp.draw("set palette defined (-1 0 0 1, 0 0 0 0, 1 1 0 0)\n");
 				
 			}
 			if (false) { 

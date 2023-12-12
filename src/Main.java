@@ -360,6 +360,7 @@ public class Main {
 			String gpsFile = filename.replace(".yuv", ".log");
 			fp.gps.startFake(gpsFile);
 		}
+		fp.espNow.open("/dev/ttyUSB0");
 		for(String f : trimCheatFiles) { 
 			fp.trimCheat.addFile(f);
 		}

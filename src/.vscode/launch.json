@@ -22,11 +22,8 @@
             },
             "mainClass": "Main",
             "args": [
-                "/home/jim/src/priuspilot/lanedumps/20231116.141353.yuv",
-                "-fakeGps",
-                "-trimCheat",
-                "/home/jim/src/priuspilot/lanedumps/20231116.141353.log"
-            ]
+                "/host/lanedumps/20231211.124404.yuv", "-key", "10,10"
+                ]
         },
         {
             "type": "java",
