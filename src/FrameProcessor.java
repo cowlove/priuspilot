@@ -305,9 +305,11 @@ class FrameProcessor {
 		//	ccLag.lagTime = 2000;
 	
         
-        tdStartX = (int)(w * 0.467);
-        tdStartY = (int)(h * 0.04);
-        tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * .098),(int)(h * .20));
+		final double tdW = 0.10;
+		final double tdH = 0.20;
+        tdStartX = (int)(w * (0.516 - tdW / 2));
+        tdStartY = (int)(h * (0.13 - tdH / 2));
+        tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * tdW),(int)(h * tdH));
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
         inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 32);

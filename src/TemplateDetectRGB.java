@@ -295,11 +295,11 @@ class TemplateDetectRGB extends TemplateDetect {
 				for(int i = 0; i < r.length; i++) { 
 					p[pi + i] = (byte)r[i];
 				}
-				int hsl[] = new int[3];
-				OriginalImage.rgb2hsl(r[0], r[1], r[2], hsl);
-				p[pi] = (byte)hsl[0];
-				p[pi + 1] = (byte)hsl[1];
-				p[pi + 2] = (byte)hsl[2];
+				//int hsl[] = new int[3];
+				//OriginalImage.rgb2hsl(r[0], r[1], r[2], hsl);
+				//p[pi] = (byte)hsl[0];
+				//p[pi + 1] = (byte)hsl[1];
+				//p[pi + 2] = (byte)hsl[2];
 			}
 		}
 		return p;
@@ -336,7 +336,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 	
 	class ScaledTilesArray { 
-		private Tile [] scaledTiles = new Tile[75];
+		private Tile [] scaledTiles = new Tile[125];
 		public Tile getTileByScale(int s) { 
 			int i = s + scaledTiles.length / 2;
 			if (i >= 0 && i < scaledTiles.length) 

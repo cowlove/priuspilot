@@ -61,7 +61,9 @@ public class OriginalImage {
 		return r;
 	}
 	
-	public int getPixelLum(int x, int y) { 
+	public int getPixelLum(int x, int y) {
+		//if (x < 0 || x >= width || y < 0 || y >= height) 
+		//	return 0; 
 		int i = (x + y * width) * 2;
 		if (useDirect) { 
 			return (int)pixels.get(i) & 0xff;
