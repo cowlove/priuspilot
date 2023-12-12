@@ -23,20 +23,24 @@ class LazyHslConvert {
 	
 	LazyHslConvert(int w, int h) { 
 		hslRange = new PointPair();
-		debugHslConvert = new boolean[width * height];
+		//debugHslConvert = new boolean[width * height];
 		width = w; height = h;
 		clear();
 	}
 	
 	boolean verifyPixelConverted(int x, int y) { 
-		if (debugHslConvert[x + y * width] != true) {
+		if (debugHslConvert != null && debugHslConvert[x + y * width] != true) {
 			System.out.printf("%d,%d NOT CONVERTED ", x, y);
 			return false;
 		} else
 			return true;
 	}
 	void convertHsl(byte []pic, int x1, int y1, int x2, int y2) { 
-		
+		x1 = Math.min(width - 1, Math.max(0, x1));
+		y1 = Math.min(height - 1, Math.max(0, y1));
+		x2 = Math.min(width - 1, Math.max(0, x2));
+		y2 = Math.min(height - 1, Math.max(0, y2));
+
 		if (!hsl)
 			return;
 		
@@ -239,7 +243,7 @@ class LazyHslConvert {
 	public void clear() {
 		hslRange.x1 = hslRange.x2 = hslRange.y1 = hslRange.y2 = 0;
 		pixelsConverted = 0;
-		debugHslConvert = new boolean[width * height]; 
+		//debugHslConvert = new boolean[width * height]; 
 	}
 	
 }

@@ -136,11 +136,10 @@ class TemplateDetectRGB extends TemplateDetect {
 	double [] mask = null;
 	double maskDecay = 0.95;
 	BufferedWriter f2 = null;
-	LazyHslConvert hsl = null;
+	boolean hsl = true;
 	byte [] picX = null;
 	
 	TemplateDetectRGB(int w, int h) { 
-		hsl = null; //new LazyHslConvert(w, h); 
 		width = w; 
 		height = h; 
 	} 
@@ -295,11 +294,13 @@ class TemplateDetectRGB extends TemplateDetect {
 				for(int i = 0; i < r.length; i++) { 
 					p[pi + i] = (byte)r[i];
 				}
-				//int hsl[] = new int[3];
-				//OriginalImage.rgb2hsl(r[0], r[1], r[2], hsl);
-				//p[pi] = (byte)hsl[0];
-				//p[pi + 1] = (byte)hsl[1];
-				//p[pi + 2] = (byte)hsl[2];
+				if (hsl == true) { 
+					int hsl[] = new int[3];
+					OriginalImage.rgb2hsl(r[0], r[1], r[2], hsl);
+					p[pi] = (byte)hsl[0];
+					p[pi + 1] = (byte)hsl[1];
+					p[pi + 2] = (byte)hsl[2];
+				}
 			}
 		}
 		return p;
@@ -307,8 +308,6 @@ class TemplateDetectRGB extends TemplateDetect {
 	@Override
 	void setTemplate(OriginalImage oi, Rectangle r) {
 		byte [] p = convertOI(oi, r);
-		if (hsl != null) 
-			hsl.convertHsl(p, r.x, r.y, r.x + r.width, r.y + r.height);
 		template.loc = new Rectangle(r);
 		template.data = new byte[r.width * r.height * bpp];
 		mask = new double[r.width * r.height];
@@ -329,10 +328,6 @@ class TemplateDetectRGB extends TemplateDetect {
 
 	@Override
 	void newFrame(OriginalImage oi) {
-		if (hsl != null) 
-			hsl.clear();
-		//convertHsl(pic, 0, 0, width, height);
-		//System.out.printf("************ New Frame\n");
 	}
 	
 	class ScaledTilesArray { 
@@ -420,15 +415,13 @@ class TemplateDetectRGB extends TemplateDetect {
 					int pi = (px + py * width) * bpp;
 					int ti = (x1 + y1 * t.loc.width) * bpp;
 					if (px >= 0 && px < width && py >=0 && py < height) {
-						if (hsl != null)
-							hsl.verifyPixelConverted(px, py);				
 						for(int b = 0; b < bpp; b++) {
 							int pp = ((int)pic[pi] & 0xff);
 							int pt = ((int)t.data[ti] & 0xff);
-							if (hsl != null) { // H value is angular value, no error more than 180 degrees
+							if (hsl == true) { // H value is angular value, no error more than 180 degrees
 								int err = pt - pp;
-								if (err > 127) err = (255 - err) * 2;
-								if (err < -127) err = (255 + err) * 2;
+								if (err > 127) err = (255 - err);
+								if (err < -127) err = (255 + err);
 								score += err * err; 
 							} else {
 								TT[b] += pt * pt;
@@ -448,7 +441,7 @@ class TemplateDetectRGB extends TemplateDetect {
 			}
 
 			for(int b = 0; b < bpp; b++) { 
-				if (b != 0 || hsl == null) {
+				if (b != 0 || hsl == false) {
 					int diffAvg = (T[b] - P[b]) / pixels;
 					int pAvg = P[b] / pixels;
 					score += TT[b] + PP[b] - 2 * TP[b] +  2 * P[b] * diffAvg - 2 * T[b] * diffAvg 	
@@ -496,7 +489,7 @@ class TemplateDetectRGB extends TemplateDetect {
 				for(int b = 0; b < bpp; b++) { 
 					int err = ((int)t.data[(x1 + y1 * t.loc.width) * bpp + b] & 0xff) - 
 						interpolatePixel(p, px1, py1, px2, py2, b);
-					if (b == 0 && hsl != null) { // H value is angular value, no error more than 180 degrees
+					if (b == 0 && hsl == true) { // H value is angular value, no error more than 180 degrees
 						if (err > 127) err = 255 - err;
 						if (err < -127) err = 255 + err;
 					}
@@ -524,8 +517,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		if (x < 0 || y < 0 || x >= width || y >= height) 
 			return null;
 
-		if (hsl != null) 
-			hsl.convertHsl(pic, x1, y1, x2 + 1, y2 + 1); // +1 b/c for negative scales, seems testFilePrescale ends up out of bounds by one
 		if (jit)
 			return testTileJitBROKEN(pic, x, y, s, already, makeMask);
 		else
