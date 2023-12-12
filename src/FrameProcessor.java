@@ -305,9 +305,9 @@ class FrameProcessor {
 		//	ccLag.lagTime = 2000;
 	
         
-        tdStartX = (int)(w * 0.445);
-        tdStartY = (int)(h * 0.03);
-        tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * .13),(int)(h * .25));
+        tdStartX = (int)(w * 0.467);
+        tdStartY = (int)(h * 0.04);
+        tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * .098),(int)(h * .20));
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
         inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 32);
@@ -946,7 +946,7 @@ class FrameProcessor {
 	    	
 	        if (td != null) {
 				td.newFrame(coi);
-		    	td.setSearchDist(5, 3, 3);
+		    	td.setSearchDist(3, 2, 2);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
@@ -961,7 +961,7 @@ class FrameProcessor {
 		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
 		        	if (tdFindResult.score > tdMaxErr) {
 		        		if (++badTdCount > 600) {
-			        		System.out.printf("Large error %d\n", (int)tdFindResult.score);
+			        		//System.out.printf("Large error %d\n", (int)tdFindResult.score);
 			        		//corr = 0;
 			        		//td.active = false;
 			        		//noProcessing = true;

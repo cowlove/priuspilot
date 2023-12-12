@@ -335,7 +335,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 	
 	class ScaledTilesArray { 
-		private Tile [] scaledTiles = new Tile[55];
+		private Tile [] scaledTiles = new Tile[75];
 		public Tile getTileByScale(int s) { 
 			int i = s + scaledTiles.length / 2;
 			if (i >= 0 && i < scaledTiles.length) 
