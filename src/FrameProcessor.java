@@ -1151,7 +1151,7 @@ class FrameProcessor {
 	
 			if (tdFindResult != null) {  
 	            	//display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
-				td.draw(coi, rescale);
+				//td.draw(coi, rescale);
 			}
         	writeCompositeImage(display.image, coi, rescale, (displayMode & 0x4) != 0,
         			(displayMode & 32) != 0);

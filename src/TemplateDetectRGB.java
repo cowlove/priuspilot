@@ -669,7 +669,7 @@ class TemplateDetectRGB extends TemplateDetect {
 			startAt.copy(best);
 		
 		// write the mask back on picX for display purposes 
-		Tile t = scaledTiles.getTileByScale(best.scale);
+		/*Tile t = scaledTiles.getTileByScale(best.scale);
 		t.commitWorstErr();
 		for(int y1 = 0; y1 < t.loc.height; y1++) { 
 			for(int x1 = 0; x1 < t.loc.width; x1++) {
@@ -683,7 +683,7 @@ class TemplateDetectRGB extends TemplateDetect {
 				}
 			}
 		}
-			
+		*/	
 		return best;
 	}
 
@@ -776,7 +776,7 @@ class TemplateDetectRGB extends TemplateDetect {
 		picX = convertOI(oi, r);
 		frame++;
 		//return findOptimized(startAt, pic);
-		//lastResult = findBruteForce(startAt,picX);
+		lastResult = findBruteForce(startAt,picX);
 		return lastResult;
 	}
 
