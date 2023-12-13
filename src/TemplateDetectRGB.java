@@ -171,7 +171,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		return out;
 	}
 	byte [] convertOI(OriginalImage oi, Rectangle r) {
-		//return yuv2canny(oi,r);
 		return rgb3ToInternal(yuvToRgb(oi), width, height);
 	}
 
@@ -249,6 +248,8 @@ class TemplateDetectRGB extends TemplateDetect {
 		return p;
 	}
 
+
+
 	byte [] rgb3ToInternal(byte []rgb3, int w, int h) {
 		byte [] p = new byte[w * h * bpp];
 		for(int y = 0; y < h; y++) {
@@ -256,7 +257,8 @@ class TemplateDetectRGB extends TemplateDetect {
 				int pi3 = (y * w + x) * 3;
 				int pii = (y * w + x) * bpp; 
 				int hsl[] = new int[3];
-				OriginalImage.rgb2hsl(rgb3[pi3], rgb3[pi3 + 1], rgb3[pi3 + 2], hsl);
+				OriginalImage.rgb2hsl(Byte.toUnsignedInt(rgb3[pi3]), Byte.toUnsignedInt(rgb3[pi3 + 1]), 
+					Byte.toUnsignedInt(rgb3[pi3 + 2]), hsl);
 				p[pii] = (byte)hsl[0];
 				p[pii + 1] = (byte)hsl[1];
 				p[pii + 2] = (byte)hsl[2];
@@ -264,6 +266,7 @@ class TemplateDetectRGB extends TemplateDetect {
 		}
 		return p;
 	}
+
 	byte [] yuvToRgb(OriginalImage oi) {
 		byte [] p = new byte[width * height * 3];
 		for(int y = 0; y < height; y++) {
@@ -277,11 +280,12 @@ class TemplateDetectRGB extends TemplateDetect {
 		}
 		return p;
 	}
+
 	@Override
 	void setTemplate(OriginalImage oi, Rectangle r) {
 		byte [] p = yuvToRgb(oi);
 		template.loc = new Rectangle(r);
-		template.data = new byte[r.width * r.height * bpp];
+		byte[] bgr3 = new byte[r.width * r.height * bpp];
 		template.errMask = new float[r.width * r.height];
 		mask = new double[r.width * r.height];
 		// TODO - move this iteration code out, do bounds checking vs width/height
@@ -290,12 +294,13 @@ class TemplateDetectRGB extends TemplateDetect {
 				for(int b = 0; b < bpp; b++) {
 					int pi = (r.x + x + (r.y + y) * width) * bpp + b;
 					int ti = (x + y * r.width) * bpp + b;
-					if (legalIndex(pi)) 
-						template.data[ti] = p[pi];
+					if (legalIndex(pi)) {
+						bgr3[ti] = p[pi];
+					}
 				}
 			}
 		}
-		scaledTiles.buildScaledTiles(template);
+		scaledTiles.buildScaledTiles(template, bgr3);
 		scaledTiles.initialized = true;
 	}
 
@@ -315,8 +320,7 @@ class TemplateDetectRGB extends TemplateDetect {
 		//public int maxScale() { return scaledTiles.length - (scaledTiles.length / 2) + 1; }
 		//public int minScale() { return -(scaledTiles.length / 2); } 
 		
-		public void buildScaledTiles(Tile t) {
-			byte []bgr3 = t.data; 
+		public void buildScaledTiles(Tile t, byte[] bgr3) {
 			for(int i = 0; i < scaledTiles.length; i++) { 
 				int scale =  i - scaledTiles.length / 2;
 				scaledTiles[i] = scaleTile(t, bgr3, scale);
@@ -372,8 +376,7 @@ class TemplateDetectRGB extends TemplateDetect {
 		
 		if (t != null) { 
 			int pixels = t.loc.height * t.loc.width;
-			double [] TT = new double[bpp], TP = new double[bpp], T = new double[bpp], 
-				PP = new double[bpp], P = new double[bpp];
+			double [] TT = new double[bpp], TP = new double[bpp], T = new double[bpp], PP = new double[bpp], P = new double[bpp];
 			int score = 0;
 			int var = 0;
 			int [] last = new int[3];
@@ -392,10 +395,8 @@ class TemplateDetectRGB extends TemplateDetect {
 					if (px >= 0 && px < width && py >=0 && py < height) {
 						double pixelErr = 0;
 						for(int b = 0; b < bpp; b++) {
-							//int pp = Byte.toUnsignedInt(pic[pi]);
-							//int pt = Byte.toUnsignedInt(t.data[ti]);
-							int pp = ((int)pic[pi] & 0xff);
-							int pt = ((int)t.data[ti] & 0xff);
+							int pp = Byte.toUnsignedInt(pic[pi]);
+							int pt = Byte.toUnsignedInt(t.data[ti]);
 							int err = pt - pp;
 							if (hsl == true && b == 0) { // H value is angular value, no error more than 180 degrees
 								pp = pic[pi]; // Hue is signed 
