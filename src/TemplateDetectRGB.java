@@ -106,22 +106,6 @@ abstract class TemplateDetect {
 		int scale = 0;
 		Rectangle loc;
 		byte [] data;
-		boolean [] mask = null;
-		int maskedBytes = 0;
-		int worstX = 0, worstY = 0;
-		public void markWorstErr(int x, int y) {
-			worstX = x; worstY = y;
-		}
-		final double pctMaskedBytes = 0.00; // byte mask not really helping anything
-		public void commitWorstErr() { 
-			if (maskedBytes < loc.width * loc.height * pctMaskedBytes) { 
-				mask[worstY * loc.width + worstX] = true;
-				maskedBytes++;
-			}
-		}
-		public boolean checkMask(int x1, int y1) {
-			return mask[y1 * loc.width + x1];
-		}
 	}
 	Tile template = new Tile();
 
@@ -170,8 +154,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		Tile out = new Tile();
 		out.loc = new Rectangle(0, 0, xs, ys);
 		out.data = new byte[out.loc.width * out.loc.height * bpp];
-		out.mask = new boolean[out.loc.width * out.loc.height];
-		out.maskedBytes = 0;
 		BufferedImage inImg = new BufferedImage(in.loc.width, in.loc.height, BufferedImage.TYPE_3BYTE_BGR);
 		BufferedImage outImg = new BufferedImage(out.loc.width, out.loc.height, BufferedImage.TYPE_3BYTE_BGR);
 		
@@ -425,17 +407,13 @@ class TemplateDetectRGB extends TemplateDetect {
 			if (already != -1)
 				already *= pixels;
 
-			int worstX = 0, worstY = 0;
-			double worstErr = 0;
-
 			for(int y1 = 0; y1 < t.loc.height; y1++) { 
 				for(int x1 = 0; x1 < t.loc.width; x1++) {
 					int px = x - t.loc.width / 2 + x1;
 					int py = y - t.loc.height /2 + y1;
 					int pi = (px + py * width) * bpp;
 					int ti = (x1 + y1 * t.loc.width) * bpp;
-					if (px >= 0 && px < width && py >=0 && py < height && t.checkMask(x1, y1) == false) {
-						double pixelErr = 0;
+					if (px >= 0 && px < width && py >=0 && py < height) {
 						for(int b = 0; b < bpp; b++) {
 							int pp = ((int)pic[pi] & 0xff);
 							int pt = ((int)t.data[ti] & 0xff);
@@ -451,14 +429,8 @@ class TemplateDetectRGB extends TemplateDetect {
 								T[b] += pt;
 								P[b] += pp;
 							}		
-							pixelErr += err * err; 
 							pi++;
 							ti++;
-						}
-						if (pixelErr > worstErr) { 
-							worstErr = pixelErr;
-							worstX = x1;
-							worstY = y1;
 						}
 					} else { // out of bounds, we're not using this pixel, exclude it from counts 
 						pixels--; 
@@ -469,9 +441,6 @@ class TemplateDetectRGB extends TemplateDetect {
 				}
 			}
 
-			if (worstErr > 0) {
-				t.markWorstErr(worstX, worstY); 
-			}				
 			for(int b = 0; b < bpp; b++) { 
 				if (b != 0 || hsl == false) {
 					int diffAvg = (T[b] - P[b]) / pixels;
@@ -668,22 +637,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		if (best != null) 
 			startAt.copy(best);
 		
-		// write the mask back on picX for display purposes 
-		/*Tile t = scaledTiles.getTileByScale(best.scale);
-		t.commitWorstErr();
-		for(int y1 = 0; y1 < t.loc.height; y1++) { 
-			for(int x1 = 0; x1 < t.loc.width; x1++) {
-				int px = best.x - t.loc.width / 2 + x1;
-				int py = best.y - t.loc.height /2 + y1;
-				int pi = (px + py * width) * bpp;
-				if (px >= 0 && px < width && py >= 0 && py < height && t.mask[y1 * t.loc.width + x1] == true) { 
-					for (int b = 0; b < bpp; b++) {
-						picX[pi + b] = -1;
-					}
-				}
-			}
-		}
-		*/	
 		return best;
 	}
 
