@@ -106,6 +106,7 @@ abstract class TemplateDetect {
 		int scale = 0;
 		Rectangle loc;
 		byte [] data;
+		float [] errMask;
 	}
 	Tile template = new Tile();
 
@@ -138,7 +139,8 @@ class TemplateDetectRGB extends TemplateDetect {
 	BufferedWriter f2 = null;
 	boolean hsl = true;
 	byte [] picX = null;
-	
+	GnuplotWrapper gp = new GnuplotWrapper();
+
 	TemplateDetectRGB(int w, int h) { 
 		width = w; 
 		height = h; 
@@ -173,7 +175,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 
 	CannyEdgeDetector c = new CannyEdgeDetector();
-	
+	float errorMask[] = null;
 	byte [] yuv2canny(OriginalImage oi, Rectangle r) { 
 		byte [] p = new byte[width * height * bpp];
 		c.threshold = 1.0F;
@@ -309,6 +311,7 @@ class TemplateDetectRGB extends TemplateDetect {
 		byte [] p = convertOI(oi, r);
 		template.loc = new Rectangle(r);
 		template.data = new byte[r.width * r.height * bpp];
+		template.errMask = new float[r.width * r.height];
 		mask = new double[r.width * r.height];
 		// TODO - move this iteration code out, do bounds checking vs width/height
 		for(int x = 0; x < r.width; x++) { 
@@ -338,8 +341,8 @@ class TemplateDetectRGB extends TemplateDetect {
 			else
 				return null;
 		}
-		public int maxScale() { return scaledTiles.length - (scaledTiles.length / 2) + 1; }
-		public int minScale() { return -(scaledTiles.length / 2); } 
+		//public int maxScale() { return scaledTiles.length - (scaledTiles.length / 2) + 1; }
+		//public int minScale() { return -(scaledTiles.length / 2); } 
 		
 		public void buildScaledTiles(Tile t) { 
 			for(int i = 0; i < scaledTiles.length; i++) { 
@@ -414,6 +417,7 @@ class TemplateDetectRGB extends TemplateDetect {
 					int pi = (px + py * width) * bpp;
 					int ti = (x1 + y1 * t.loc.width) * bpp;
 					if (px >= 0 && px < width && py >=0 && py < height) {
+						double pixelErr = 0;
 						for(int b = 0; b < bpp; b++) {
 							int pp = ((int)pic[pi] & 0xff);
 							int pt = ((int)t.data[ti] & 0xff);
@@ -429,8 +433,16 @@ class TemplateDetectRGB extends TemplateDetect {
 								T[b] += pt;
 								P[b] += pp;
 							}		
+							pixelErr += err * err;
 							pi++;
 							ti++;
+						}
+						if (makeMask) { 
+							int mx = (int)Math.round((double)x1 * template.loc.width / t.loc.width);
+							int my = (int)Math.round((double)y1 * template.loc.height / t.loc.height);
+							if (mx > 0 && mx < template.loc.width && my > 0 && my < template.loc.height) { 
+								template.errMask[my *template.loc.width + mx] += pixelErr;
+							}
 						}
 					} else { // out of bounds, we're not using this pixel, exclude it from counts 
 						pixels--; 
@@ -634,9 +646,17 @@ class TemplateDetectRGB extends TemplateDetect {
 				}
 			}
 		}
-		if (best != null) 
+		if (best != null) { 
 			startAt.copy(best);
-		
+
+			if (Main.debugInt("TDMASK", 0) == 1) {
+				testTile(pic, best.x, best.y, best.scale, -1, true);
+				gp.startNew();
+				gp.add3DGridF(template.errMask, template.loc.width, template.loc.height, true);
+				gp.draw();
+			
+			}
+		}
 		return best;
 	}
 

@@ -22,7 +22,7 @@
             },
             "mainClass": "Main",
             "args": [
-                "/host/lanedumps/20231211.124404.yuv", "-debug", "CONT_TF=1", "-debug", "TFU1=2"
+                "/host/lanedumps/20231211.124404.yuv", "-key", "10,10", "-debug", "TDMASK=1"
                 ]
         },
         {

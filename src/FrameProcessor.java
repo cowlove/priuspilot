@@ -970,7 +970,7 @@ class FrameProcessor {
 	            	tdAvg.add(tdFindResult);
 		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
 		        	if (tdFindResult.score > tdMaxErr) {
-			      		System.out.printf("Large error %d\n", (int)tdFindResult.score);
+			      		//System.out.printf("Large error %d\n", (int)tdFindResult.score);
 		        		if (++badTdCount > 600) {
 			        		//corr = 0;
 			        		//td.active = false;
