@@ -131,7 +131,7 @@ abstract class TemplateDetect {
 class TemplateDetectRGB extends TemplateDetect {
 	int width, height;
 	int frame = 0;
-	static final int bpp = 3;
+	static final int bpp = 7;
 	boolean debug = false;
 	Rectangle searchArea = null;
 	double [] mask = null;
@@ -148,8 +148,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	
 	Tile scaleTile(Tile in, byte []image3byteBGR, int scale) { 
 		int xs = in.loc.width + scale;
-		int ys = in.loc.height + scale;
-		//(int)Math.round(xs * in.loc.height / in.loc.width);
+		int ys = (int)Math.round((double)xs * in.loc.height / in.loc.width);
 		if (xs < 3 || ys < 3)
 			return null;
 
@@ -262,6 +261,11 @@ class TemplateDetectRGB extends TemplateDetect {
 				p[pii] = (byte)hsl[0];
 				p[pii + 1] = (byte)hsl[1];
 				p[pii + 2] = (byte)hsl[2];
+				p[pii + 3] = rgb3[pi3];
+				p[pii + 4] = rgb3[pi3 + 1];
+				p[pii + 5] = rgb3[pi3 + 2];
+				p[pii + 6] = 0; // TODO edge detection byte 
+
 			}
 		}
 		return p;
@@ -291,9 +295,9 @@ class TemplateDetectRGB extends TemplateDetect {
 		// TODO - move this iteration code out, do bounds checking vs width/height
 		for(int x = 0; x < r.width; x++) { 
 			for(int y = 0; y < r.height; y++) { 
-				for(int b = 0; b < bpp; b++) {
-					int pi = (r.x + x + (r.y + y) * width) * bpp + b;
-					int ti = (x + y * r.width) * bpp + b;
+				for(int b = 0; b < 3; b++) {
+					int pi = (r.x + x + (r.y + y) * width) * 3 + b;
+					int ti = (x + y * r.width) * 3 + b;
 					if (legalIndex(pi)) {
 						bgr3[ti] = p[pi];
 					}
@@ -379,7 +383,6 @@ class TemplateDetectRGB extends TemplateDetect {
 			double [] TT = new double[bpp], TP = new double[bpp], T = new double[bpp], PP = new double[bpp], P = new double[bpp];
 			int score = 0;
 			int var = 0;
-			int [] last = new int[3];
 		
 			already = -1;  // already does not work with one-pass normalization
 			
@@ -445,7 +448,8 @@ class TemplateDetectRGB extends TemplateDetect {
 			var /= pixels;
 			score /= pixels;
 			
-			System.out.printf("%d,%d,%s %d\n", x, y, s, score);
+			if (Main.debugInt("TDSCORE", 1) == 1) 
+				System.out.printf("%d,%d,%s %d\n", x, y, s, score);
 			r = new FindResult(x, y, s, score, var);
 		
 		}
