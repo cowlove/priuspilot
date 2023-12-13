@@ -412,8 +412,9 @@ class FrameProcessor {
 //			tfFindTargetNow = false;
 //		}
         else if (keyCode == 10) { // [ENTER] key
-			if (td != null) {
+			if (td != null && tf != null) {
 				td.active = true;
+				tf.reset();
 				tdFindResult = null;
 				tdTempFrame = null;
 				tfFindTargetNow = true;
@@ -945,10 +946,10 @@ class FrameProcessor {
 	    	    	tdStartX = tfResult.x + tfResult.width / 2 + tf.fudge / 2;
 	    	    	tdStartY = tfResult.y + tfResult.height / 2 + tf.fudge / 2;
 					tdFindResult = td.setTemplate(coi, tdStartX, tdStartY, tfResult.width, tfResult.height);
+					tfFindTargetNow = false;
 				}
 				tdAvg.reset();
 				tdAvg.add(tdFindResult);
-				tfFindTargetNow = false;
 			}
 			if (Main.debug("CONT_TF"))
 			 	tfFindTargetNow = true;
@@ -1153,21 +1154,31 @@ class FrameProcessor {
 	            	//display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
 				//td.draw(coi, rescale);
 			}
-        	writeCompositeImage(display.image, coi, rescale, (displayMode & 0x4) != 0,
+        	writeCompositeImage(display.image, coi, rescale, (displayMode & 32) != 0,
         			(displayMode & 32) != 0);
   
             if ((displayMode & 0x1) != 0) {
                 writeDisplayText();                  
             }
-            if ((displayMode & 0x2) != 0) {
+
+			if ((displayMode & 0x4) != 0) {
+            	display.g2.setStroke(new BasicStroke(3 * rescale));
+	            if (tdFindResult != null) {  
+	            	display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
+					//td.draw(oi);
+					/*Rectangle r = td.targetRect(tdFindResult);
+					if ((count / 40) % 2 == 0) 
+						display.g2.drawString("TRUCK!", (r.x - 28) * rescale, (r.y+r.width + 40) * rescale);
+					display.g2.drawString(String.format("%d feet", 65 - tdFindResult.scale * 2) , 
+					(r.x - 25) * rescale, (r.y+r.width + 60) * rescale);
+					*/
+	            }
+			}
+			if ((displayMode & 0x2) != 0) {
                 if (writer != null && writer.active)  
                 	display.rectangle(Color.red, "REC", 0.90, 0.10, 0.1, 0.05);
 
             	display.g2.setStroke(new BasicStroke(2));
-	            if (tdFindResult != null) {  
-	            	display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
-					//td.draw(oi);
-	            }
  
 				// draw blue target lines adjusted for dynamicLandWidth
 				tfrc.rescaleDisplay = tflo.rescaleDisplay = tfro.rescaleDisplay = tfr.rescaleDisplay = tfl.rescaleDisplay = rescale;

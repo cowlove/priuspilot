@@ -23,6 +23,14 @@ class TargetFinderUnchanging extends TargetFinder {
 	GnuplotWrapper gp2 = new GnuplotWrapper();
 	BufferedImageDebugDisplay dd = null;
 
+	int frameCount = 0;
+
+	@Override
+	void reset() { 
+		frameCount = 0; 
+		history = null;
+	}
+
 	@Override
 	Rectangle []findAll(OriginalImage oi, Rectangle rec) {
 		c.zones.height = rec.height;
@@ -166,11 +174,12 @@ class TargetFinderUnchanging extends TargetFinder {
 		}
 		double partialSum = 0;
 		int bottomY = 0;
+		final double vertSnipPct = Main.debugDouble("TFVSNIP", 0.01);
 		for(int y = r.y + r.width - 1; y >= r.y && y >= 0; y--) { 
 			for(int x = bestSymX - bestX; x <= bestSymX; x++) {
 				if (y >= 0 && y < r.height && x >= 0 && x < r.width) { 
 					partialSum += cdata[y * r.width + x];
-					if (bottomY == 0 && partialSum > totalSum * 0.05)
+					if (bottomY == 0 && partialSum > totalSum * vertSnipPct)
 						bottomY = y;
 				}
 			}
@@ -192,11 +201,15 @@ class TargetFinderUnchanging extends TargetFinder {
 			gp.draw("set palette defined (-1 0 0 0, 1 1 1 1)\n");
 		}
 
-		final int border = 1;
+		final int border = Main.debugInt("TFBORDER", 2);
 		bestX += border;
 		bottomY += border;
 		Rectangle []ra = {new Rectangle(r. x + bestSymX - bestX, r.y, bestX * 2, bottomY)};
-        return ra;
+
+		if (frameCount++ > 30) 
+	        return ra;
+		else 
+			return null;
 	}
 
 	float []history = null;

@@ -202,7 +202,7 @@ public class Main {
             else if (a.compareTo("-exit") == 0) exitFrame = Integer.parseInt(args[++i]);
             else if (a.compareTo("-displaymode") == 0) displayMode = Integer.parseInt(args[++i]);
             // depricated - use -out and let ImageFileWriter set the FrameCaptureJNI capfile 
-            //else if (a.compareTo("-capfile") == 0) capFile = args[++i];
+            else if (a.compareTo("-capfile") == 0) capFile = args[++i];
             else if (a.compareTo("-capcount") == 0) capCount = Integer.parseInt(args[++i]);
             else if (a.compareTo("-capsize") == 0) capSize = Integer.parseInt(args[++i]);
             else if (a.compareTo("-gstreamer") == 0) gstreamer = true;

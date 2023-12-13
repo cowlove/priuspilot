@@ -329,6 +329,8 @@ class TargetFinder {
 	
 	final int cannyRadius = 3;
 
+	void reset() {}
+
 	boolean [] makeCannyRadiusMask(int []c, int w, int h, int radius) {
 		boolean [] result = new boolean[w * h];
 		for(int x = 0; x < w; x++) { 
