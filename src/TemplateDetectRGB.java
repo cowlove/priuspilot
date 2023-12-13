@@ -448,7 +448,7 @@ class TemplateDetectRGB extends TemplateDetect {
 			var /= pixels;
 			score /= pixels;
 			
-			if (Main.debugInt("TDSCORE", 1) == 1) 
+			if (Main.debugInt("TDSCORE", 0) == 1) 
 				System.out.printf("%d,%d,%s %d\n", x, y, s, score);
 			r = new FindResult(x, y, s, score, var);
 		

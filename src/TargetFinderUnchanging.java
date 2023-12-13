@@ -174,7 +174,7 @@ class TargetFinderUnchanging extends TargetFinder {
 		}
 		double partialSum = 0;
 		int bottomY = 0;
-		final double vertSnipPct = Main.debugDouble("TFVSNIP", 0.01);
+		final double vertSnipPct = Main.debugDouble("TFVSNIP", 0.04);
 		for(int y = r.y + r.width - 1; y >= r.y && y >= 0; y--) { 
 			for(int x = bestSymX - bestX; x <= bestSymX; x++) {
 				if (y >= 0 && y < r.height && x >= 0 && x < r.width) { 
