@@ -478,60 +478,11 @@ class TemplateDetectRGB extends TemplateDetect {
 		return r;
 	}
 	
-	// May still be a good idea because it is cleaner and since the template scale doesn't change much, 
-	// would be easier to maintain a quality mask on the template. 
-	//
-	// This function hasn't been maintained to follow new features added to testTilePrescale.  Needs hsl
-	// code
-	// 
-	// Probably doesn't support non-square teplates yet 
-	
-	FindResult testTileJitBROKEN(byte []p, int x, int y, int s, double already, boolean makeMask) { 
-		Tile t= template;
-		int score = 0;
-		
-		if (already != -1)
-			already *= t.loc.width * t.loc.height;
-		
-		for(int y1 = 0; y1 < t.loc.height; y1++) { 
-			for(int x1 = 0; x1 < t.loc.width; x1++) { 
-				double px1 = x - ((double)(t.loc.width / 2 - x1)) * (t.loc.width + s) / t.loc.width;
-				double py1 = y - ((double)(t.loc.height / 2 - y1)) * (t.loc.height + s) / t.loc.height;
-				double px2 = x - ((double)(t.loc.width / 2 - x1 - 1)) * (t.loc.width + s) / t.loc.width;
-				double py2 = y - ((double)(t.loc.height / 2 - y1 - 1)) * (t.loc.height + s) / t.loc.height;
-				
-				double pixelError = 0;
-				//for(int b = 1; b < 2; b++) { 
-				for(int b = 0; b < bpp; b++) { 
-					int err = ((int)t.data[(x1 + y1 * t.loc.width) * bpp + b] & 0xff) - 
-						interpolatePixel(p, px1, py1, px2, py2, b);
-					if (b == 0) { // H value is angular value, no error more than 180 degrees
-						if (err > 127) err = 255 - err;
-						if (err < -127) err = 255 + err;
-					}
-					pixelError += err * err;
-				}
-				score += pixelError;
-
-				if (makeMask)  
-					mask[x1 + y1 * t.loc.width] += pixelError;
-				if (mask[x1 + y1 * t.loc.width] < 10000)
-					score += pixelError;
-				if (already != -1 && score > already) 
-					return new FindResult(x, y, s, score / t.loc.width / t.loc.height);					
-			}
-		}
-		return new FindResult(x, y, s, score / t.loc.width / t.loc.height);
-	}
-
 	FindResult testTile(byte []pic, int x, int y, int s, double already, boolean makeMask) {		
 		if (x < 0 || y < 0 || x >= width || y >= height) 
 			return null;
 		FindResult f;
-		if (jit)
-			f = testTileJitBROKEN(pic, x, y, s, already, makeMask);
-		else
-			f = testTilePrescale(pic, x, y, s, already, makeMask);	
+		f = testTilePrescale(pic, x, y, s, already, makeMask);	
 		if (f != null) 
 			avgScore.add(f.score);
 		return f;
@@ -605,7 +556,7 @@ class TemplateDetectRGB extends TemplateDetect {
 	}
 	
 	void trainTemplate(byte []pic, FindResult startAt) { 
-		testTileJitBROKEN(pic, startAt.x, startAt.y, startAt.scale, -1, true);
+		testTile(pic, startAt.x, startAt.y, startAt.scale, -1, true);
 		for(int i = 0; i < mask.length; i++)
 			mask[i] *= maskDecay;
 		dumpMask();
@@ -769,8 +720,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		return lastResult;
 	}
 
-
-	boolean jit = false;
 	String outDataFile = null;
 
 /*
