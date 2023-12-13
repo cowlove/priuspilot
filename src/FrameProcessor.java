@@ -229,8 +229,8 @@ class FrameProcessor {
         pids.add(pidPV);
         if (pidLV != null) pids.add(pidLV);
         if (pidCA != null) pids.add(pidCA);
-        if (pidCC != null) pids.add(pidCC);
 		if (pidTX != null) pids.add(pidTX);
+        if (pidCC != null) pids.add(pidCC);
         
         steeringTestPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_SQUARE;
         steeringTestPulse.magnitude = 0.30;
@@ -288,7 +288,7 @@ class FrameProcessor {
 		
 		pidTX.copySettings(pidPV);
 		pidTX.finalGain = .8;
-		pidTX.qualityFadeThreshold = 0.015;
+		pidTX.qualityFadeThreshold = 0.010;
         pidTX.qualityFadeGain = 2;
 		
         if (pidCA != null) { 
@@ -303,9 +303,9 @@ class FrameProcessor {
 		if (pidCC != null) {
 			pidCC.setGains(.06, 0, .34, 0, 1);
 			pidCC.finalGain = 1.0;
-			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 1);     
+			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 2);     
 			pidCC.qualityFadeThreshold = 1.0;
-			pidCC.qualityFadeGain = 0;
+			pidCC.qualityFadeGain = 1;
 			pidCC.reset();
 		}
 		//	ccLag.actuationTime = 0;
@@ -313,10 +313,10 @@ class FrameProcessor {
 		//	ccLag.lagTime = 2000;
 	
         
-		final double tdW = 0.10;
-		final double tdH = 0.20;
-        tdStartX = (int)(w * (0.516 - tdW / 2));
-        tdStartY = (int)(h * (0.13 - tdH / 2));
+		final double tdW = 0.20;
+		final double tdH = 0.30;
+        tdStartX = (int)(w * (0.515 - tdW / 2));
+        tdStartY = (int)(h * (0.15 - tdH / 2));
         tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * tdW),(int)(h * tdH));
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
@@ -505,7 +505,7 @@ class FrameProcessor {
     	if (now - lastCruiseSet > 250) {  // limit cruise control commands
     									  // to one per 1/4sec 
 	    	int val = up ? 40 : 25;
-	    	System.out.printf("setCruise(%s)\n", up ? "UP               " : "               DOWN");
+	    	//System.out.printf("setCruise(%s)\n", up ? "UP               " : "               DOWN");
 	    	lastCruiseSet = now;
     	}
     }
@@ -639,7 +639,7 @@ class FrameProcessor {
     ByteBuffer tdTempFrame = null;
     double tdTargetAspect = 1.0; // h to w ratio
     boolean tdTakeNewTemplateNow = false;
-    int tdMaxErr = 22000;
+    int tdMaxErr = 10000;
     double tdDelta;
     Rectangle tfResult = null;
     
@@ -970,8 +970,8 @@ class FrameProcessor {
 	            	tdAvg.add(tdFindResult);
 		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
 		        	if (tdFindResult.score > tdMaxErr) {
+			      		System.out.printf("Large error %d\n", (int)tdFindResult.score);
 		        		if (++badTdCount > 600) {
-			        		System.out.printf("Large error %d\n", (int)tdFindResult.score);
 			        		//corr = 0;
 			        		//td.active = false;
 			        		//noProcessing = true;

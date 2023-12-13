@@ -460,6 +460,8 @@ class TemplateDetectRGB extends TemplateDetect {
 							worstX = x1;
 							worstY = y1;
 						}
+					} else { // out of bounds, we're not using this pixel, exclude it from counts 
+						pixels--; 
 					}
 					if (already != -1 && score > already) 
 						return new FindResult(x, y, s, score / pixels);;
@@ -774,7 +776,7 @@ class TemplateDetectRGB extends TemplateDetect {
 		picX = convertOI(oi, r);
 		frame++;
 		//return findOptimized(startAt, pic);
-		lastResult = findBruteForce(startAt,picX);
+		//lastResult = findBruteForce(startAt,picX);
 		return lastResult;
 	}
 

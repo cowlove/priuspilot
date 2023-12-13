@@ -13,6 +13,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.util.ArrayList;
 
 import javax.swing.Box;
@@ -309,4 +310,31 @@ class BufferedImageDisplayWithInputs extends BufferedImageDisplay {
         textrow = 0;
     }
  
+}
+
+class BufferedImageDebugDisplay extends BufferedImageDisplay { 
+	byte [] rgb = null;
+	final int bpp = 3;
+	public BufferedImageDebugDisplay(int w, int h) {
+		super(w, h, 5, 60, BufferedImage.TYPE_3BYTE_BGR);
+		rgb = new byte[w * h * bpp];
+	}
+	void setPixel(int x, int y, int argb) {
+		final int i = (y * width + x) * bpp;
+		final int c = argb;
+		rgb[i] = (byte)((c & 0xff0000) >> 16);
+		rgb[i+1]  = (byte)((c & 0xff00) >> 8);
+		rgb[i+2] = (byte)(c & 0xff);
+	}
+	void setPixelGrey(int x, int y, int grey) {
+		final int i = (y * width + x) * bpp;
+		final int c = grey;
+		rgb[i] = rgb[i+1] = rgb[i+2] = (byte)(c & 0xff);
+	}
+	void display() { 
+		WritableRaster r = image.getWritableTile(0, 0);
+		r.setDataElements(0, 0, width, height, rgb);
+		redraw();
+	
+	}
 }

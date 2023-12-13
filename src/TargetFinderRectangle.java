@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 
 
 public class TargetFinderRectangle extends TargetFinder {
-	CannyEdgeDetectorOriginal c = new CannyEdgeDetectorOriginal();
+	//CannyEdgeDetectorOriginal c = new CannyEdgeDetectorOriginal();
 	final int bpp = 3;
 	double slope = 0.000000001;
 	int hist = 4;
@@ -30,10 +30,12 @@ public class TargetFinderRectangle extends TargetFinder {
 	int gaussianKernelWidth = 8;
 	final double aspect = 44F / 35;
 	
-	Rectangle []findAll(ByteBuffer bb, Rectangle r) {
+	@Override
+	Rectangle []findAll(OriginalImage oi, Rectangle r) {
+		super.findAll(oi, r);
 		ls1 = new RunningLeastSquares(hist);
 		ls2 = new RunningLeastSquares(hist);
-		
+
 		yhist = new int[height];
         xhist = new int[width];
      
@@ -43,6 +45,7 @@ public class TargetFinderRectangle extends TargetFinder {
 		y1 = r.y;
 		y2 = r.y + r.height;
 		
+		/* 
 		BufferedImage cimage = new BufferedImage(r.width, r.height, BufferedImage.TYPE_3BYTE_BGR);
 		byte [] pixels = new byte[r.width * r.height * 3];
 		for(int x = 0; x < r.width; x++) { 
@@ -52,24 +55,18 @@ public class TargetFinderRectangle extends TargetFinder {
 				}
 			}
 		}
-		c.setContrastNormalized(false);
-		c.setLowThreshold(threshold2);
-		c.setHighThreshold(threshold1);
 		c.setGaussianKernelRadius(gaussianKernelRadius);
 		c.setGaussianKernelWidth(gaussianKernelWidth);
-
+		*/
 		border = (int)(gaussianKernelRadius * 5);
 
-		cimage.getWritableTile(0, 0).setDataElements(0, 0, r.width, r.height, pixels);
-        c.setSourceImage(cimage);
-        c.process();
-        c.createEdgeImage();
+		//cimage.getWritableTile(0, 0).setDataElements(0, 0, r.width, r.height, pixels);
         data = c.getData();
         
         makeHist();
         Rectangle rec = findBestRect();
-        Rectangle []ra = {rec};
-        return ra;
+		Rectangle []ra = {rec};
+        return rec == null ? null : ra;
 	}
 	
 	private void makeHist() {
