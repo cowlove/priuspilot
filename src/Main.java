@@ -648,7 +648,7 @@ public class Main {
 	        Gst.main();
         }*/
     static void usage() { 		// TODO Auto-generated method stub
-
+		System.out.printf("%d", (int)(byte)220);
         System.out.println("usage: Silly [-out <filename>] [-log <filename>] [-fps n] [-nodrop]");
         System.out.println("             [-size <h>[x<w>]] [-rescale <n>] [-displayratio <n>]");
         System.out.println("             [-displayMode <n>]");

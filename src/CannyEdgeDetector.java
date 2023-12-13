@@ -153,7 +153,29 @@ public class CannyEdgeDetector {
 		if (gaussianKernelRadius < 0.1f) throw new IllegalArgumentException();
 		this.gaussianKernelRadius = gaussianKernelRadius;
 	}
-		
+
+	public void processData(int []d, int pw, int ph, Rectangle r) {
+		if (r == null) {
+			r = new Rectangle(0, 0, pw, ph);
+		}
+		width = r.width;
+		height = r.height;
+		zones.height = height;
+		zones.width = width;
+		zones.lsz.m1 = zones.lsz.m2 = Double.NaN;
+
+		initArrays();
+		results.clear();
+
+		for(int x = 0; x < r.width; x++) {
+			int lasty = yend(x);
+			for (int y = ystart(x); y < lasty; y++) {
+				data[x + y * width] = d[(r.y + y) * pw + r.x + x];
+			}
+		}
+		process2();
+	}
+
 	public void processData(OriginalImage i, Rectangle r) { 
 		if (r == null) 
 			r = new Rectangle(0, 0, i.width, i.height);

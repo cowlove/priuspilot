@@ -957,7 +957,7 @@ class FrameProcessor {
 	    	
 	        if (td != null) {
 				td.newFrame(coi);
-		    	td.setSearchDist(4, 1, 2);
+		    	td.setSearchDist(20, 20, 5);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
@@ -1455,6 +1455,8 @@ class FrameProcessor {
  	  	System.out.printf("CC=%.5f %.5f %.5f, TX=%.5f %.5f %.5f\n",
 			pidCC.getAvgRmsErr(), (double)pidCC.lowQualityCount/count, pidCC.avgQuality.calculate(),
 			pidTX.getAvgRmsErr(), (double)pidTX.lowQualityCount/count, pidTX.avgQuality.calculate());
+		if (td != null) 
+			td.printStats();
     }
      
 

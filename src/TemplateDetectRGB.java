@@ -116,6 +116,7 @@ abstract class TemplateDetect {
 		return new FindResult(x, y, 0);	
 	}	
 
+	abstract void printStats();
 	abstract void draw(OriginalImage oi, int rescale);
 	abstract void setTemplate(OriginalImage oi, Rectangle r);
 	abstract FindResult find(FindResult startAt, OriginalImage oi); 
@@ -128,6 +129,7 @@ abstract class TemplateDetect {
 	FindResult searchDist; 
 }
 
+
 class TemplateDetectRGB extends TemplateDetect {
 	int width, height;
 	int frame = 0;
@@ -137,9 +139,10 @@ class TemplateDetectRGB extends TemplateDetect {
 	double [] mask = null;
 	double maskDecay = 0.95;
 	BufferedWriter f2 = null;
-	boolean hsl = true;
 	byte [] picX = null;
 	GnuplotWrapper gp = new GnuplotWrapper();
+
+	Average avgScore = new Average(), avgWinScore = new Average();
 
 	TemplateDetectRGB(int w, int h) { 
 		width = w; 
@@ -247,10 +250,13 @@ class TemplateDetectRGB extends TemplateDetect {
 		return p;
 	}
 
-
+	boolean doCanny = Main.debugInt("TDCANNY", 1) > 0;
+	boolean doHSL = Main.debugInt("TDHSL", 1) > 0;
+	boolean doRGB = Main.debugInt("TDRGB", 1) > 0;
 
 	byte [] rgb3ToInternal(byte []rgb3, int w, int h) {
 		byte [] p = new byte[w * h * bpp];
+		int []lum = doCanny ? new int[w * h] : null;
 		for(int y = 0; y < h; y++) {
 			for(int x = 0; x < w; x++) { 
 				int pi3 = (y * w + x) * 3;
@@ -258,15 +264,31 @@ class TemplateDetectRGB extends TemplateDetect {
 				int hsl[] = new int[3];
 				OriginalImage.rgb2hsl(Byte.toUnsignedInt(rgb3[pi3]), Byte.toUnsignedInt(rgb3[pi3 + 1]), 
 					Byte.toUnsignedInt(rgb3[pi3 + 2]), hsl);
-				p[pii] = (byte)hsl[0];
-				p[pii + 1] = (byte)hsl[1];
-				p[pii + 2] = (byte)hsl[2];
-				p[pii + 3] = rgb3[pi3];
-				p[pii + 4] = rgb3[pi3 + 1];
-				p[pii + 5] = rgb3[pi3 + 2];
-				p[pii + 6] = 0; // TODO edge detection byte 
-
+				if (doHSL) {
+					p[pii] = (byte)hsl[0];
+					p[pii + 1] = (byte)hsl[1];
+					p[pii + 2] = (byte)hsl[2];
+				}
+				if (doRGB) { 
+					p[pii + 3] = rgb3[pi3];
+					p[pii + 4] = rgb3[pi3 + 1];
+					p[pii + 5] = rgb3[pi3 + 2];
+				}
+				p[pii + 6] = 0; // TODO edge detection byte
+				if (lum != null) 
+					lum[y * w + x] = hsl[2]; // luminance  
 			}
+		}
+
+		if (lum != null) { 
+			c.threshold = 2.0F;
+			c.setGaussianKernelRadius(0.5F);
+			c.setGaussianKernelWidth(6);
+			c.processData(lum, w, h, null);
+
+			for(int y = 0; y < h; y++) 
+				for(int x = 0; x < w; x++) 
+					p[((y * w + x) * bpp) + 6] = (byte)c.results.gradResults[y * w + x];
 		}
 		return p;
 	}
@@ -401,9 +423,9 @@ class TemplateDetectRGB extends TemplateDetect {
 							int pp = Byte.toUnsignedInt(pic[pi]);
 							int pt = Byte.toUnsignedInt(t.data[ti]);
 							int err = pt - pp;
-							if (hsl == true && b == 0) { // H value is angular value, no error more than 180 degrees
-								pp = pic[pi]; // Hue is signed 
-								pt = t.data[ti];
+							if (b == 0) { // H value is angular value, no error more than 180 degrees
+								//pp = pic[pi]; // Hue is signed 
+								//pt = t.data[ti];
 								err = pt - pp; 
 								if (err > 127) err = (255 - err);
 								if (err < -127) err = (255 + err);
@@ -436,7 +458,7 @@ class TemplateDetectRGB extends TemplateDetect {
 			}
 
 			for(int b = 0; b < bpp; b++) { 
-				if (b != 0 || hsl == false) {
+				if (b != 0) { // first byte is Hue, treated differently 
 					double diffAvg = (T[b] - P[b]) / pixels;
 					double pAvg = P[b] / pixels;
 					score += TT[b] + PP[b] - 2 * TP[b] +  2 * P[b] * diffAvg - 2 * T[b] * diffAvg 	
@@ -483,7 +505,7 @@ class TemplateDetectRGB extends TemplateDetect {
 				for(int b = 0; b < bpp; b++) { 
 					int err = ((int)t.data[(x1 + y1 * t.loc.width) * bpp + b] & 0xff) - 
 						interpolatePixel(p, px1, py1, px2, py2, b);
-					if (b == 0 && hsl == true) { // H value is angular value, no error more than 180 degrees
+					if (b == 0) { // H value is angular value, no error more than 180 degrees
 						if (err > 127) err = 255 - err;
 						if (err < -127) err = 255 + err;
 					}
@@ -505,11 +527,14 @@ class TemplateDetectRGB extends TemplateDetect {
 	FindResult testTile(byte []pic, int x, int y, int s, double already, boolean makeMask) {		
 		if (x < 0 || y < 0 || x >= width || y >= height) 
 			return null;
-
+		FindResult f;
 		if (jit)
-			return testTileJitBROKEN(pic, x, y, s, already, makeMask);
+			f = testTileJitBROKEN(pic, x, y, s, already, makeMask);
 		else
-			return testTilePrescale(pic, x, y, s, already, makeMask);		
+			f = testTilePrescale(pic, x, y, s, already, makeMask);	
+		if (f != null) 
+			avgScore.add(f.score);
+		return f;
 	}
 	
 	// startAt must already be a valid findResult, with a valid score, for starting coordinate x,y,s
@@ -615,6 +640,8 @@ class TemplateDetectRGB extends TemplateDetect {
 				for(int x = startAt.x - searchDist.x; x <= startAt.x + searchDist.x; x++) {
 					for(int y = startAt.y - searchDist.y; y <= startAt.y + searchDist.y; y++) { 
 						FindResult fr = testTile(pic, x, y, t.scale,/*r == null ? -1 : r.score*/ - 1, false);
+						if (fr != null) 
+							avgScore.add(fr.score);
 						if (best == null || (fr != null && fr.score < best.score)) { 
 							best = fr;
 						}
@@ -624,7 +651,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		}
 		if (best != null) { 
 			startAt.copy(best);
-
 			if (Main.debugInt("TDMASK", 0) == 1) {
 				testTile(pic, best.x, best.y, best.scale, -1, true);
 				gp.startNew();
@@ -636,7 +662,14 @@ class TemplateDetectRGB extends TemplateDetect {
 		return best;
 	}
 
-	
+	@Override
+	void printStats() { 
+		double as = avgScore.calculate();
+		double aw = avgWinScore.calculate();
+		double ratio = aw / as;
+		System.out.printf("TD avgScore %08.0f avgWinScore %08.0f ratio %05.3f\n", as, aw, ratio);
+	}
+
 	// Write out an x,y vs. score chart file suitable for gnuplot.  Also returns FindResult
 	// from exhaustive search of searchDist area
 	// todo - also make x,s vs score and y,s vs score graphs
@@ -717,6 +750,8 @@ class TemplateDetectRGB extends TemplateDetect {
 			}
 		}	
 	}
+
+	boolean bruteForce = Main.debugInt("TDBRUTE", 0) > 0;
 	@Override
 	FindResult find(FindResult startAt, OriginalImage oi) {
 		int rw = 50;
@@ -724,10 +759,16 @@ class TemplateDetectRGB extends TemplateDetect {
 		Rectangle r = new Rectangle(startAt.x - rw / 2, startAt.y - rh / 2, rw, rh); 
 		picX = convertOI(oi, r);
 		frame++;
-		//return findOptimized(startAt, pic);
-		lastResult = findBruteForce(startAt,picX);
+		if (bruteForce) { 
+			lastResult = findBruteForce(startAt,picX);
+		} else {
+			lastResult = findOptimized(startAt, picX);
+		}
+		if (lastResult != null)
+			avgWinScore.add(lastResult.score);
 		return lastResult;
 	}
+
 
 	boolean jit = false;
 	String outDataFile = null;
