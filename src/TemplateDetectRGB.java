@@ -582,22 +582,45 @@ class TemplateDetectRGB extends TemplateDetect {
 	
 	
 	FindResult findBruteForce(FindResult startAt, byte [] pic) {
-		FindResult best = null;
 		// simple brute-force exhaustive search of the searchDist space
-		for (int s = startAt.scale - searchDist.scale; s <= startAt.scale + searchDist.scale; s++) { 
-			Tile t = scaledTiles.getTileByScale(s);	
-			if (t != null) {
-				for(int x = startAt.x - searchDist.x; x <= startAt.x + searchDist.x; x++) {
-					for(int y = startAt.y - searchDist.y; y <= startAt.y + searchDist.y; y++) { 
-						FindResult fr = testTile(pic, x, y, t.scale,/*r == null ? -1 : r.score*/ - 1, false);
-						if (fr != null) 
-							avgScore.add(fr.score);
-						if (best == null || (fr != null && fr.score < best.score)) { 
-							best = fr;
+		Thread[] threads = new Thread[searchDist.scale * 2 + 1];
+		FindResult[] bests = new FindResult[searchDist.scale * 2 + 1];
+		for (int i = 0; i < searchDist.scale * 2 + 1; i++) {
+			threads[i] = new Thread(new Runnable() {
+				int index; 
+				public Runnable init(int idx){ 
+					index = idx;
+					return this; 
+				} 
+				@Override
+				public void run() { 
+					int s = startAt.scale - searchDist.scale + index;
+					Tile t = scaledTiles.getTileByScale(s);	
+					if (t != null) {
+						for(int x = startAt.x - searchDist.x; x <= startAt.x + searchDist.x; x++) {
+							for(int y = startAt.y - searchDist.y; y <= startAt.y + searchDist.y; y++) { 
+								FindResult fr = testTile(pic, x, y, t.scale,/*r == null ? -1 : r.score*/ - 1, false);
+								if (fr != null) 
+									avgScore.add(fr.score);
+								if (bests[index] == null || (fr != null && fr.score < bests[index].score)) { 
+									bests[index] = fr;
+								}
+							}
 						}
 					}
 				}
-			}
+			}.init(i));
+			threads[i].start();
+		}
+		for (Thread t : threads) {
+			try {
+				t.join(0);
+			} catch(Exception e) {}
+		}
+		FindResult best = null;
+		for (FindResult r : bests) {
+			if (best == null || (r != null && r.score < best.score))
+				best = r;
 		}
 		if (best != null) { 
 			startAt.copy(best);
@@ -606,7 +629,6 @@ class TemplateDetectRGB extends TemplateDetect {
 				gp.startNew();
 				gp.add3DGridF(template.errMask, template.loc.width, template.loc.height, true);
 				gp.draw();
-			
 			}
 		}
 		return best;
