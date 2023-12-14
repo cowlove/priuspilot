@@ -586,7 +586,7 @@ class TemplateDetectRGB extends TemplateDetect {
 		Thread[] threads = new Thread[searchDist.scale * 2 + 1];
 		FindResult[] bests = new FindResult[searchDist.scale * 2 + 1];
 		for (int i = 0; i < searchDist.scale * 2 + 1; i++) {
-			threads[i] = new Thread(new Runnable() {
+			threads[i] = new Thread(new Runnable() { // minimal benefit from going wide, increased FPS from 44 to 50 or so 
 				int index; 
 				public Runnable init(int idx){ 
 					index = idx;

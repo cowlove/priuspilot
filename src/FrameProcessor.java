@@ -957,7 +957,7 @@ class FrameProcessor {
 	    	
 	        if (td != null) {
 				td.newFrame(coi);
-		    	td.setSearchDist(3, 2, 2);
+		    	td.setSearchDist(3, 2, 1);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
