@@ -539,7 +539,7 @@ class FrameProcessor {
 		// 40MPH : .80
 		// 60MPH : 1.00
 		// 70MPH : 1.10 
-		final double speedLo = 30, speedHi = 80;
+		final double speedLo = 30, speedHi = 70;
 		final double gainLo = .70, gainHi = 1.0;
 		if (gps.speed > speedLo && gps.speed < speedHi) {
 			speedAdjust = (gps.speed - speedLo) / (speedHi - speedLo) 
