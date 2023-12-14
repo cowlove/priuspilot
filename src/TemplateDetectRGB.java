@@ -470,10 +470,7 @@ class TemplateDetectRGB extends TemplateDetect {
 			var /= pixels;
 			score /= pixels;
 			
-			if (Main.debugInt("TDSCORE", 0) == 1) 
-				System.out.printf("%d,%d,%s %d\n", x, y, s, score);
-			r = new FindResult(x, y, s, score, var);
-		
+			r = new FindResult(x, y, s, score, var);		
 		}
 		return r;
 	}
@@ -736,8 +733,11 @@ class TemplateDetectRGB extends TemplateDetect {
 		} else {
 			lastResult = findOptimized(startAt, picX);
 		}
-		if (lastResult != null)
+		if (lastResult != null) {
 			avgWinScore.add(lastResult.score);
+			if (Main.debugInt("TDSCORE", 0) == 1) 
+				System.out.printf("%d,%d,%s %d\n", lastResult.x, lastResult.y, lastResult.scale, lastResult.score);
+		}
 		return lastResult;
 	}
 

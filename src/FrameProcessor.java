@@ -287,7 +287,7 @@ class FrameProcessor {
         //pidLV.setGains(0,0,0,0,0);
 		
 		pidTX.copySettings(pidPV);
-		pidTX.finalGain = .8;
+		pidTX.finalGain = 8.0;
 		pidTX.qualityFadeThreshold = 0.010;
         pidTX.qualityFadeGain = 2;
 		
@@ -413,11 +413,17 @@ class FrameProcessor {
 //		}
         else if (keyCode == 10) { // [ENTER] key
 			if (td != null && tf != null) {
-				td.active = true;
-				tf.reset();
-				tdFindResult = null;
-				tdTempFrame = null;
-				tfFindTargetNow = true;
+				if (td.active == false) {
+					td.active = true;
+					tf.reset();
+					tdFindResult = null;
+					tdTempFrame = null;
+					tfFindTargetNow = true;
+				} else {
+					td.active = false;
+					tdFindResult = null;
+					tfFindTargetNow = false;
+				}
 			}
         }  else if (keyCode == 32) { // [SPACE] key
 			noSteering = !noSteering;
@@ -580,7 +586,7 @@ class FrameProcessor {
 		}
     }
 	
-
+	int debugMode = 0;
     RunningAverage avgFrameDelay = new RunningAverage(100);
     // TODO- separate text window to display test stats
     void writeDisplayText() {
@@ -653,7 +659,7 @@ class FrameProcessor {
     ByteBuffer tdTempFrame = null;
     double tdTargetAspect = 1.0; // h to w ratio
     boolean tdTakeNewTemplateNow = false;
-    int tdMaxErr = 10000;
+    int tdMaxErr = 20000;
     double tdDelta;
     Rectangle tfResult = null;
     
@@ -967,7 +973,7 @@ class FrameProcessor {
 			if (Main.debug("CONT_TF"))
 			 	tfFindTargetNow = true;
 	    	
-	    	
+	    	if (debugMode == 1) corr = 0;
 	        if (td != null) {
 				td.newFrame(coi);
 		    	td.setSearchDist(3, 2, 1);
@@ -985,13 +991,10 @@ class FrameProcessor {
 		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
 		        	if (tdFindResult.score > tdMaxErr) {
 			      		//System.out.printf("Large error %d\n", (int)tdFindResult.score);
-		        		if (++badTdCount > 600) {
-			        		//corr = 0;
-			        		//td.active = false;
-			        		//noProcessing = true;
-			        		//tdFindResult = null;
-		        		}
-		      
+		        		if (++badTdCount > 30) {
+			        		td.active = false;
+			        		tdFindResult = null;
+		        		}		      
 		        	} else {
 		        		badTdCount = 0;
 						if (pidCC != null) {
@@ -1006,7 +1009,7 @@ class FrameProcessor {
 						}
 						if (pidTX != null) { 
 							double x = ((double)tdFindResult.x - tdStartX) / width;
-							corr += pidTX.add(x, time);
+							corr += -pidTX.add(x, time);
 						}
 					}
 
@@ -1245,7 +1248,7 @@ class FrameProcessor {
 	            double yspace = 0.05;
                 double yoff = 1.0 - yspace * (pids.size() + 1);
     			final double bWidth = 0.06;
-	   	        //display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
+	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.magenta, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.blue, String.format("%d", (int)gps.avgCurve.size()), gps.curve + 0.5, yoff, bWidth, 0.05);
 	            for( PidControl pid : pids ) { 
