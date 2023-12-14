@@ -249,10 +249,11 @@ class GPSSerial {
 	long lastMs = 0;
 	double maxCurve = 0.30;
 	double curveGain = 0.024;
+	double minCurveCorrectionSpeed = 20.0;	
 	double curve = 0.0;
 	RunningQuadraticLeastSquares avgCurve = 
-		new RunningQuadraticLeastSquares(1, (int)(PidControl.EXPECTED_FPS * 3),
-		1.8);
+		new RunningQuadraticLeastSquares(1, (int)(PidControl.EXPECTED_FPS * 3),1.8);
+		
     Thread reader = new Thread (new Runnable() {
         public void run() {
         	while(true) { 
@@ -332,11 +333,16 @@ class GPSSerial {
 		lastMs = time;
 
 	}
+
 	double getCurveCorrection(long ms) {
 		avgCurve.removeAged((double)ms / 1000.0);
 		avgCurve.validate();
-		curve = avgCurve.calculate() * curveGain;
-		curve = Math.max(-maxCurve, Math.min(maxCurve, curve));
+		if (speed > minCurveCorrectionSpeed) { 
+			curve = avgCurve.calculate() * curveGain;
+			curve = Math.max(-maxCurve, Math.min(maxCurve, curve));
+		} else {
+			curve = 0;
+		}
 		return curve;
 	}
     String lastDebugString = "";
