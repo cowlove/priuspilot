@@ -532,7 +532,20 @@ class FrameProcessor {
 		if (Main.sim != null) 
 			Main.sim.setSteer(x);
 
-        x = x * epsSteeringGain;
+
+		double speedAdjust = 1.0;
+		// todo - replace with proper interpolation table.  quick hack 
+		// based on observations that epsSteeringGain works best at
+		// 40MPH : .80
+		// 60MPH : 1.00
+		// 70MPH : 1.10 
+		final double speedLo = 30, speedHi = 80;
+		final double gainLo = .70, gainHi = 1.0;
+		if (gps.speed > speedLo && gps.speed < speedHi) {
+			speedAdjust = (gps.speed - speedLo) / (speedHi - speedLo) 
+				* (gainHi - gainLo) + gainLo;
+		}
+        x = x * epsSteeringGain * speedAdjust;
 
 		String s = String.format("PPDEG %.3f %.3f\n", x, x);
 		if (Main.fc != null) { 
