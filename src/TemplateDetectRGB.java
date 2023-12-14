@@ -560,7 +560,6 @@ class TemplateDetectRGB extends TemplateDetect {
 		for(int i = 0; i < mask.length; i++)
 			mask[i] *= maskDecay;
 		dumpMask();
-	
 	}
 		
 	void dumpMask() { 
@@ -702,7 +701,7 @@ class TemplateDetectRGB extends TemplateDetect {
 		}	
 	}
 
-	boolean bruteForce = Main.debugInt("TDBRUTE", 0) > 0;
+	boolean bruteForce = Main.debugInt("TDBRUTE", 1) > 0;
 	@Override
 	FindResult find(FindResult startAt, OriginalImage oi) {
 		int rw = 50;

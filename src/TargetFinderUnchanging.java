@@ -201,7 +201,7 @@ class TargetFinderUnchanging extends TargetFinder {
 			gp.draw("set palette defined (-1 0 0 0, 1 1 1 1)\n");
 		}
 
-		final int border = Main.debugInt("TFBORDER", 2);
+		final int border = Main.debugInt("TFBORDER", 0);
 		bestX += border;
 		bottomY += border;
 		Rectangle []ra = {new Rectangle(r. x + bestSymX - bestX, r.y, bestX * 2, bottomY)};

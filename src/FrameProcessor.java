@@ -957,7 +957,7 @@ class FrameProcessor {
 	    	
 	        if (td != null) {
 				td.newFrame(coi);
-		    	td.setSearchDist(20, 20, 5);
+		    	td.setSearchDist(3, 2, 2);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
@@ -993,7 +993,7 @@ class FrameProcessor {
 						}
 						if (pidTX != null) { 
 							double x = ((double)tdFindResult.x - tdStartX) / width;
-							pidTX.add(x, time);
+							corr += pidTX.add(x, time);
 						}
 					}
 
