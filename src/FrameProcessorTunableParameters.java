@@ -22,7 +22,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("steer.maxSteer", (char)59, .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.maxSteer += i; }});
-
+		add("fp.cruiseMinMs", '4', 100,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.cruiseMinMs += i; }});
 		add("steer.maxChange", '[', .0001,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.maxChange += i; }});

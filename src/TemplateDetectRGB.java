@@ -73,7 +73,7 @@ import java.io.IOException;
 // continue work on regression testing - Add logfile format specifiers - ex "%tdx,%tdy,%tds,%steer  # comment field %fps"
 
 abstract class TemplateDetect {
-	boolean active = true; // tmp- not used
+	boolean active = false; 
 	float threshold1 = 8F, threshold2 = 4F;
 	float gaussianKernelRadius = 1.5F;
 	int gaussianKernelWidth = 8;

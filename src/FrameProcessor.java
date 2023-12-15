@@ -500,22 +500,42 @@ class FrameProcessor {
     		keyPressed('Q');
     	}
     }
-    
+
+	void sendEspNow(String s) { 
+		if (Main.fc != null) { 
+			Main.fc.espnowSend(s);	
+			if (cmdLink != null) {
+				try {
+					cmdLink.write(s);
+					cmdLink.flush();
+				} catch (Exception e) {
+					cmdLink = null;
+				}
+			}
+		}
+	}
+
     JoystickControl joystick = new JoystickControl();
     
     double epsSteeringGain = 1.10;	
     double trq1 = 0, trq2 = 0;
     
+	long cruiseMinMs = 1000;
     long lastCruiseSet = 0; // time of last cruise control command in ms
-    synchronized void setCruise(boolean up) {
-    	long now = Calendar.getInstance().getTimeInMillis();
-    	if (now - lastCruiseSet > 250) {  // limit cruise control commands
-    									  // to one per 1/4sec 
-	    	int val = up ? 40 : 25;
-	    	//System.out.printf("setCruise(%s)\n", up ? "UP               " : "               DOWN");
-	    	lastCruiseSet = now;
+	int lastCruiseAction = 0;
+    synchronized void setCruise(boolean up, long now) {
+    	if (now - lastCruiseSet > cruiseMinMs) {  // limit cruise control commands to 2 per sec 
+	    	int val = up ? 25000 : 20000;
+			System.out.println(up ? "CRUISE UP        " : "CRUISE          DOWN");
+			sendEspNow(String.format("TPWM %d 200\n", val));
+			lastCruiseSet = now;
     	}
+		lastCruiseAction = up ? 1 : -1;
     }
+	synchronized void armCruise() { 
+		System.out.println("CRUISE *ARM*");
+		sendEspNow(new String("TPWM 65535 200\n"));
+	}
 
 	String steerCmdHost = "255.255.255.255";
 
@@ -553,18 +573,8 @@ class FrameProcessor {
 		}
         x = x * epsSteeringGain * speedAdjust;
 
-		String s = String.format("PPDEG %.3f %.3f\n", x, x);
-		if (Main.fc != null) { 
-			Main.fc.espnowSend(s);	
-		}
-		if (cmdLink != null) {
-			try {
-				cmdLink.write(s);
-				cmdLink.flush();
-			} catch (Exception e) {
-				cmdLink = null;
-			}
-		}
+		sendEspNow(String.format("PPDEG %.3f %.3f\n", x, x));
+
 		if (false) { 
 			try {
 				final int lo = 300, hi = 1700;
@@ -999,11 +1009,13 @@ class FrameProcessor {
 		        		badTdCount = 0;
 						if (pidCC != null) {
 							double ccDist = (tdFindResult.scale - ccSetPoint);
-							double cc = -pidCC.add(ccDist, time);		        		
-							if (time - ccLastCorrectionTime > ccMinCorrectionInterval && Math.abs(cc) > 0.25) { 
+							double cc = -pidCC.add(ccDist, time);
+							if (debugMode == 2) cc = 0;		        		
+							if (time - ccLastCorrectionTime > ccMinCorrectionInterval && 
+								Math.abs(cc) > 0.25) { 
 								boolean up = cc < 0;
 								// TODO - ccPid.correctionFeedback(time, up ? -0.25 : 0.25);
-								setCruise(up);
+								setCruise(up, time);
 								ccLastCorrectionTime = time;
 							}
 						}
@@ -1104,7 +1116,7 @@ class FrameProcessor {
         
         double tc = joystick.getThrottleChange();
         if (tc != 0.0)
-        	setCruise(tc > 0/*increase vs decrease*/);
+        	setCruise(tc > 0/*increase vs decrease*/, time);
     	
         if (joystick.getExit())  
         	this.keyPressed('Q');
@@ -1116,7 +1128,8 @@ class FrameProcessor {
 		//if (joystick.getButtonPressed(2))  
 		//	steeringTestPulse.startPulse(1);
 		if (joystick.getButtonPressed(8))  
-			inputZeroPoint.setAutoZero(); 
+			inputZeroPoint.setAutoZero();
+		/* TMP use buttons for cruise control tests
 		if (joystick.getButtonPressed(1))  {
 			tp.adjustParam('M', +1);
 			tp.printParam('M');
@@ -1125,6 +1138,14 @@ class FrameProcessor {
 			tp.adjustParam('M', -1);
 			tp.printParam('M');
 		} 
+		*/
+		if (joystick.getButtonPressed(0)) 
+			setCruise(false, time);
+		if (joystick.getButtonPressed(3))
+			setCruise(true, time);
+		if (joystick.getButtonPressed(1))
+			armCruise();
+		
 		if (joystick.getButtonPressed(12)) { 
 			tp.adjustParam(-1);
 			tp.printCurrent();
@@ -1296,8 +1317,9 @@ class FrameProcessor {
 	    if (display != null && writer != null) 
     	   writer.write(time, display.image, coi);   
         
-        logData();    
-        
+        logData();
+		resetPerFrameData();
+
     	long ms = intTimer.tick();
     	long pms = profTimer.tick();
         if (ms != 0) {
@@ -1372,7 +1394,9 @@ class FrameProcessor {
     SteeringTestPulseGenerator steeringDitherPulse = new SteeringTestPulseGenerator();
     SteeringTestPulseGenerator steeringTestPulse = new SteeringTestPulseGenerator();
       
-
+	void resetPerFrameData() { 
+		lastCruiseAction = 0;
+	}
     void displayLs(PidControl p, JamaLeastSquaresFit d, Color c) { 
     	double minX, maxX, minY, maxY;
     	minX = minY = maxX = maxY = 0;
@@ -1549,12 +1573,16 @@ class FrameProcessor {
 	    			s = s.replace("%TEST1", 
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
-		"strim %strim but %buttons stass %stass %pidrl %pidll %pidpv " +
+		"strim %strim cruise %cruise but %buttons stass %stass %pidrl %pidll %pidpv %pidlv %pidtx %pidcc " +
 		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx");
 					s = s.replace("%lidar", String.format("%.0f", lidar));
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 					s = s.replace("%pidll", pidLL.toString("pidll-"));
 					s = s.replace("%pidpv", pidPV.toString("pidvp-"));
+					s = s.replace("%pidpv", pidPV.toString("pidvp-"));
+					s = s.replace("%pidlv", pidLV.toString("pidlp-"));
+					s = s.replace("%pidtx", pidTX.toString("pidtx-"));
+					s = s.replace("%pidcc", pidCC.toString("pidcc-"));
 	    			s = s.replace("%frame", String.format("%d", count));
 	    			s = s.replace("%time", String.format("%d", (int)(time - logFileStartTime)));
 	    			s = s.replace("%ts", String.format("%d", time));
@@ -1569,6 +1597,7 @@ class FrameProcessor {
 	    			s = s.replace("%tcurve", String.format("%f", trimCheat.curve));
 	    			s = s.replace("%gcurve", String.format("%f", gps.curve));
 	    			s = s.replace("%logdiff", String.format("%f", logDiffSteer));
+	    			s = s.replace("%cruise", String.format("%d", lastCruiseAction));
 
 	    			s = s.replace("%tfx", String.format("%f", tfResult == null ? Double.NaN : tfResult.x));
 	    			s = s.replace("%tfy", String.format("%f", tfResult == null ? Double.NaN : tfResult.y));
@@ -1599,9 +1628,7 @@ class FrameProcessor {
 	    			s = s.replace("%gpstrim", String.format("%.5f", trimCheat.trim));
 	    			s = s.replace("%gpstcount", String.format("%d", (int)trimCheat.count));
 					s = s.replace("%buttons", String.format("%d", joystick.buttonBits));
-
 					s = s.replace("~", " ");
-	    			
 	    	}
 	       	logfile.write(s);
     	}
@@ -1642,9 +1669,9 @@ class FrameProcessor {
 		} else if (s.equals("EXIT")) { 
 			keyPressed('Q');				
 		} else if (s.equals("FASTER")) { 
-			setCruise(true);
+			setCruise(true, time);
 		} else if (s.equals("SLOWER")) { 
-			setCruise(false);
+			setCruise(false, time);
 		} else if (s.equals("INCREASE")) { 
 			tp.adjustParam(+1);
 			tp.printCurrent();

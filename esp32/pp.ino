@@ -108,21 +108,12 @@ void setDeg(float d) {
 LineBuffer lb;
 float steerCmd = 0;
 
+float pwm = 0, pwmms = 0;
 void EspNowOnDataRecv(const uint8_t * mac, const uint8_t *in, int len) {
 	string s((const char *)in, len);
-	OUT("Got %s", s.c_str());
-	float f1, f2;
-	if (sscanf(s.c_str(), "PPDEG %f %f", &f1, &f2) == 2) { 
-		//OUT("PPDEG %f %f", f1, f2);
-		if (f1 == f2) { 
-			steerCmd = -f1;
-			setDeg(steerCmd);
-			ledcDetachPin(pins.led);
-			pinMode(pins.led, OUTPUT);
-			digitalToggle(pins.led);
-		}	
-	}	
-}
+	OUT("ESPNOW got %s", s.c_str());
+	sscanf(s.c_str(), "TPWM %f %f", &pwm, &pwmms);
+}	
 
 void setup() { 
 	setDeg(0);
@@ -130,75 +121,101 @@ void setup() {
 	j.cliEcho = false;
 	j.mqtt.active = false;
 	j.onConn = []{};
-	j.cli.on("PPDEG ([-0-9.]+)", [](const char *s, smatch m){ 
-		float f = 0;
-		OUT("cli got %s", s);
-		if (m.size() > 1 && sscanf(m.str(1).c_str(), "%f", &f) == 1) {
-			setDeg(-f);
+	j.cli.on("NO-PPDEG ([-0-9.]+) ([-0-9.]+)", [](const char *s, smatch m){ 
+		float f1, f2;
+		OUT("PPDEG %s", s);
+		if (m.size() > 2 && 
+			sscanf(m.str(1).c_str(), "%f", &f1) == 1 &&
+			sscanf(m.str(2).c_str(), "%f", &f2) == 1 && 
+			f1 == f2) {
+			steerCmd = -f1;
+			setDeg(steerCmd);
 		}
 		return "";
 	});
+	j.cli.on("TPWM ([-0-9.]+) ([-0-9.]+)", [](const char *s, smatch m){ 
+		float pwm, t;
+		OUT("TPWM %s", s);
+		if (m.size() > 2 && 
+			sscanf(m.str(1).c_str(), "%f", &pwm) == 1 &&
+			sscanf(m.str(2).c_str(), "%f", &t) == 1) {
+			pwm1.set(pwm);
+			pwm2.set(pwm);
+			delay(t);
+			pwm1.set(0);
+			pwm2.set(0);
+		}
+		return "";
+	});
+	j.cli.on("PWM ([-0-9.]+)", [](const char *s, smatch m){ 
+		float f = 0;
+		OUT("cli got %s", s);
+		if (m.size() > 1 && sscanf(m.str(1).c_str(), "%f", &f) == 1) {
+			pwm1.set(f);
+			pwm2.set(f);
+		}
+		return "";
+	});
+	j.cli.on("TIMING", [](const char *s, smatch m){ 
+		float f = 0;
+		pwm1.set(65535);
+		pwm2.set(65535);
+		delay(100);
+		pwm1.set(0);
+		pwm2.set(0);
+		Serial.printf("TIMING:\n");
+		for (int i = 0; i < 100; i++) { 
+			Serial.printf("%03d %05d\n", i * 10, analogRead(34));
+			delay(10);
+		}
+		return "";
+	});
+	j.cli.on("SAMPLE", [](const char *s, smatch m){ 
+		Serial.printf("SAMPLE:\n");
+		for (int i = 0; i < 100; i++) { 
+			Serial.printf("%03d %05d\n", i * 10, analogRead(34));
+			delay(10);
+		}
+		return "";
+	});
+	j.cli.on("TABLE", [](const char *s, smatch m){ 
+		Serial.printf("TABLE:\n");
+		for (int pwm = 0; pwm < 30000; pwm += 100) { 
+			pwm1.set(pwm);
+			pwm2.set(pwm);
+			delay(250);
+			Serial.printf("%03d %05d\n", pwm, analogRead(34));
+			esp_task_wdt_reset();
+		}
+		return "";
+	});
+	j.cli.on("ADC", [](const char *s, smatch m){ 
+			Serial.printf("ADC %05d\n", analogRead(34));
+		return "";
+	});
 	j.begin();
-	//j.led.setPattern(100, 1, 1.0, 1); 
 	EspNowInit();
-
 }
 
 void EspNowSend(const String x) { 
 	esp_now_send(broadcastAddress, (uint8_t *) x.c_str(), x.length());
-
 }
+
 void loop() {
 	j.run();
 	delay(1);
 	yield();
 	if (j.hz(5)) { 
-		steerCmd = steerCmd * 0.8;
-		setDeg(steerCmd);
-	}  
-	if (j.hz(1)) {
-		EspNowSend("HI!");
+		//steerCmd = steerCmd * 0.8;
+		//setDeg(steerCmd);
 	}
+	if (pwm > 0) { 
+		OUT("PWM %d for %d ms", (int)pwm, (int)pwmms);
+		pwm1.set((int)pwm);
+		pwm2.set((int)pwm);
+		delay((int)pwmms);
+		pwm = pwmms = 0;
+		pwm1.set(0);
+		pwm2.set(0);
+	}  
 }
-#if 0 
-void setupOLD() {
-	setDeg(0);
-	j.mqtt.active = false;
-	j.begin();
-	j.jw.invalidateCachedAP(); 
-	j.cli.on("PWM ([-0-9.]+)", [](const char *, smatch m){ 
-		if (m.size() > 1) { 
-			pwm1.setMs(atoi(m.str(1).c_str()));
-			pwm2.setMs(atoi(m.str(1).c_str()));
-		}
-		return strfmt("PWM set to %f", pwm1.get()); 
-	});
-	j.cli.on("GRADUAL ([0-9]+)", [](const char *, smatch m) { 
-		if (m.size() > 1) {
-			pwm1.gradual = atoi(m.str(1).c_str());
-			pwm1.gradual = atoi(m.str(1).c_str());
-		}
-		return strfmt("GRADUAL set to %d", pwm1.gradual); 
-	});
-	j.onConn = [](){ 
-		udpCmd.listen(7788); 
-		udpCmd.onPacket([](AsyncUDPPacket packet) {
-			float f; 
-			long t;
-			string s((const char *)packet.data(), packet.length());
-			string res = j.cli.process(s.c_str());
-			//OUT("cli response: %s", res.c_str());
-			//OUT("GOT %d bytes: %s", packet.length(), s.c_str());
-			if (sscanf(s.c_str(), "PPDEG %f %ld", &f, &t) == 2) { 
-				//OUT("PPDEG %f %d", f, t);
-				steerCmd = -f;
-				setDeg(steerCmd);	
-			}	
-		});
-	};
-	delay(1000);
-	//WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector   
-}
-
-#endif //#if 0 
-
