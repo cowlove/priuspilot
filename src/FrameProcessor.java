@@ -374,7 +374,23 @@ class FrameProcessor {
     	else
     		pendingKeyCode = keyCode;
     }
-    
+
+	void toggleTd() { 
+		if (td != null && tf != null) {
+			if (td.active == false) {
+				td.active = true;
+				tf.reset();
+				tdFindResult = null;
+				tdTempFrame = null;
+				tfFindTargetNow = true;
+			} else {
+				td.active = false;
+				tdFindResult = null;
+				tfFindTargetNow = false;
+			}
+		}
+	}
+
     synchronized void keyPressedSync(int keyCode) { 
         // TODO replace the tunable keys mess down below with an array,
         // or better yet, a call to the tunable object to see if it handles
@@ -412,20 +428,8 @@ class FrameProcessor {
 //			tfFindTargetNow = false;
 //		}
         else if (keyCode == 10) { // [ENTER] key
-			if (td != null && tf != null) {
-				if (td.active == false) {
-					td.active = true;
-					tf.reset();
-					tdFindResult = null;
-					tdTempFrame = null;
-					tfFindTargetNow = true;
-				} else {
-					td.active = false;
-					tdFindResult = null;
-					tfFindTargetNow = false;
-				}
-			}
-        }  else if (keyCode == 32) { // [SPACE] key
+			toggleTd();
+		}  else if (keyCode == 32) { // [SPACE] key
 			noSteering = !noSteering;
 			//noProcessing = !noProcessing;
 			reset();
@@ -1139,12 +1143,14 @@ class FrameProcessor {
 			tp.printParam('M');
 		} 
 		*/
+		if (joystick.getButtonPressed(1))
+			armCruise();
+		if (joystick.getButtonPressed(2))
+			toggleTd();
 		if (joystick.getButtonPressed(0)) 
 			setCruise(false, time);
 		if (joystick.getButtonPressed(3))
 			setCruise(true, time);
-		if (joystick.getButtonPressed(1))
-			armCruise();
 		
 		if (joystick.getButtonPressed(12)) { 
 			tp.adjustParam(-1);
