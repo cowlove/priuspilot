@@ -1,3 +1,8 @@
+2023/12/15
+	Good logs for exploring cruise control response:
+	ll 20231215.121107.log cruise 2 speed
+	ll 20231116.141353.log cruise 2 speed
+
 2023/11/09 
 	TODO - separate out reDouble() 
 	TODO - parse button hints from GPSTrimCheat
@@ -13,11 +18,14 @@
 		pp /host/lanedumps/20231211.161217.yuv -key 1,10 -displayratio 5  -key 445,z -debug TDBRUTE=0
 
 
+
 11/17/2023 excellent results with these changes
 
 truck tracking examples:
 pp /host/lanedumps/20231211.161217.yuv -key 1,10 
 pp /host/lanedumps/20231211.124404.yuv -key 1,10 
+
+lots of sun and glare, will be challenging ./lanedumps/20231215.113059.yuv
 
 
 

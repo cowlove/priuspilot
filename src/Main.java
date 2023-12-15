@@ -158,6 +158,7 @@ public class Main {
         int frameCount = 0, pauseFrame = 0, exitFrame = 0, displayratio = 1;
         int displayMode = 63;
         int volume = 10;
+		int debugMode = 0;
 		String steerCmdHost = "255.255.255.255";
         boolean jni = false;
 		boolean gps = false;
@@ -209,6 +210,7 @@ public class Main {
             else if (a.compareTo("-flip") == 0) flipVideo = true;
             else if (a.compareTo("-night") == 0) nightMode = true;
             else if (a.compareTo("-faketime") == 0) faketime = true;
+            else if (a.compareTo("-dm") == 0) debugMode = Integer.parseInt(args[++i]);
             else if (a.compareTo("-realtime") == 0) realtime = true;
             else if (a.compareTo("-systemclock") == 0) useSystemClock = !useSystemClock;
 			else if (a.compareTo("-unusedkeys") == 0) showUnusedKeys = true;
@@ -340,6 +342,7 @@ public class Main {
         		outputFile, logFile, rescale, displayratio, serialDevice, swrc);
         fp.colorThresholdPercent = colorThreshold;
         fp.exitFrame = exitFrame;
+		fp.debugMode = debugMode;
         fp.pauseFrame = pauseFrame;
         fp.skipFrames = skipFrames;
         fp.sounds.volume = volume; 

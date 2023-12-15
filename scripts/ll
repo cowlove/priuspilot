@@ -1,0 +1,20 @@
+#!/bin/bash
+
+LOG="$1"
+CMD="set y2tic; set tic nomirror; p "
+shift
+AX=""
+while (($#)); do
+    if [ "$1" == "2" ]; then 
+        AX="ax x1y2"
+        shift
+    fi
+    CMD="$CMD '$LOG' u (\$2)/1000:`fieldno.py $1 $LOG` w l $AX, "
+    shift
+done
+
+CMD="$CMD; pause 111"
+echo $CMD
+echo $CMD | gnuplot
+
+

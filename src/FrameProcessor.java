@@ -524,7 +524,7 @@ class FrameProcessor {
     double epsSteeringGain = 1.10;	
     double trq1 = 0, trq2 = 0;
     
-	long cruiseMinMs = 1000;
+	long cruiseMinMs = 300;
     long lastCruiseSet = 0; // time of last cruise control command in ms
 	int lastCruiseAction = 0;
     synchronized void setCruise(boolean up, long now) {
