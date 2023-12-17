@@ -1674,10 +1674,12 @@ class FrameProcessor {
 			armButton = !armButton;
 		} else if (s.equals("EXIT")) { 
 			keyPressed('Q');				
-		} else if (s.equals("FASTER")) { 
+		} else if (s.equals("CC UP")) { 
 			setCruise(true, time);
-		} else if (s.equals("SLOWER")) { 
+		} else if (s.equals("CC DOWN")) { 
 			setCruise(false, time);
+		} else if (s.equals("CC ARM")) { 
+			armCruise();
 		} else if (s.equals("INCREASE")) { 
 			tp.adjustParam(+1);
 			tp.printCurrent();

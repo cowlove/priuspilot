@@ -1,8 +1,10 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridLayout;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
@@ -17,6 +19,7 @@ import java.awt.image.WritableRaster;
 import java.util.ArrayList;
 
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -44,7 +47,7 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 	//private static final long serialVersionUID = 3580688315933254868L;
 
 	JTextField   typingArea = new JTextField();
-	Box box = Box.createVerticalBox();
+	Box box = null;
 	JComboBox<String> cb = new JComboBox<String>();
 	
 	FrameProcessor fp = null;
@@ -53,7 +56,8 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 		JButton b = new JButton(s);
 		b.addActionListener(this);
 		b.setPreferredSize(new Dimension(120, 40));
-		box.add(b);
+		b.setAlignmentX(Component.CENTER_ALIGNMENT);
+		//box.add(b);
 		return b;
 	}
 	JButton butArm = null, butRec = null;
@@ -63,27 +67,36 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 		fp = f;
 		width = w; 
 		height = h;
-		//box.setLayout(new BoxLayout(box, BoxLayout.PAGE_AXIS));
+		box = Box.createVerticalBox();
+		add(box);
+		//box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
 		this.addKeyListener(this);
+
 		typingArea.addKeyListener(this);
-	    
 	    box.add(typingArea);
 		butRec = addButton("RECORD");
+		box.add(butRec);
 		butArm = addButton("ARM");
-		addButton("INCREASE");
-		addButton("DECREASE");
-		//addButton("EXIT");
-		
-//		addButton("FASTER");
-//		addButton("SLOWER");
-
-		//cb.addItem(new String("foo"));
-		//cb.addItem(new String("bar"));
+		box.add(butArm);
+		box.add(Box.createRigidArea(new Dimension(0,30)));
 		box.add(cb);
 		cb.addActionListener(this);
+		box.add(addButton("INCREASE"));
+		box.add(addButton("DECREASE"));
+
+		//addButton("EXIT");
+		//cb.addItem(new String("foo"));
+		//cb.addItem(new String("bar"));
 		
-		add(box);
+
+		box.add(Box.createVerticalGlue());
+		box.add(Box.createRigidArea(new Dimension(0,30)));
+		box.add(addButton("CC UP"));
+		box.add(addButton("CC ARM"));
+		box.add(Box.createVerticalGlue());
+		addButton("CC DOWN");
 		typingArea.requestFocus();
+	
 	}
 	
 	@Override
@@ -202,7 +215,8 @@ class BufferedImageDisplay {
         image = new BufferedImage(width, height, type);
         canv = new MyCanvas(image);
         frame.getContentPane().add(canv, BorderLayout.CENTER);
-        frame.setVisible(true);
+        frame.pack();
+		frame.setVisible(true);
         g2 = image.createGraphics();
     }
     public BufferedImageDisplay(int w, int h, int bx, int by, int type) {
