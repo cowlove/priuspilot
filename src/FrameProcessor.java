@@ -1118,7 +1118,8 @@ class FrameProcessor {
 			armButton = false; 
 			display.panel.butArm.setBackground(armButton ? Color.RED : null);
 		}
-	    setSteering(steer);
+		display.panel.butLock.setBackground(td.active == false ? null : (tdFindResult == null ? Color.BLUE : Color.RED));
+		setSteering(steer);
 	    
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
 	    avgFrameDelay.add(frameResponseMs);
@@ -1676,7 +1677,9 @@ class FrameProcessor {
 
 
 		String s = ae.getActionCommand();
-		if (s.equals("RECORD")) { 
+		if (s.equals("TF LOCK")) { 
+			keyPressed(10);
+		} else if (s.equals("RECORD")) { 
 			keyPressed('A');
 		} else if (s.equals("ARM")) { 
 			armButton = !armButton;
