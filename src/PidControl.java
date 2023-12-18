@@ -152,6 +152,8 @@ public class PidControl {
 	Average avgQuality = new Average();
 	int lowQualityCount = 0;
     
+	double pendingCorrection = 0; // used externally to manage pending correction/input 
+
     // these values are set in reset() method
     double i;
     RunningQuadraticLeastSquares p, d, l, q;

@@ -524,16 +524,11 @@ class FrameProcessor {
     double epsSteeringGain = 1.10;	
     double trq1 = 0, trq2 = 0;
     
-	long cruiseMinMs = 300;
-    long lastCruiseSet = 0; // time of last cruise control command in ms
 	int lastCruiseAction = 0;
     synchronized void setCruise(boolean up, long now) {
-    	if (now - lastCruiseSet > cruiseMinMs) {  // limit cruise control commands to 2 per sec 
-	    	int val = up ? 25000 : 20000;
-			System.out.println(up ? "CRUISE UP        " : "CRUISE          DOWN");
-			sendEspNow(String.format("TPWM %d 200\n", val));
-			lastCruiseSet = now;
-    	}
+		int val = up ? 25000 : 20000;
+		System.out.println(up ? "CRUISE UP        " : "CRUISE          DOWN");
+		sendEspNow(String.format("TPWM %d 200\n", val));
 		lastCruiseAction = up ? 1 : -1;
     }
 	synchronized void armCruise() { 
@@ -713,7 +708,7 @@ class FrameProcessor {
 	RunningAverage avgRLCorr = new RunningAverage(PidControl.EXPECTED_FPS);
 
     long ccLastCorrectionTime = 0;
-	long ccMinCorrectionInterval = 1000; // milliseconds
+	long ccMinCorrectionInterval = 300; // milliseconds
     int ccSetPoint = 0;
 	RunningAveragePoint houghVan = new RunningAveragePoint(1);
 	
@@ -1013,14 +1008,27 @@ class FrameProcessor {
 		        		badTdCount = 0;
 						if (pidCC != null) {
 							double ccDist = (tdFindResult.scale - ccSetPoint);
-							double cc = -pidCC.add(ccDist, time);
+							double cc = -pidCC.add(ccDist, time) - pidCC.pendingCorrection;
 							if (debugMode == 2) cc = 0;		        		
+							
+							final double ccTriggerErr = 0.25;
+							final double ccPendDecay = ccTriggerErr / 30;
 							if (time - ccLastCorrectionTime > ccMinCorrectionInterval && 
-								Math.abs(cc) > 0.25) { 
-								boolean up = cc < 0;
-								// TODO - ccPid.correctionFeedback(time, up ? -0.25 : 0.25);
-								setCruise(up, time);
-								ccLastCorrectionTime = time;
+								Math.abs(cc) > ccTriggerErr) {
+									boolean up = cc < 0;
+									setCruise(up, time);
+									ccLastCorrectionTime = time;
+							
+									pidCC.pendingCorrection += up ? -ccTriggerErr : ccTriggerErr; 
+									if (Math.abs(pidCC.pendingCorrection) > ccPendDecay) {
+										if (pidCC.pendingCorrection > 0) 
+											pidCC.pendingCorrection -= ccPendDecay;
+										else 
+											pidCC.pendingCorrection += ccPendDecay; 
+									} else { 
+										pidCC.pendingCorrection = 0;
+									}
+
 							}
 						}
 						if (pidTX != null) { 
@@ -1579,7 +1587,7 @@ class FrameProcessor {
 	    			s = s.replace("%TEST1", 
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
-		"strim %strim cruise %cruise but %buttons stass %stass %pidrl %pidll %pidpv %pidlv %pidtx %pidcc " +
+		"strim %strim cruise %cruise cruisepc %cruisepc but %buttons stass %stass %pidrl %pidll %pidpv %pidlv %pidtx %pidcc " +
 		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx");
 					s = s.replace("%lidar", String.format("%.0f", lidar));
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
@@ -1604,7 +1612,7 @@ class FrameProcessor {
 	    			s = s.replace("%gcurve", String.format("%f", gps.curve));
 	    			s = s.replace("%logdiff", String.format("%f", logDiffSteer));
 	    			s = s.replace("%cruise", String.format("%d", lastCruiseAction));
-
+	    			s = s.replace("%cruisepc", String.format("%d", pidCC.pendingCorrection));
 	    			s = s.replace("%tfx", String.format("%f", tfResult == null ? Double.NaN : tfResult.x));
 	    			s = s.replace("%tfy", String.format("%f", tfResult == null ? Double.NaN : tfResult.y));
 	    			s = s.replace("%tfw", String.format("%f", tfResult == null ? Double.NaN : tfResult.width));
