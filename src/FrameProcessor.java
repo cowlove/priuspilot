@@ -152,18 +152,25 @@ class FrameProcessor {
 
 	GPSSerial gps = new GPSSerial("/dev/ttyACM0", this);
 
+
+	int fontSize = 12;
+	void setFontSize(int fs) { 
+        if (displayRatio > 0) {
+			Map<TextAttribute, Object> attributes = new HashMap<>();
+			Font currentFont = display.g2.getFont();
+			attributes.put(TextAttribute.FAMILY, currentFont.getFamily());
+			attributes.put(TextAttribute.WEIGHT, TextAttribute.WEIGHT_SEMIBOLD);
+			attributes.put(TextAttribute.SIZE, (int) (fs * rescale));
+			Font myFont = Font.getFont(attributes);
+			display.g2.setFont(myFont);
+		}
+	}
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
     		int displayRatio, String serialDevice, String swCam) throws IOException {
         if (displayRatio > 0) {
         	display = new BufferedImageDisplayWithInputs(this, w * rescale, h * rescale);    
 			display.rescale = rescale;
-			Map<TextAttribute, Object> attributes = new HashMap<>();
-			Font currentFont = display.g2.getFont();
-			attributes.put(TextAttribute.FAMILY, currentFont.getFamily());
-			attributes.put(TextAttribute.WEIGHT, TextAttribute.WEIGHT_SEMIBOLD);
-			attributes.put(TextAttribute.SIZE, (int) (currentFont.getSize() * rescale));
-			Font myFont = Font.getFont(attributes);
-			display.g2.setFont(myFont);
+			setFontSize(fontSize);
 
 			for(TunableParameter f : tp.ps) { 
 				String item = "X";
@@ -599,12 +606,14 @@ class FrameProcessor {
     RunningAverage avgFrameDelay = new RunningAverage(100);
     // TODO- separate text window to display test stats
     void writeDisplayText() {
+		setFontSize(display.fontSize);
 		display.g2.setColor(Color.blue);
         display.writeText("FRAME: " + String.format("%d", count));
+        display.writeText("GPS    : " + gps.updates);
+        display.writeText("LIDAR  : " + String.format("%05.1f", lidar));
         display.writeText("LTIME: " + String.format("%d",  time - logFileStartTime));
         display.writeText("FPS: " + String.format("%.1f", fps));
         display.writeText("DROPPED: " + framesDropped);
-        display.writeText("GPS    : " + gps.updates);
         //display.writeText("L   : " + String.format("%.2f", pid.la.calculate()));
         //display.writeText("R   : " + String.format("%.2f", pid.ra.calculate()));
         //display.writeText("M   :" + String.format("%.2f", pid.mid));
@@ -617,10 +626,10 @@ class FrameProcessor {
         display.writeText("RSCAN: " + String.format("%.2f to %.2f", la.lanes.zones.rsz.m1, la.lanes.zones.rsz.m2));
         display.writeText("RLINE: " + String.format("%.2f %d", la.lanes.right.currentSlope, la.lanes.right.weight));
         display.writeText("VANISH: " + String.format("%.2f,%.2f", la.lanes.currentVanish.x, la.lanes.currentVanish.y));
-        */
         display.writeText("LLPER : " + String.format("%d", this.tfl.pd.getPeriod()));
         display.writeText("RLPER : " + String.format("%d", tfr.pd.getPeriod()));
         display.writeText("R WIDTH: " + (int)(tfl.getAngle() - tfr.getAngle()));
+        */
         
 
         /*display.writeText("TSCORE: " + String.format("%.1f", tdFindResult == null ? 0.0 : tdFindResult.score));
@@ -638,7 +647,7 @@ class FrameProcessor {
         //			display.writeText("RB1: " + String.format("%d", la.lanes.right.scanZone.b1));
         //			display.writeText("RM2: " + String.format("%.2f", la.lanes.right.scanZone.m2));
         //			display.writeText("RB1: " + String.format("%d", la.lanes.right.scanZone.b2));
-        
+        setFontSize(10);
     }
 
     double corr = 0, steer = 0;
@@ -1209,9 +1218,6 @@ class FrameProcessor {
         	writeCompositeImage(display.image, coi, rescale, (displayMode & 32) != 0,
         			(displayMode & 32) != 0);
   
-            if ((displayMode & 0x1) != 0) {
-                writeDisplayText();                  
-            }
 
 			if ((displayMode & 0x4) != 0) {
             	display.g2.setStroke(new BasicStroke(3 * rescale));
@@ -1324,6 +1330,9 @@ class FrameProcessor {
             	//	pic);
             	display.g2.setColor(Color.red);  
             	//display.g2.draw(tfResult);
+            }
+            if ((displayMode & 0x1) != 0) {
+                writeDisplayText();                  
             }
             display.redraw(keepFocus);
         }

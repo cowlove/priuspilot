@@ -194,9 +194,10 @@ class BufferedImageDisplay {
 		return x;
 	}
 
+	int fontSize = 20;
     void writeText(String s) {
         //g2.setColor(Color.blue);
-        g2.drawString(s, 10, ++textrow * 12 * rescale);
+        g2.drawString(s, 10, ++textrow * (fontSize + 1) * rescale);
     }
     static int nextX = 0;
     static int nextY = 0;
