@@ -1613,7 +1613,7 @@ class FrameProcessor {
 	    			s = s.replace("%gcurve", String.format("%f", gps.curve));
 	    			s = s.replace("%logdiff", String.format("%f", logDiffSteer));
 	    			s = s.replace("%cruise", String.format("%d", lastCruiseAction));
-	    			s = s.replace("%cruisepc", String.format("%d", pidCC.pendingCorrection));
+	    			s = s.replace("%cruisepc", String.format("%f", pidCC.pendingCorrection));
 	    			s = s.replace("%tfx", String.format("%f", tfResult == null ? Double.NaN : tfResult.x));
 	    			s = s.replace("%tfy", String.format("%f", tfResult == null ? Double.NaN : tfResult.y));
 	    			s = s.replace("%tfw", String.format("%f", tfResult == null ? Double.NaN : tfResult.width));
