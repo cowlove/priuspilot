@@ -1261,7 +1261,7 @@ class FrameProcessor {
     			caR.display(display.g2);
                 setLineColorAndWidth(Color.lightGray, 2);
         		tfrc.draw(display.g2);
-        		display.g2.draw(tfl.scaleRect(tfl.vanLimits, rescale));
+				if (tfl.vanLimits != null) display.g2.draw(tfl.scaleRect(tfl.vanLimits, rescale));
 
     			int s = 7;
         		Rectangle r1 = scaleRect(new Rectangle(houghVan.calculate().x - s, 

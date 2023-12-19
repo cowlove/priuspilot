@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -151,6 +153,7 @@ public class Main {
         int windx = 0, windy = 0, windw = width, windh = height;
         int framerate = 30;
         int rescale = 1;
+		boolean noProcessing = false;
         String outputFile = null, serialDevice = null, logspec = null, logFile = null, chartFile = null, rawOutputFile = null;
         boolean dropFrames = true, noDisplay = false, repeat = false, gstreamer = false, rgb32 = false;
         int skipFrames = 0, debug = 0, capSize = 0, capCount = 0;
@@ -214,6 +217,7 @@ public class Main {
             else if (a.compareTo("-realtime") == 0) realtime = true;
             else if (a.compareTo("-systemclock") == 0) useSystemClock = !useSystemClock;
 			else if (a.compareTo("-unusedkeys") == 0) showUnusedKeys = true;
+			else if (a.compareTo("-np") == 0) noProcessing = true;
 			
                                         
             else if (a.compareTo("-ct") == 0) colorThreshold = Double.parseDouble(args[++i]);
@@ -355,7 +359,7 @@ public class Main {
 		fp.steerCmdHost = steerCmdHost;
 		fp.keepFocus = keepFocus;
 		fp.logDiffFile = logDiffFile;
-
+		if (noProcessing) fp.noProcessing = true;
 		if (noDither) fp.steeringDitherPulse.magnitude = 0;
 		
 		if (gps) fp.gps.start();
@@ -427,6 +431,14 @@ public class Main {
 
       		}
     	} else if (filename.endsWith(".gz") || !jni) {
+			if (!Files.isReadable(Paths.get(filename))) {
+				String [] prefixes = new String[] { "/host/lanedumps/", "./lanedumps/"};
+				for (String prefix : prefixes) {
+					if (Files.isReadable(Paths.get(prefix + filename)))
+						filename = prefix + filename;
+				}
+			}
+
 			long lastRawTime = 0;
 			long timeAdjust = 0;
         	do {

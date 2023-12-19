@@ -1,6 +1,13 @@
 #!/bin/bash
 
 LOG="$1"
+
+if ! [ -f "$LOG" ]; then 
+    if [ -f "/host/lanedumps/$LOG" ]; then  
+        LOG="/host/lanedumps/$LOG";
+    fi
+fi
+
 CMD="set y2tic; set tic nomirror; p "
 shift
 AX=""
