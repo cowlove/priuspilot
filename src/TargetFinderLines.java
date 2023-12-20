@@ -178,8 +178,7 @@ class PeriodicityDetector {
 	
 }
 class Focus { 
-	//double minWeight = 185000; // TODO RAW_FPS // TODO needs to be normalized, values change with useLuminance, etc
-	double minWeight = Main.debugDouble("MINWT", 9000); // TODO needs to be normalized, values change with useLuminance, etc
+	double minWeight = Main.debugDouble("MINWT", 17000); // TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;

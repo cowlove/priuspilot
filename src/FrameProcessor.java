@@ -307,7 +307,7 @@ class FrameProcessor {
 		}
         
 		if (pidCC != null) {
-			pidCC.setGains(.16, 0, .75, 0, 1);
+			pidCC.setGains(.20, 0, .75, 0, 1);
 			pidCC.finalGain = 1.2;
 			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 2);     
 			pidCC.qualityFadeThreshold = 1.0;
@@ -317,7 +317,7 @@ class FrameProcessor {
 	
         
 		tdStartScale = 1.0;
-        tdStartX = (int)Math.round((.5 + .046 / 2) * w);
+        tdStartX = 225; //Math.round((.5 + .046 / 2) * w);
         tdStartY = (int)Math.round((.0156 + .125 / 2)  * h);
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
@@ -667,7 +667,7 @@ class FrameProcessor {
     IntervalTimer profTimer = new IntervalTimer(100);
     int tdStartX = 0;  
     int tdStartY = 0;
-	double tdStartScale = 1.0;
+	double tdStartScale = 1.2;
 
     int tdTargetSize = 40;
     ByteBuffer tdTempFrame = null;
