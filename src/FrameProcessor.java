@@ -294,7 +294,7 @@ class FrameProcessor {
 		
 		pidTX.copySettings(pidPV);
 		pidTX.finalGain = 4.0;
-		pidTX.qualityFadeThreshold = 0.010;
+		pidTX.qualityFadeThreshold = 0.003;
         pidTX.qualityFadeGain = 2;
 		
         if (pidCA != null) { 
@@ -316,12 +316,9 @@ class FrameProcessor {
 		}
 	
         
-		final double tdW = 0.046;
-		final double tdH = 0.125;
 		tdStartScale = 1.0;
-        tdStartX = (int)Math.round(.5 * w);
-        tdStartY = (int)Math.round(.0156 * h);
-        tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * tdW),(int)(h * tdH));
+        tdStartX = (int)Math.round((.5 + .046 / 2) * w);
+        tdStartY = (int)Math.round((.0156 + .125 / 2)  * h);
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
         inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 32);
@@ -975,14 +972,19 @@ class FrameProcessor {
 			if (pidCA != null) 
 				corr += -pidCA.add(curve, time);
 	
+			final double tdW = 0.046;
+			final double tdH = 0.125;
+			final int tdWP = (int)(width * tdW * tdStartScale);
+			final int tdHP = (int)(height * tdH * tdStartScale);
+			tfSearchArea = new Rectangle(tdStartX - tdWP / 2, tdStartY - tdHP / 2, tdWP, tdHP);
 			if (tfFindTargetNow) {
-				// try to set tdFindResult to new template.  If fails, tdFindResult will be left null
 				tfResult = tf.findNearest(coi, tfSearchArea, tdStartX, tdStartY);
 		    	if (tfResult != null) {
 					int x = tfResult.x + tfResult.width / 2;
 					int y = tfResult.y + tfResult.height / 2; 
 					tdFindResult = td.setTemplate(coi, x, y, tfResult.width, tfResult.height);
 					tfFindTargetNow = false;
+					pidCC.reset();
 				}
 				tdAvg.reset();
 				tdAvg.add(tdFindResult);
@@ -1000,13 +1002,13 @@ class FrameProcessor {
 	        		//	tdFindResult.scale = -10;	
 	        		// prohibit scale frome changing more than td.searchDist.scale / tdScale.size per frame 
 	        		tdAvg.set(tdFindResult);
-	        		td.find(tdFindResult, coi);
+	        		tdFindResult = td.find(tdFindResult, coi);
 	        		//if (tdChartFiles != null) 
 	        		//	td.makeChartFiles(tdFindResult, picbb.array(), tdChartFiles);
 	            	//sounds.setAlertLevel(tdFindResult.score / tdMaxErr);
 	            	tdAvg.add(tdFindResult);
-		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
-		        	if (tdFindResult.score > tdMaxErr) {
+		        	pos = (double)(tdFindResult.xF - tdStartX) / width * zoom; 
+		        	if (tdFindResult.score > tdMaxErr || Math.abs(pos) > .05) {
 			      		//System.out.printf("Large error %d\n", (int)tdFindResult.score);
 		        		if (++badTdCount > 30) {
 			        		td.active = false;
@@ -1015,7 +1017,7 @@ class FrameProcessor {
 		        	} else {
 		        		badTdCount = 0;
 						if (pidCC != null) {
-							double ccDist = (tdFindResult.scale - ccSetPoint);
+							double ccDist = (tdFindResult.scaleF - ccSetPoint);
 							double cc = -pidCC.add(ccDist, time) - pidCC.pendingCorrection;
 							if (debugMode == 2) cc = 0;		        		
 							
@@ -1040,7 +1042,7 @@ class FrameProcessor {
 							}
 						}
 						if (pidTX != null) { 
-							double x = ((double)tdFindResult.x - tdStartX) / width;
+							double x = ((double)tdFindResult.xF - tdStartX) / width;
 							corr += -pidTX.add(x, time);
 						}
 					}
@@ -1126,7 +1128,8 @@ class FrameProcessor {
 			armButton = false; 
 			display.panel.butArm.setBackground(armButton ? Color.RED : null);
 		}
-		display.panel.butLock.setBackground(td.active == false ? null : (tdFindResult == null ? Color.BLUE : Color.RED));
+		if (displayRatio > 0)
+			display.panel.butLock.setBackground(td.active == false ? null : (tdFindResult == null ? Color.BLUE : Color.RED));
 		setSteering(steer);
 	    
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
@@ -1275,7 +1278,7 @@ class FrameProcessor {
     			//display.g2.draw(tfl.sa);
     			//display.g2.draw(tfr.sa);
 
-    			if (!td.active)
+    			if (!td.active && tfSearchArea != null)
 	            	display.draw(Color.yellow, scaleRect(tfSearchArea, rescale));
             }
             if ((displayMode & 0x8) != 0) {
@@ -1517,7 +1520,7 @@ class FrameProcessor {
 			pidRL.getAvgRmsErr(), (double)pidRL.lowQualityCount/count, pidRL.avgQuality.calculate(),
 			pidPV.getAvgRmsErr(), (double)pidPV.lowQualityCount/count, pidPV.avgQuality.calculate(),
 			steering.totalAction / count, totalLogDiff / count);
- 	  	System.out.printf("CC=%.5f %.5f %.5f, TX=%.5f %.5f %.5f\n",
+ 	  	System.out.printf("CC=%.9f %.5f %.5f, TX=%.7f %.7f %.7f\n",
 			pidCC.getAvgRmsErr(), (double)pidCC.lowQualityCount/count, pidCC.avgQuality.calculate(),
 			pidTX.getAvgRmsErr(), (double)pidTX.lowQualityCount/count, pidTX.avgQuality.calculate());
 		if (td != null) 
@@ -1613,9 +1616,9 @@ class FrameProcessor {
 	    			s = s.replace("%ts", String.format("%d", time));
 	    			s = s.replace("%delay", String.format("%d", (int)frameResponseMs));
 	    			s = s.replace("%fps", String.format("%.2f", fps));
-	    			s = s.replace("%tdx", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.x));
-	    			s = s.replace("%tdy", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.y));
-	    			s = s.replace("%tds", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.scale));
+	    			s = s.replace("%tdx", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.xF));
+	    			s = s.replace("%tdy", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.yF));
+	    			s = s.replace("%tds", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.scaleF));
 	    			s = s.replace("%tde", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.score));
 	    			s = s.replace("%tdv", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.var));
 	    			s = s.replace("%tddelta", String.format("%.1f", tdAvg.delta));

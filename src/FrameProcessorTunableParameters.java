@@ -33,11 +33,11 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.epsSteeringGain += i; }} );
 					
-		add("PID P gain", 'P', 0.05, 
+		add("PID P gain", 'P', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
 		add("PID I gain", 'I', 0.001, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.i.loGain += i; }} );
-		add("PID D gain", 'D', 0.05, 
+		add("PID D gain", 'D', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.d.loGain += i; }} );
 /*
 		add("PID P period", '4', 1, 
@@ -175,11 +175,24 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.tf.param.L.high += i; }});
 	*/
-	
-		add("testPulse magnitude", '6', .05,
+		add("tdStartX", '4', 1,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.tdStartX += i; }});
+		add("tdStartY", '5', 1,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.tdStartY += i; }});
+		add("tdStartScale", '6', 0.01,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.tdStartScale += i; }});
+		add("ccSetPoint", '7', 1,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.ccSetPoint += i; }});
+
+					
+		add("testPulse magnitude", '8', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.magnitude += i; }});
-		add("testPulse duration", '7', .05,
+		add("testPulse duration", '9', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.duration += i; }});
 		add("testPulse type", '0', 1,
