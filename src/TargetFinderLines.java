@@ -179,7 +179,7 @@ class PeriodicityDetector {
 }
 class Focus { 
 	//double minWeight = 185000; // TODO RAW_FPS // TODO needs to be normalized, values change with useLuminance, etc
-	double minWeight = Main.debugDouble("MINWT", 6000); // TODO needs to be normalized, values change with useLuminance, etc
+	double minWeight = Main.debugDouble("MINWT", 9000); // TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -974,9 +974,9 @@ class TargetFinderLines extends TargetFinder {
 		Point midLine = findMiddleOfLine(h.origin, h.bestRadius(), focus.getLastAngle(), sa);
 		final int txtOffset = 0;
 
-		g2.drawString(String.format("%d %.1f/%d %.1f", focus.getQuality(), 
-			getAngle(), getOffsetX(), h.getAngSpread()), (midLine.x + sa.x + txtOffset) * rescaleDisplay, 
-			(sa.height / 4 + sa.y + txtOffset) * rescaleDisplay);
+		//g2.drawString(String.format("%d %.1f/%d %.1f", focus.getQuality(), 
+		//	getAngle(), getOffsetX(), h.getAngSpread()), (midLine.x + sa.x + txtOffset) * rescaleDisplay, 
+		//	(sa.height / 4 + sa.y + txtOffset) * rescaleDisplay);
 
 		//final int oDot = 3;
 		//Point p = new Point((midLine.x + sa.x) * rescaleDisplay, (sa.height / 4 + sa.y) * rescaleDisplay);

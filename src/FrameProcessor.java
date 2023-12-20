@@ -107,7 +107,6 @@ class FrameProcessor {
     
     BufferedImageDisplayWithInputs display = null;
     public PidControl pidCC = new PidControl("Cruise Control PID");
-    //public ControlLagLogic ccLag = new ControlLagLogic();
     public PidControl pidLL = new PidControl("Left Line PID");         
     public PidControl pidRL = new PidControl("Right Line PID");
     public PidControl pidPV = new PidControl("Perspective PID");
@@ -294,7 +293,7 @@ class FrameProcessor {
         //pidLV.setGains(0,0,0,0,0);
 		
 		pidTX.copySettings(pidPV);
-		pidTX.finalGain = 8.0;
+		pidTX.finalGain = 4.0;
 		pidTX.qualityFadeThreshold = 0.010;
         pidTX.qualityFadeGain = 2;
 		
@@ -308,22 +307,20 @@ class FrameProcessor {
 		}
         
 		if (pidCC != null) {
-			pidCC.setGains(.06, 0, .34, 0, 1);
-			pidCC.finalGain = 1.0;
+			pidCC.setGains(.16, 0, .75, 0, 1);
+			pidCC.finalGain = 1.2;
 			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 2);     
 			pidCC.qualityFadeThreshold = 1.0;
 			pidCC.qualityFadeGain = 1;
 			pidCC.reset();
 		}
-		//	ccLag.actuationTime = 0;
-		//	ccLag.deadTime = 1000;
-		//	ccLag.lagTime = 2000;
 	
         
-		final double tdW = 0.20;
-		final double tdH = 0.30;
-        tdStartX = (int)(w * (0.515 - tdW / 2));
-        tdStartY = (int)(h * (0.15 - tdH / 2));
+		final double tdW = 0.046;
+		final double tdH = 0.125;
+		tdStartScale = 1.0;
+        tdStartX = (int)Math.round(.5 * w);
+        tdStartY = (int)Math.round(.0156 * h);
         tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * tdW),(int)(h * tdH));
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
@@ -528,7 +525,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.10;	
+    double epsSteeringGain = 1.20;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
@@ -671,8 +668,10 @@ class FrameProcessor {
     TemplateDetect.FindResult tdFindResult = null;
     int badTdCount = 0;
     IntervalTimer profTimer = new IntervalTimer(100);
-    int tdStartX = 180;  // TODO raw pixel use!
-    int tdStartY = 70;
+    int tdStartX = 0;  
+    int tdStartY = 0;
+	double tdStartScale = 1.0;
+
     int tdTargetSize = 40;
     ByteBuffer tdTempFrame = null;
     double tdTargetAspect = 1.0; // h to w ratio
@@ -979,10 +978,10 @@ class FrameProcessor {
 			if (tfFindTargetNow) {
 				// try to set tdFindResult to new template.  If fails, tdFindResult will be left null
 				tfResult = tf.findNearest(coi, tfSearchArea, tdStartX, tdStartY);
-		    	if (tfResult != null) { 
-	    	    	tdStartX = tfResult.x + tfResult.width / 2 + tf.fudge / 2;
-	    	    	tdStartY = tfResult.y + tfResult.height / 2 + tf.fudge / 2;
-					tdFindResult = td.setTemplate(coi, tdStartX, tdStartY, tfResult.width, tfResult.height);
+		    	if (tfResult != null) {
+					int x = tfResult.x + tfResult.width / 2;
+					int y = tfResult.y + tfResult.height / 2; 
+					tdFindResult = td.setTemplate(coi, x, y, tfResult.width, tfResult.height);
 					tfFindTargetNow = false;
 				}
 				tdAvg.reset();
@@ -1222,6 +1221,8 @@ class FrameProcessor {
 			if ((displayMode & 0x4) != 0) {
             	display.g2.setStroke(new BasicStroke(3 * rescale));
 	            if (tdFindResult != null) {  
+					Rectangle r = td.targetRect((tdFindResult));
+					//System.out.printf("td: x %d y %d w %d h %d\n", r.x, r.y, r.width, r.height);
 	            	display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
 					//td.draw(oi);
 					/*Rectangle r = td.targetRect(tdFindResult);
@@ -1261,7 +1262,7 @@ class FrameProcessor {
     			caR.display(display.g2);
                 setLineColorAndWidth(Color.lightGray, 2);
         		tfrc.draw(display.g2);
-				if (tfl.vanLimits != null) display.g2.draw(tfl.scaleRect(tfl.vanLimits, rescale));
+				//if (tfl.vanLimits != null) display.g2.draw(TargetFinder.scaleRect(tfl.vanLimits, rescale));
 
     			int s = 7;
         		Rectangle r1 = scaleRect(new Rectangle(houghVan.calculate().x - s, 
@@ -1274,7 +1275,7 @@ class FrameProcessor {
     			//display.g2.draw(tfl.sa);
     			//display.g2.draw(tfr.sa);
 
-    			if (tfFindTargetNow)
+    			if (!td.active)
 	            	display.draw(Color.yellow, scaleRect(tfSearchArea, rescale));
             }
             if ((displayMode & 0x8) != 0) {
@@ -1715,8 +1716,6 @@ class FrameProcessor {
 		if (Main.debug("DEBUG_ORIGIN")) { 
 			this.tfr.hOriginOverride = new Point(x,y);
 		}
-		//tdStartX  = x - 2; // TODO - figure out why these constant offsets are needed
-		//tdStartY = y - 22;
 	}
 	
 	boolean arduinoArmed = false;

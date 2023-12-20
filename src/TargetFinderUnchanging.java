@@ -33,6 +33,9 @@ class TargetFinderUnchanging extends TargetFinder {
 
 	@Override
 	Rectangle []findAll(OriginalImage oi, Rectangle rec) {
+		return new Rectangle[] {rec};
+	}
+	Rectangle []findAllNO(OriginalImage oi, Rectangle rec) {
 		c.zones.height = rec.height;
 		c.zones.clear();
 		if (dd == null) {
@@ -205,6 +208,8 @@ class TargetFinderUnchanging extends TargetFinder {
 		bestX += border;
 		bottomY += border;
 		Rectangle []ra = {new Rectangle(r. x + bestSymX - bestX, r.y, bestX * 2, bottomY)};
+		if (bestX < 2)
+			ra = null;
 
 		if (frameCount++ > 30) 
 	        return ra;
