@@ -316,7 +316,7 @@ class FrameProcessor {
 		}
 	
         
-		tdStartScale = 1.0;
+		tdStartScale = 1.2;
         tdStartX = 225; //Math.round((.5 + .046 / 2) * w);
         tdStartY = (int)Math.round((.0156 + .125 / 2)  * h);
         
