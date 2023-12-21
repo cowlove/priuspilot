@@ -829,7 +829,7 @@ class FrameProcessor {
 	   		for(int i = 0; i < vp.length; i++)  
 	   			vp[i] = vpL[i] + vpR[i];
 	   		
-			double gr = Main.debugDouble("VP_GR", 7) / vpScale;
+			double gr = Main.debugDouble("VP_GR", 3.2) / vpScale;
 			GaussianKernel gk = new GaussianKernel(gr, (int)(gr * 10), r.width / vpScale, 
 					r.height / vpScale);
 			gk.blur(vp);
@@ -1265,7 +1265,7 @@ class FrameProcessor {
     			caR.display(display.g2);
                 setLineColorAndWidth(Color.lightGray, 2);
         		tfrc.draw(display.g2);
-				//if (tfl.vanLimits != null) display.g2.draw(TargetFinder.scaleRect(tfl.vanLimits, rescale));
+				if (tfl.vanLimits != null) display.g2.draw(TargetFinder.scaleRect(tfl.vanLimits, rescale));
 
     			int s = 7;
         		Rectangle r1 = scaleRect(new Rectangle(houghVan.calculate().x - s, 
@@ -1514,11 +1514,12 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, VP=%.5f %.5f %.5f, avgAction=%.5f avgLogDiff=%.5f\n",
+ 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, VP=%.5f %.5f %.5f, LP=%.5f %.5f %.5f, avgAction=%.5f avgLogDiff=%.5f\n",
 			avgMs != 0 ? 1000.0 / avgMs : 0,  
 			pidLL.getAvgRmsErr(), (double)pidLL.lowQualityCount/count, pidLL.avgQuality.calculate(),
 			pidRL.getAvgRmsErr(), (double)pidRL.lowQualityCount/count, pidRL.avgQuality.calculate(),
 			pidPV.getAvgRmsErr(), (double)pidPV.lowQualityCount/count, pidPV.avgQuality.calculate(),
+			pidLV.getAvgRmsErr(), (double)pidLV.lowQualityCount/count, pidLV.avgQuality.calculate(),
 			steering.totalAction / count, totalLogDiff / count);
  	  	System.out.printf("CC=%.9f %.5f %.5f, TX=%.7f %.7f %.7f\n",
 			pidCC.getAvgRmsErr(), (double)pidCC.lowQualityCount/count, pidCC.avgQuality.calculate(),

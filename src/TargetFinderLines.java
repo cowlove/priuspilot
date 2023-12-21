@@ -178,7 +178,7 @@ class PeriodicityDetector {
 	
 }
 class Focus { 
-	double minWeight = Main.debugDouble("MINWT", 17000); // TODO needs to be normalized, values change with useLuminance, etc
+	double minWeight = Main.debugDouble("MINWT", 22000); // see also MINWT2 TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -474,6 +474,7 @@ class TargetFinderLines extends TargetFinder {
 
 		if (newFilt) {
 			filterVP();
+			focus.minWeight = Main.debugDouble("MINWT2", 6000);
 		}
 		if (lastMags == null) {
 			lastMags = new float[sa.height * sa.width];
