@@ -2,5 +2,5 @@
 #./scripts/configESPNOW.sh
 #sudo \
 ./scripts/ppr \
-	-minms 55	-rescale 2 -displayratio 5 $@
+	-minms 55 -displaymode 55 /dev/video2 -rescale 3 -displayratio 5 $@
 

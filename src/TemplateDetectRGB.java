@@ -87,6 +87,7 @@ abstract class TemplateDetect {
 
 	public class FindResult { 
 		int x, y, scale, score = 0, var = 0;
+		double xF, yF, scaleF;
 		int compares = 0;
 		FindResult(int x1, int y1, int s1) { x = x1; y = y1; scale = s1; score = 0; } 
 		FindResult(int x1, int y1, int s1, int s2) { x = x1; y = y1; scale = s1; score = s2; } 
@@ -628,7 +629,44 @@ class TemplateDetectRGB extends TemplateDetect {
 				gp.draw();
 			}
 		}
+			
+		// TODO: keep array of FindResults so we don't have to re-run testTile 6 times 
+		FindResult l = best, r = best;
+		if (best.x > startAt.x - searchDist.x)
+			l = testTile(pic, best.x - 1, best.y, best.scale, -1, false);
+		if (best.x < startAt.x + searchDist.x - 1)
+			r = testTile(pic, best.x + 1, best.y, best.scale, -1, false);
+		best.xF = average3FindResults(l, best, r, 1.022).xF;
+		
+		l = best; r = best;
+		if (best.y > startAt.y - searchDist.y)
+			l = testTile(pic, best.x, best.y - 1, best.scale, -1, false);
+		if (best.y < startAt.y + searchDist.y - 1)
+			r = testTile(pic, best.x, best.y + 1, best.scale, -1, false);
+		best.yF = average3FindResults(l, best, r, 1.022).yF;
+
+		l = best; r = best;
+		if (best.scale > startAt.scale - searchDist.scale)
+			l = testTile(pic, best.x, best.y, best.scale - 1, -1, false);
+		if (best.scale < startAt.scale + searchDist.scale - 1)
+			r = testTile(pic, best.x, best.y, best.scale + 1, -1, false);
+		best.scaleF = average3FindResults(l, best, r, 1.08).scaleF;
+		
 		return best;
+	}
+
+	// weighted average of the x,y,scale of the 3 find results weighted according to scores
+	FindResult average3FindResults(FindResult l, FindResult m, FindResult r, double arg) {
+		FindResult rv = new FindResult(m); 
+		final double maxS = Math.max(l.score, Math.max(m.score, r.score)) * arg; // TODO- better way to weight? 
+		final double sumS = maxS - l.score + maxS - r.score + maxS - m.score;
+		rv.xF = (m.x * (maxS - m.score) + l.x * (maxS - l.score) + r.x * (maxS - r.score)) / sumS;
+		rv.yF = (m.y * (maxS - m.score) + l.y * (maxS - l.score) + r.y * (maxS - r.score)) / sumS;
+		rv.scaleF = (m.scale * (maxS - m.score) + l.scale * (maxS - l.score) + r.scale * (maxS - r.score)) / sumS;
+		if (Main.debugInt("TDINT", 0) == 1) {
+			rv.xF = m.x; rv.yF = m.y; rv.scaleF = m.scale; 
+		}
+		return rv;
 	}
 
 	@Override

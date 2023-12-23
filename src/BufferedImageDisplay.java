@@ -60,41 +60,44 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 		//box.add(b);
 		return b;
 	}
-	JButton butArm = null, butRec = null;
+	JButton butArm = null, butRec = null, butLock = null;
 	
 	int width, height;
 	MyPanel(FrameProcessor f, int w, int h) {
 		fp = f;
 		width = w; 
 		height = h;
-		box = Box.createVerticalBox();
-		add(box);
+		Box bv = Box.createHorizontalBox();
+		add(bv);
+		Box bl = Box.createVerticalBox(), br = Box.createVerticalBox();
+		bv.add(bl);
+		bv.add(br);
 		//box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));
 		this.addKeyListener(this);
 
 		typingArea.addKeyListener(this);
-	    box.add(typingArea);
-		butRec = addButton("RECORD");
-		box.add(butRec);
-		butArm = addButton("ARM");
-		box.add(butArm);
-		box.add(Box.createRigidArea(new Dimension(0,30)));
-		box.add(cb);
+	    bl.add(typingArea);
+		bl.add(butRec = addButton("RECORD"));
+		bl.add(Box.createRigidArea(new Dimension(0,15)));
+		bl.add(butArm = addButton("ARM"));
+		bl.add(Box.createRigidArea(new Dimension(0,15)));
+		bl.add(cb);
 		cb.addActionListener(this);
-		box.add(addButton("INCREASE"));
-		box.add(addButton("DECREASE"));
+		bl.add(addButton("INCREASE"));
+		bl.add(addButton("DECREASE"));
 
 		//addButton("EXIT");
 		//cb.addItem(new String("foo"));
 		//cb.addItem(new String("bar"));
 		
 
-		box.add(Box.createVerticalGlue());
-		box.add(Box.createRigidArea(new Dimension(0,30)));
-		box.add(addButton("CC UP"));
-		box.add(addButton("CC ARM"));
-		box.add(Box.createVerticalGlue());
-		addButton("CC DOWN");
+		br.add(butLock = addButton("TF LOCK"));
+		br.add(Box.createVerticalGlue());
+		br.add(addButton("CC ARM"));
+		br.add(Box.createVerticalGlue());
+		br.add(addButton("CC UP"));
+		br.add(Box.createVerticalGlue());
+		br.add(addButton("CC DOWN"));
 		typingArea.requestFocus();
 	
 	}
@@ -191,18 +194,21 @@ class BufferedImageDisplay {
 		return x;
 	}
 
+	int fontSize = 20;
     void writeText(String s) {
         //g2.setColor(Color.blue);
-        g2.drawString(s, 10, ++textrow * 12 * rescale);
+        g2.drawString(s, 10, ++textrow * (fontSize + 1) * rescale);
     }
     static int nextX = 0;
     static int nextY = 0;
     JComponent canv;
-    int xpos, ypos;
+    int xpos, ypos, bx, by;
     
-    public void init(int w, int h, int bx, int by, int type) {
+    public void init(int w, int h, int _bx, int _by, int type) {
         width = w;
         height = h;
+		bx = _bx;
+		by = _by;
         xpos = nextX;
         ypos = nextY;
         nextY += h + by;
@@ -300,9 +306,9 @@ class BufferedImageDisplay {
 class BufferedImageDisplayWithInputs extends BufferedImageDisplay { 
 	MyPanel panel;
 	public BufferedImageDisplayWithInputs(FrameProcessor fp, int w, int h) {
-    	super(w, h, 220, 40, BufferedImage.TYPE_3BYTE_BGR);
+    	super(w, h, 280, 40, BufferedImage.TYPE_3BYTE_BGR);
     	panel = new MyPanel(fp, w, h);
-        frame.setBounds(xpos,ypos, width + 200, height + 40);
+        frame.setBounds(xpos,ypos, width + bx, height + by);
         frame.getContentPane().add(panel, BorderLayout.EAST);
 		frame.addMouseListener(panel);
 		frame.addMouseMotionListener(panel);

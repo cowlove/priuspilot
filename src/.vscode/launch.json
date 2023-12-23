@@ -22,7 +22,7 @@
             },
             "mainClass": "Main",
             "args": [
-                "/host/lanedumps/20231211.124404.yuv", "-key", "10,10", "-capfile", "x.png"
+                "20231218.161903.yuv", "-key", "22,10"
                 
                 ]
         },

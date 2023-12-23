@@ -1,8 +1,10 @@
 #include "jimlib.h"
 //#include "AsyncUDP.h"
+#ifndef UBUNTU
 #include <esp_now.h>
 #include <esp_wifi.h>
 #include <esp_private/esp_wifi_private.h>
+#endif
 
 JStuff j;
 
@@ -54,6 +56,7 @@ struct {
 	int led = getLedPin(); 
 	int pwm1 = 17;
 	int pwm2 = 16;
+	int adc = 36;
 } pins;
 
 //AsyncUDP udpCmd;
@@ -61,7 +64,7 @@ struct {
 PwmChannel pwm1(pins.pwm1, 1200/*hz*/, 2/*chan*/, 0/*gradual*/);
 PwmChannel pwm2(pins.pwm2, 1200/*hz*/, 1/*chan*/, 0/*gradual*/);
 
-CLI_VARIABLE_FLOAT(maxSteer, 0.6);
+CLI_VARIABLE_FLOAT(maxSteer, 1.5);
 
 struct ExtrapolationTable<float>::Pair table[] = {
 	{-10.00, 8500},
@@ -100,19 +103,34 @@ void setDeg(float d) {
 	d = min(limit, max(-limit, d)); 
 	int t1 = ex.extrapolate(2.50 - d);
 	int t2 = ex.extrapolate(2.50 + d);
-	OUT("set pwm %d %d", t1, t2);
+	//OUT("set pwm %d %d", t1, t2);
 	pwm1.setMs(t1);
 	pwm2.setMs(t2);
 }
 
 LineBuffer lb;
 float steerCmd = 0;
-
+String macAddress;
 float pwm = 0, pwmms = 0;
-void EspNowOnDataRecv(const uint8_t * mac, const uint8_t *in, int len) {
+void EspNowOnDataRecv(const uint8_t *m, const uint8_t *in, int len) {
 	string s((const char *)in, len);
+	float f1, f2;
 	OUT("ESPNOW got %s", s.c_str());
-	sscanf(s.c_str(), "TPWM %f %f", &pwm, &pwmms);
+	char mac[32];
+	char msg[256];
+	if (sscanf(s.c_str(), "TPWM %s %f %f", mac, &f1, &f2) == 3 
+		&& strcmp(mac, macAddress.c_str()) == 0) {
+		pwm = f1;
+		pwmms = f2;
+	}
+	if (sscanf(s.c_str(), "PPDEG %s %f %f", mac, &f1, &f2) == 3 
+		&& strcmp(mac, macAddress.c_str()) == 0 && f1 == f2) { 
+		steerCmd = -f1;
+		setDeg(steerCmd);
+	}
+	if (sscanf(s.c_str(), "GW %s %s", mac, msg) == 2) { 
+		Serial.print(msg);
+	}
 }	
 
 void setup() { 
@@ -120,8 +138,10 @@ void setup() {
 	j.jw.enabled = false;
 	j.cliEcho = false;
 	j.mqtt.active = false;
+    j.parseSerial = false; 
 	j.onConn = []{};
-	j.cli.on("NO-PPDEG ([-0-9.]+) ([-0-9.]+)", [](const char *s, smatch m){ 
+	macAddress = getMacAddress();
+	j.cli.on("PPDEG ([-0-9.]+) ([-0-9.]+)", [](const char *s, smatch m){ 
 		float f1, f2;
 		OUT("PPDEG %s", s);
 		if (m.size() > 2 && 
@@ -165,7 +185,7 @@ void setup() {
 		pwm2.set(0);
 		Serial.printf("TIMING:\n");
 		for (int i = 0; i < 100; i++) { 
-			Serial.printf("%03d %05d\n", i * 10, analogRead(34));
+			Serial.printf("%03d %05d\n", i * 10, analogRead(pins.adc));
 			delay(10);
 		}
 		return "";
@@ -173,24 +193,57 @@ void setup() {
 	j.cli.on("SAMPLE", [](const char *s, smatch m){ 
 		Serial.printf("SAMPLE:\n");
 		for (int i = 0; i < 100; i++) { 
-			Serial.printf("%03d %05d\n", i * 10, analogRead(34));
+			Serial.printf("%03d %05d\n", i * 10, analogRead(pins.adc));
+			esp_task_wdt_reset();
 			delay(10);
 		}
 		return "";
 	});
-	j.cli.on("TABLE", [](const char *s, smatch m){ 
-		Serial.printf("TABLE:\n");
+	j.cli.on("PWMTABLE", [](const char *s, smatch m){ 
+		Serial.printf("PWMTABLE:\n");
 		for (int pwm = 0; pwm < 30000; pwm += 100) { 
 			pwm1.set(pwm);
 			pwm2.set(pwm);
 			delay(250);
-			Serial.printf("%03d %05d\n", pwm, analogRead(34));
+			Serial.printf("%03d %05d\n", pwm, analogRead(pins.adc));
+			esp_task_wdt_reset();
+		}
+		return "";
+	});
+	j.cli.on("PPDTABLE", [](const char *s, smatch m){ 
+		Serial.printf("PPDTABLE:\n");
+		for (float ppd = 0; ppd <= +maxSteer; ppd += .02) { 
+			setDeg(ppd);
+			delay(250);
+			Serial.printf("%+.2f %05d\n", ppd, analogRead(pins.adc));
+			esp_task_wdt_reset();
+		}
+		for (float ppd = maxSteer; ppd > 0; ppd -= .02) { 
+			setDeg(ppd);
+			delay(250);
+			Serial.printf("%+.2f %05d\n", ppd, analogRead(pins.adc));
+			esp_task_wdt_reset();
+		}
+		for (float ppd = 0; ppd >= -maxSteer; ppd -= .02) { 
+			setDeg(ppd);
+			delay(250);
+			Serial.printf("%+.2f %05d\n", ppd, analogRead(pins.adc));
+			esp_task_wdt_reset();
+		}
+		for (float ppd = -maxSteer; ppd <= 0; ppd += .02) { 
+			setDeg(ppd);
+			delay(250);
+			Serial.printf("%+.2f %05d\n", ppd, analogRead(pins.adc));
 			esp_task_wdt_reset();
 		}
 		return "";
 	});
 	j.cli.on("ADC", [](const char *s, smatch m){ 
-			Serial.printf("ADC %05d\n", analogRead(34));
+			Serial.printf("ADC %05d\n", analogRead(pins.adc));
+		return "";
+	});
+	j.cli.on("CLI OFF", [](const char *s, smatch m){ 
+		j.parseSerial = false;
 		return "";
 	});
 	j.begin();
@@ -205,11 +258,22 @@ void loop() {
 	j.run();
 	delay(1);
 	yield();
-	if (j.hz(5)) { 
-		//steerCmd = steerCmd * 0.8;
-		//setDeg(steerCmd);
+	OUT("ADC %d", analogRead(pins.adc));
+	if (j.hz(.2)) { 
+		String s = Sfmt("%s %s " GIT_VERSION " " __DATE__ " " __TIME__ " %d", 
+             getMacAddress().c_str(), basename_strip_ext(__BASE_FILE__).c_str(), millis());
+		OUT(s.c_str());
+		EspNowSend(s + "\n");
 	}
-	if (pwm > 0) { 
+	if (j.hz(5)) { 
+		if (abs(steerCmd) > 0) {
+			steerCmd = steerCmd * 0.8;
+			setDeg(steerCmd);
+			if (abs(steerCmd < .001))
+				steerCmd = 0;
+		}
+	}
+	if (steerCmd == 0 && pwm > 0) { 
 		OUT("PWM %d for %d ms", (int)pwm, (int)pwmms);
 		pwm1.set((int)pwm);
 		pwm2.set((int)pwm);
@@ -217,5 +281,15 @@ void loop() {
 		pwm = pwmms = 0;
 		pwm1.set(0);
 		pwm2.set(0);
-	}  
+	} 
+	if (j.parseSerial == false && Serial.available()) { 
+        lb.add(Serial.read(), [](const char *line) {
+			//OUT("wrote %s", line);
+			esp_now_send(broadcastAddress, (uint8_t *)line, strlen(line));  
+			digitalToggle(2);       
+			if (strcmp(line, "CLI ON") == 0) { 
+				j.parseSerial = true;
+			}        
+		});
+	} 
 }

@@ -107,7 +107,6 @@ class FrameProcessor {
     
     BufferedImageDisplayWithInputs display = null;
     public PidControl pidCC = new PidControl("Cruise Control PID");
-    //public ControlLagLogic ccLag = new ControlLagLogic();
     public PidControl pidLL = new PidControl("Left Line PID");         
     public PidControl pidRL = new PidControl("Right Line PID");
     public PidControl pidPV = new PidControl("Perspective PID");
@@ -152,18 +151,25 @@ class FrameProcessor {
 
 	GPSSerial gps = new GPSSerial("/dev/ttyACM0", this);
 
+
+	int fontSize = 12;
+	void setFontSize(int fs) { 
+        if (displayRatio > 0) {
+			Map<TextAttribute, Object> attributes = new HashMap<>();
+			Font currentFont = display.g2.getFont();
+			attributes.put(TextAttribute.FAMILY, currentFont.getFamily());
+			attributes.put(TextAttribute.WEIGHT, TextAttribute.WEIGHT_SEMIBOLD);
+			attributes.put(TextAttribute.SIZE, (int) (fs * rescale));
+			Font myFont = Font.getFont(attributes);
+			display.g2.setFont(myFont);
+		}
+	}
     public FrameProcessor(int w, int  h, String outFile, String dumpFile, int rescale, 
     		int displayRatio, String serialDevice, String swCam) throws IOException {
         if (displayRatio > 0) {
         	display = new BufferedImageDisplayWithInputs(this, w * rescale, h * rescale);    
 			display.rescale = rescale;
-			Map<TextAttribute, Object> attributes = new HashMap<>();
-			Font currentFont = display.g2.getFont();
-			attributes.put(TextAttribute.FAMILY, currentFont.getFamily());
-			attributes.put(TextAttribute.WEIGHT, TextAttribute.WEIGHT_SEMIBOLD);
-			attributes.put(TextAttribute.SIZE, (int) (currentFont.getSize() * rescale));
-			Font myFont = Font.getFont(attributes);
-			display.g2.setFont(myFont);
+			setFontSize(fontSize);
 
 			for(TunableParameter f : tp.ps) { 
 				String item = "X";
@@ -287,8 +293,8 @@ class FrameProcessor {
         //pidLV.setGains(0,0,0,0,0);
 		
 		pidTX.copySettings(pidPV);
-		pidTX.finalGain = 8.0;
-		pidTX.qualityFadeThreshold = 0.010;
+		pidTX.finalGain = 4.0;
+		pidTX.qualityFadeThreshold = 0.003;
         pidTX.qualityFadeGain = 2;
 		
         if (pidCA != null) { 
@@ -301,28 +307,24 @@ class FrameProcessor {
 		}
         
 		if (pidCC != null) {
-			pidCC.setGains(.06, 0, .34, 0, 1);
-			pidCC.finalGain = 1.0;
+			pidCC.setGains(.20, 0, .75, 0, 1);
+			pidCC.finalGain = 1.2;
 			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 2);     
 			pidCC.qualityFadeThreshold = 1.0;
 			pidCC.qualityFadeGain = 1;
 			pidCC.reset();
 		}
-		//	ccLag.actuationTime = 0;
-		//	ccLag.deadTime = 1000;
-		//	ccLag.lagTime = 2000;
 	
         
-		final double tdW = 0.20;
-		final double tdH = 0.30;
-        tdStartX = (int)(w * (0.515 - tdW / 2));
-        tdStartY = (int)(h * (0.15 - tdH / 2));
-        tfSearchArea = new Rectangle(tdStartX, tdStartY, (int)(w * tdW),(int)(h * tdH));
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
-        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 32);
+        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 72);
         inputZeroPoint.zeroPoint.rLane = 490;
         inputZeroPoint.zeroPoint.lLane = 1;
+
+		tdStartScale = 1.8;
+        tdStartX = inputZeroPoint.zeroPoint.vanX + 8;
+        tdStartY = inputZeroPoint.zeroPoint.vanY - 10;
 
 		trimCheat = new GPSTrimCheat(50);
 		//gps.start();
@@ -369,6 +371,7 @@ class FrameProcessor {
     
     int pendingKeyCode = 0;
     void keyPressed(int keyCode) {
+		System.out.printf("Got key %d\n", keyCode);
     	if (keyCode == 'N' || keyCode == 'Z')
     		keyPressedSync(keyCode);
     	else
@@ -521,7 +524,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.10;	
+    double epsSteeringGain = 1.20;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
@@ -572,7 +575,7 @@ class FrameProcessor {
 		}
         x = x * epsSteeringGain * speedAdjust;
 
-		sendEspNow(String.format("PPDEG %.3f %.3f\n", x, x));
+		sendEspNow(String.format("PPDEG 7821849B14F0 %.3f %.3f\n", x, x));
 
 		if (false) { 
 			try {
@@ -599,12 +602,14 @@ class FrameProcessor {
     RunningAverage avgFrameDelay = new RunningAverage(100);
     // TODO- separate text window to display test stats
     void writeDisplayText() {
+		setFontSize(display.fontSize);
 		display.g2.setColor(Color.blue);
         display.writeText("FRAME: " + String.format("%d", count));
+        display.writeText("GPS    : " + gps.updates);
+        display.writeText("LIDAR  : " + String.format("%05.1f", lidar));
         display.writeText("LTIME: " + String.format("%d",  time - logFileStartTime));
         display.writeText("FPS: " + String.format("%.1f", fps));
         display.writeText("DROPPED: " + framesDropped);
-        display.writeText("GPS    : " + gps.updates);
         //display.writeText("L   : " + String.format("%.2f", pid.la.calculate()));
         //display.writeText("R   : " + String.format("%.2f", pid.ra.calculate()));
         //display.writeText("M   :" + String.format("%.2f", pid.mid));
@@ -617,10 +622,10 @@ class FrameProcessor {
         display.writeText("RSCAN: " + String.format("%.2f to %.2f", la.lanes.zones.rsz.m1, la.lanes.zones.rsz.m2));
         display.writeText("RLINE: " + String.format("%.2f %d", la.lanes.right.currentSlope, la.lanes.right.weight));
         display.writeText("VANISH: " + String.format("%.2f,%.2f", la.lanes.currentVanish.x, la.lanes.currentVanish.y));
-        */
         display.writeText("LLPER : " + String.format("%d", this.tfl.pd.getPeriod()));
         display.writeText("RLPER : " + String.format("%d", tfr.pd.getPeriod()));
         display.writeText("R WIDTH: " + (int)(tfl.getAngle() - tfr.getAngle()));
+        */
         
 
         /*display.writeText("TSCORE: " + String.format("%.1f", tdFindResult == null ? 0.0 : tdFindResult.score));
@@ -638,7 +643,7 @@ class FrameProcessor {
         //			display.writeText("RB1: " + String.format("%d", la.lanes.right.scanZone.b1));
         //			display.writeText("RM2: " + String.format("%.2f", la.lanes.right.scanZone.m2));
         //			display.writeText("RB1: " + String.format("%d", la.lanes.right.scanZone.b2));
-        
+        setFontSize(10);
     }
 
     double corr = 0, steer = 0;
@@ -662,8 +667,10 @@ class FrameProcessor {
     TemplateDetect.FindResult tdFindResult = null;
     int badTdCount = 0;
     IntervalTimer profTimer = new IntervalTimer(100);
-    int tdStartX = 180;  // TODO raw pixel use!
-    int tdStartY = 70;
+    int tdStartX = 0;  
+    int tdStartY = 0;
+	double tdStartScale = 1.2;
+
     int tdTargetSize = 40;
     ByteBuffer tdTempFrame = null;
     double tdTargetAspect = 1.0; // h to w ratio
@@ -824,7 +831,7 @@ class FrameProcessor {
 	   		for(int i = 0; i < vp.length; i++)  
 	   			vp[i] = vpL[i] + vpR[i];
 	   		
-			double gr = Main.debugDouble("VP_GR", 7) / vpScale;
+			double gr = Main.debugDouble("VP_GR", 3.2) / vpScale;
 			GaussianKernel gk = new GaussianKernel(gr, (int)(gr * 10), r.width / vpScale, 
 					r.height / vpScale);
 			gk.blur(vp);
@@ -967,14 +974,19 @@ class FrameProcessor {
 			if (pidCA != null) 
 				corr += -pidCA.add(curve, time);
 	
+			final double tdW = 0.046;
+			final double tdH = 0.125;
+			final int tdWP = (int)(width * tdW * tdStartScale);
+			final int tdHP = (int)(height * tdH * tdStartScale);
+			tfSearchArea = new Rectangle(tdStartX - tdWP / 2, tdStartY - tdHP / 2, tdWP, tdHP);
 			if (tfFindTargetNow) {
-				// try to set tdFindResult to new template.  If fails, tdFindResult will be left null
 				tfResult = tf.findNearest(coi, tfSearchArea, tdStartX, tdStartY);
-		    	if (tfResult != null) { 
-	    	    	tdStartX = tfResult.x + tfResult.width / 2 + tf.fudge / 2;
-	    	    	tdStartY = tfResult.y + tfResult.height / 2 + tf.fudge / 2;
-					tdFindResult = td.setTemplate(coi, tdStartX, tdStartY, tfResult.width, tfResult.height);
+		    	if (tfResult != null) {
+					int x = tfResult.x + tfResult.width / 2;
+					int y = tfResult.y + tfResult.height / 2; 
+					tdFindResult = td.setTemplate(coi, x, y, tfResult.width, tfResult.height);
 					tfFindTargetNow = false;
+					pidCC.reset();
 				}
 				tdAvg.reset();
 				tdAvg.add(tdFindResult);
@@ -985,20 +997,20 @@ class FrameProcessor {
 	    	if (debugMode == 1) corr = 0;
 	        if (td != null) {
 				td.newFrame(coi);
-		    	td.setSearchDist(3, 2, 1);
+		    	td.setSearchDist(3, 2, 2);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
 	        		//	tdFindResult.scale = -10;	
 	        		// prohibit scale frome changing more than td.searchDist.scale / tdScale.size per frame 
 	        		tdAvg.set(tdFindResult);
-	        		td.find(tdFindResult, coi);
+	        		tdFindResult = td.find(tdFindResult, coi);
 	        		//if (tdChartFiles != null) 
 	        		//	td.makeChartFiles(tdFindResult, picbb.array(), tdChartFiles);
 	            	//sounds.setAlertLevel(tdFindResult.score / tdMaxErr);
 	            	tdAvg.add(tdFindResult);
-		        	pos = (double)(tdFindResult.x - tdStartX) / width * zoom; 
-		        	if (tdFindResult.score > tdMaxErr) {
+		        	pos = (double)(tdFindResult.xF - tdStartX) / width * zoom; 
+		        	if (tdFindResult.score > tdMaxErr || Math.abs(pos) > .05) {
 			      		//System.out.printf("Large error %d\n", (int)tdFindResult.score);
 		        		if (++badTdCount > 30) {
 			        		td.active = false;
@@ -1007,7 +1019,7 @@ class FrameProcessor {
 		        	} else {
 		        		badTdCount = 0;
 						if (pidCC != null) {
-							double ccDist = (tdFindResult.scale - ccSetPoint);
+							double ccDist = (tdFindResult.scaleF - ccSetPoint);
 							double cc = -pidCC.add(ccDist, time) - pidCC.pendingCorrection;
 							if (debugMode == 2) cc = 0;		        		
 							
@@ -1032,7 +1044,7 @@ class FrameProcessor {
 							}
 						}
 						if (pidTX != null) { 
-							double x = ((double)tdFindResult.x - tdStartX) / width;
+							double x = ((double)tdFindResult.xF - tdStartX) / width;
 							corr += -pidTX.add(x, time);
 						}
 					}
@@ -1118,7 +1130,9 @@ class FrameProcessor {
 			armButton = false; 
 			display.panel.butArm.setBackground(armButton ? Color.RED : null);
 		}
-	    setSteering(steer);
+		if (displayRatio > 0)
+			display.panel.butLock.setBackground(td.active == false ? null : (tdFindResult == null ? Color.BLUE : Color.RED));
+		setSteering(steer);
 	    
 	    frameResponseMs = Calendar.getInstance().getTimeInMillis() - t;
 	    avgFrameDelay.add(frameResponseMs);
@@ -1208,13 +1222,12 @@ class FrameProcessor {
         	writeCompositeImage(display.image, coi, rescale, (displayMode & 32) != 0,
         			(displayMode & 32) != 0);
   
-            if ((displayMode & 0x1) != 0) {
-                writeDisplayText();                  
-            }
 
 			if ((displayMode & 0x4) != 0) {
             	display.g2.setStroke(new BasicStroke(3 * rescale));
 	            if (tdFindResult != null) {  
+					Rectangle r = td.targetRect((tdFindResult));
+					//System.out.printf("td: x %d y %d w %d h %d\n", r.x, r.y, r.width, r.height);
 	            	display.draw(arduinoArmed ? Color.red : Color.green, scaleRect(td.targetRect(tdFindResult), rescale));
 					//td.draw(oi);
 					/*Rectangle r = td.targetRect(tdFindResult);
@@ -1254,7 +1267,7 @@ class FrameProcessor {
     			caR.display(display.g2);
                 setLineColorAndWidth(Color.lightGray, 2);
         		tfrc.draw(display.g2);
-        		display.g2.draw(tfl.scaleRect(tfl.vanLimits, rescale));
+				if (tfl.vanLimits != null) display.g2.draw(TargetFinder.scaleRect(tfl.vanLimits, rescale));
 
     			int s = 7;
         		Rectangle r1 = scaleRect(new Rectangle(houghVan.calculate().x - s, 
@@ -1267,7 +1280,7 @@ class FrameProcessor {
     			//display.g2.draw(tfl.sa);
     			//display.g2.draw(tfr.sa);
 
-    			if (tfFindTargetNow)
+    			if (!td.active && tfSearchArea != null)
 	            	display.draw(Color.yellow, scaleRect(tfSearchArea, rescale));
             }
             if ((displayMode & 0x8) != 0) {
@@ -1323,6 +1336,9 @@ class FrameProcessor {
             	//	pic);
             	display.g2.setColor(Color.red);  
             	//display.g2.draw(tfResult);
+            }
+            if ((displayMode & 0x1) != 0) {
+                writeDisplayText();                  
             }
             display.redraw(keepFocus);
         }
@@ -1500,13 +1516,14 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, VP=%.5f %.5f %.5f, avgAction=%.5f avgLogDiff=%.5f\n",
+ 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, VP=%.5f %.5f %.5f, LP=%.5f %.5f %.5f, avgAction=%.5f avgLogDiff=%.5f\n",
 			avgMs != 0 ? 1000.0 / avgMs : 0,  
 			pidLL.getAvgRmsErr(), (double)pidLL.lowQualityCount/count, pidLL.avgQuality.calculate(),
 			pidRL.getAvgRmsErr(), (double)pidRL.lowQualityCount/count, pidRL.avgQuality.calculate(),
 			pidPV.getAvgRmsErr(), (double)pidPV.lowQualityCount/count, pidPV.avgQuality.calculate(),
+			pidLV.getAvgRmsErr(), (double)pidLV.lowQualityCount/count, pidLV.avgQuality.calculate(),
 			steering.totalAction / count, totalLogDiff / count);
- 	  	System.out.printf("CC=%.5f %.5f %.5f, TX=%.5f %.5f %.5f\n",
+ 	  	System.out.printf("CC=%.9f %.5f %.5f, TX=%.7f %.7f %.7f\n",
 			pidCC.getAvgRmsErr(), (double)pidCC.lowQualityCount/count, pidCC.avgQuality.calculate(),
 			pidTX.getAvgRmsErr(), (double)pidTX.lowQualityCount/count, pidTX.avgQuality.calculate());
 		if (td != null) 
@@ -1602,9 +1619,9 @@ class FrameProcessor {
 	    			s = s.replace("%ts", String.format("%d", time));
 	    			s = s.replace("%delay", String.format("%d", (int)frameResponseMs));
 	    			s = s.replace("%fps", String.format("%.2f", fps));
-	    			s = s.replace("%tdx", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.x));
-	    			s = s.replace("%tdy", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.y));
-	    			s = s.replace("%tds", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.scale));
+	    			s = s.replace("%tdx", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.xF));
+	    			s = s.replace("%tdy", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.yF));
+	    			s = s.replace("%tds", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.scaleF));
 	    			s = s.replace("%tde", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.score));
 	    			s = s.replace("%tdv", String.format("%f", tdFindResult == null ? Double.NaN : tdFindResult.var));
 	    			s = s.replace("%tddelta", String.format("%.1f", tdAvg.delta));
@@ -1612,7 +1629,7 @@ class FrameProcessor {
 	    			s = s.replace("%gcurve", String.format("%f", gps.curve));
 	    			s = s.replace("%logdiff", String.format("%f", logDiffSteer));
 	    			s = s.replace("%cruise", String.format("%d", lastCruiseAction));
-	    			s = s.replace("%cruisepc", String.format("%d", pidCC.pendingCorrection));
+	    			s = s.replace("%cruisepc", String.format("%f", pidCC.pendingCorrection));
 	    			s = s.replace("%tfx", String.format("%f", tfResult == null ? Double.NaN : tfResult.x));
 	    			s = s.replace("%tfy", String.format("%f", tfResult == null ? Double.NaN : tfResult.y));
 	    			s = s.replace("%tfw", String.format("%f", tfResult == null ? Double.NaN : tfResult.width));
@@ -1676,7 +1693,9 @@ class FrameProcessor {
 
 
 		String s = ae.getActionCommand();
-		if (s.equals("RECORD")) { 
+		if (s.equals("TF LOCK")) { 
+			keyPressed(10);
+		} else if (s.equals("RECORD")) { 
 			keyPressed('A');
 		} else if (s.equals("ARM")) { 
 			armButton = !armButton;
@@ -1703,8 +1722,6 @@ class FrameProcessor {
 		if (Main.debug("DEBUG_ORIGIN")) { 
 			this.tfr.hOriginOverride = new Point(x,y);
 		}
-		//tdStartX  = x - 2; // TODO - figure out why these constant offsets are needed
-		//tdStartY = y - 22;
 	}
 	
 	boolean arduinoArmed = false;
