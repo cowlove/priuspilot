@@ -428,7 +428,7 @@ void max_brightness(int fd, bool max) {
 				//set_ctl_to_max(V4L2_CID_BRIGHTNESS);
 				//set_ctl_to_max(V4L2_CID_CONTRAST);
 				set_ctl_to_max(fd, V4L2_CID_SHARPNESS);
-				//set_ctl_to_max(V4L2_CID_SATURATION);
+				set_ctl_to_max(fd, V4L2_CID_SATURATION);
 				//set_ctl_to_max(V4L2_CID_BRIGHTNESS);
 				set_ctl(fd, V4L2_CID_EXPOSURE_ABSOLUTE, 333);
 				set_ctl(fd, V4L2_CID_BRIGHTNESS, 64);
@@ -436,8 +436,8 @@ void max_brightness(int fd, bool max) {
 			} else { 
 				set_ctl(fd, V4L2_CID_EXPOSURE_AUTO, V4L2_EXPOSURE_APERTURE_PRIORITY);
 				set_ctl_to_default(fd, V4L2_CID_BRIGHTNESS);
-				set_ctl_to_default(fd, V4L2_CID_SHARPNESS);
-				set_ctl_to_default(fd, V4L2_CID_CONTRAST);
+				set_ctl_to_max(fd, V4L2_CID_SHARPNESS);
+				set_ctl_to_max(fd, V4L2_CID_CONTRAST);
 				//set_ctl(V4L2_CID_EXPOSURE_AUTO, V4L2_EXPOSURE_APERTURE_PRIORITY);
 				//set_ctl(V4L2_CID_EXPOSURE_ABSOLUTE, 156);
 				//set_ctl_to_max(V4L2_CID_SHARPNESS);
@@ -586,7 +586,7 @@ JNIEXPORT jint JNICALL Java_FrameCaptureJNI_grabFrame
 			}
 		} else {
 			if (conf->count == 20) {
-				max_brightness(conf->fd, false);
+				//max_brightness(conf->fd, false);
 			}
 			// check to see if we need to switch to night mode
 			static const int modeCheckInterval = 2; // seconds

@@ -316,14 +316,15 @@ class FrameProcessor {
 		}
 	
         
-		tdStartScale = 1.2;
-        tdStartX = 225; //Math.round((.5 + .046 / 2) * w);
-        tdStartY = (int)Math.round((.0156 + .125 / 2)  * h);
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
-        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 32);
+        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 72);
         inputZeroPoint.zeroPoint.rLane = 490;
         inputZeroPoint.zeroPoint.lLane = 1;
+
+		tdStartScale = 1.8;
+        tdStartX = inputZeroPoint.zeroPoint.vanX + 8;
+        tdStartY = inputZeroPoint.zeroPoint.vanY - 10;
 
 		trimCheat = new GPSTrimCheat(50);
 		//gps.start();
@@ -370,6 +371,7 @@ class FrameProcessor {
     
     int pendingKeyCode = 0;
     void keyPressed(int keyCode) {
+		System.out.printf("Got key %d\n", keyCode);
     	if (keyCode == 'N' || keyCode == 'Z')
     		keyPressedSync(keyCode);
     	else
@@ -573,7 +575,7 @@ class FrameProcessor {
 		}
         x = x * epsSteeringGain * speedAdjust;
 
-		sendEspNow(String.format("PPDEG %.3f %.3f\n", x, x));
+		sendEspNow(String.format("PPDEG 7821849B14F0 %.3f %.3f\n", x, x));
 
 		if (false) { 
 			try {
@@ -995,7 +997,7 @@ class FrameProcessor {
 	    	if (debugMode == 1) corr = 0;
 	        if (td != null) {
 				td.newFrame(coi);
-		    	td.setSearchDist(3, 2, 1);
+		    	td.setSearchDist(3, 2, 2);
 	        	double pos = 0;
 	        	if (tdFindResult != null) {
 	        		//if (tdFindResult.scale < -10)
