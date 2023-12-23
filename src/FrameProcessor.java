@@ -187,6 +187,11 @@ class FrameProcessor {
         this.rescale = rescale;
         this.displayRatio = displayRatio;
         
+        inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
+        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 72);
+        inputZeroPoint.zeroPoint.rLane = 490;
+        inputZeroPoint.zeroPoint.lLane = 1;
+
 		restartOutputFiles();
         //td = new TemplateDetectCannyCorrelation(w, h);
         td = new TemplateDetectRGB(w, h);
@@ -196,7 +201,7 @@ class FrameProcessor {
 		int minAng = Main.debugInt("minAng", 6);
 		int maxAng = Main.debugInt("maxAng", 55);
         int houghSize = Main.debugInt("HOUGH_SIZE", 80);
-		double vertPct = Main.debugDouble("SA_VERT_PERCENT",80) / 100.0;
+		double vertPct = 1.0 - (inputZeroPoint.zeroPoint.vanY + Main.debugDouble("SAVF",9)) / h;
         tfl = new TargetFinderLines(w, h, null, true, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tfr = new TargetFinderLines(w, h, null, false, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tflo = new TargetFinderLines(w, h, null, true, 77, 60, minSz, maxSz, 12, 35, .85);
@@ -313,14 +318,7 @@ class FrameProcessor {
 			pidCC.qualityFadeThreshold = 1.0;
 			pidCC.qualityFadeGain = 1;
 			pidCC.reset();
-		}
-	
-        
-        
-        inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
-        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 72);
-        inputZeroPoint.zeroPoint.rLane = 490;
-        inputZeroPoint.zeroPoint.lLane = 1;
+		}      
 
 		tdStartScale = 1.8;
         tdStartX = inputZeroPoint.zeroPoint.vanX + 8;
@@ -1299,6 +1297,7 @@ class FrameProcessor {
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.magenta, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.blue, String.format("%d", (int)gps.avgCurve.size()), gps.curve + 0.5, yoff, bWidth, 0.05);
+	            display.rectangle(Color.cyan, String.format("%.1f", fps), Math.min(0.95, (double)fps / 16), yoff, bWidth, 0.05);	            
 	            for( PidControl pid : pids ) { 
 	            	yoff += yspace;
 	            	display.text(pid.description, 0, yoff + 0.05);
@@ -1312,7 +1311,6 @@ class FrameProcessor {
 		       				.41 + pid.quality * 0.52, yoff, bWidth, 0.05, false);
 		  //          display.text(pid.description, 0.0, yoff);
 	            }
-	            display.rectangle(Color.cyan, String.format("%.1f", fps), Math.min(0.95, (double)fps / 32), yoff, bWidth, 0.05);	            
 
  //           	TemplateDetect.Tile ti = td.scaledTiles.getTileByScale(tdFindResult.scale);
  //           	display.image.getWritableTile(0,0).setDataElements(0, 0, ti.loc.width, ti.loc.height, 
