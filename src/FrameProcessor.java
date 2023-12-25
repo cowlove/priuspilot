@@ -104,6 +104,7 @@ class FrameProcessor {
     TemplateDetect td = null;
 	BufferedReader logDiffFile = null;
 	SerialReaderThread espNow = new SerialReaderThread();
+	double vsenseErrMax = 0.5;
     
     BufferedImageDisplayWithInputs display = null;
     public PidControl pidCC = new PidControl("Cruise Control PID");
@@ -188,7 +189,7 @@ class FrameProcessor {
         this.displayRatio = displayRatio;
         
         inputZeroPoint.zeroPoint.vanX = Main.debugInt("VANX", 219); 
-        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 72);
+        inputZeroPoint.zeroPoint.vanY = Main.debugInt("VANY", 67);
         inputZeroPoint.zeroPoint.rLane = 490;
         inputZeroPoint.zeroPoint.lLane = 1;
 
@@ -1123,6 +1124,9 @@ class FrameProcessor {
 
 		if (Main.fc != null && !joystick.safetyButton() && !armButton)
 			steer = 0;
+		
+		if (espNow.vsenseErr.calculate() >= vsenseErrMax) 
+			steer = 0;
 
 		if (joystick.safetyButton() && armButton) { 
 			armButton = false; 
@@ -1285,7 +1289,7 @@ class FrameProcessor {
 				//displayPid(pidPV, Color.cyan);
             	//displayPid(pidLL, Color.yellow);
                	//displayPid(pidLV, Color.green);
-               	displayPid(pidPV, Color.blue);
+               	//displayPid(pidPV, Color.blue);
                	//displayPid(pidRL, Color.white);
             }
             	
@@ -1294,10 +1298,12 @@ class FrameProcessor {
 	            double yspace = 0.05;
                 double yoff = 1.0 - yspace * (pids.size() + 1);
     			final double bWidth = 0.06;
+				final double serr = espNow.vsenseErr.calculate();
 	   	        display.rectangle(Color.pink, "", corr + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(arduinoArmed ? Color.red : Color.magenta, "ST", steer + 0.5, yoff, bWidth, 0.05);
 	   	        display.rectangle(Color.blue, String.format("%d", (int)gps.avgCurve.size()), gps.curve + 0.5, yoff, bWidth, 0.05);
 	            display.rectangle(Color.cyan, String.format("%.1f", fps), Math.min(0.95, (double)fps / 16), yoff, bWidth, 0.05);	            
+	            display.rectangle(serr < vsenseErrMax ? Color.green : Color.red, String.format("%.1f", serr), Math.min(0.95, serr), yoff, bWidth, 0.05);	            
 	            for( PidControl pid : pids ) { 
 	            	yoff += yspace;
 	            	display.text(pid.description, 0, yoff + 0.05);

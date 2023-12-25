@@ -14,7 +14,8 @@ class SerialReaderThread {
     FileWriter tty = null;
 	BufferedReader fakeFile = null; 
     String devName; 
-	
+	RunningAverage vsenseErr = new RunningAverage(8);
+
 	public void open(String d) {
     	boolean complained = false;
 		devName = d;
@@ -27,25 +28,6 @@ class SerialReaderThread {
 			}	
     	}
     	tty = null;
-
-    	while(false && tty == null) { 
-	    	try {
-	    	    Process p = null;
-	    	    p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
-	    	    p.waitFor();
-	        	//tty = new FileWriter(devName);
-				System.out.println("Opened " + devName + " for writing at 9600bps");
-				complained = false;
-	        } catch(Exception e) { 
-	        	if (!complained) {
-	        		e.printStackTrace();
-	        		System.out.println("Could not open serial device " + devName + ", retrying...");
-	        	}
-	        	complained = true;
-				tty = null;
-				sleep();
-	        }   	
-    	}
 		reader.start();
     }
 	String re(String pat, String s) { 
@@ -109,7 +91,7 @@ class SerialReaderThread {
 							updated = true;
 						}
 						if (st[0].equals("7821849B14F0") && st[1].equals("SR")) {
-							vsenseErr = Double.parseDouble(st[4]);
+							vsenseErr.add(Math.abs(Double.parseDouble(st[4])));
 						}
 					} catch(Exception e) {
 						//e.printStackTrace();
@@ -118,7 +100,6 @@ class SerialReaderThread {
         	}
         }
     });
-	double vsenseErr;
     void sleep() { 
     	try {
 			Thread.sleep(50);

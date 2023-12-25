@@ -92,9 +92,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//				return fp.tfparamIndex;
 		//			}} );
 
-		add("steer.trim", 'Y', .01, 
+		add("fp.vsenseErrMax", 'Y', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.steering.trim += i; }} );
+					return fp.vsenseErrMax += i; }} );
 //		add("detector.threshold1", 'Y', 1, 
 //				new TunableParameter.Adjust() { public double adjust(double i) { 
 //					return fp.tfparam.threshold1 = (fp.tfparam.threshold1 += i); }} );
