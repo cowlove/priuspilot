@@ -108,6 +108,9 @@ class SerialReaderThread {
 							lidar = Double.parseDouble(st[1]);
 							updated = true;
 						}
+						if (st[0].equals("7821849B14F0") && st[1].equals("SR")) {
+							vsenseErr = Double.parseDouble(st[4]);
+						}
 					} catch(Exception e) {
 						//e.printStackTrace();
 					}
@@ -115,6 +118,7 @@ class SerialReaderThread {
         	}
         }
     });
+	double vsenseErr;
     void sleep() { 
     	try {
 			Thread.sleep(50);
