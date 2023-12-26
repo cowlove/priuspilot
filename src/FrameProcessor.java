@@ -205,8 +205,8 @@ class FrameProcessor {
 		double vertPct = 1.0 - (inputZeroPoint.zeroPoint.vanY + Main.debugDouble("SAVF",9)) / h;
         tfl = new TargetFinderLines(w, h, null, true, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tfr = new TargetFinderLines(w, h, null, false, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
-        tflo = new TargetFinderLines(w, h, null, true, 77, 60, minSz, maxSz, 12, 35, .85);
-        tfro = new TargetFinderLines(w, h, null, false, 77, 60, minSz, maxSz, 12, 35, .85);
+        tflo = new TargetFinderLines(w, h, null, true, 77, 32, minSz, maxSz, 12, 35, .85);
+        tfro = new TargetFinderLines(w, h, null, false, 77, 32, minSz, maxSz, 12, 35, .85);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
 
 
@@ -231,7 +231,7 @@ class FrameProcessor {
         tfparamIndex = 0;
         tfparam = tfparams.get(0);
 
-        tfrc = new TargetFinderRoadColor(w, h);
+        tfrc = null;//new TargetFinderRoadColor(w, h);
         tfrcRect = new Rectangle((int)(w * 0.51), (int)(h * 0.55), (int)(w * .12), 
         		(int)(h * 0.16));
         //new Rectangle((int)(w * 0.44), (int)(h * 0.35), 
@@ -266,12 +266,12 @@ class FrameProcessor {
 		pidRL.period.l = 0.15;
 		pidRL.delays.l.delay = 1.75;
         pidRL.gain.p.hiGain = 1.52;
-        pidRL.gain.i.max = 0.60; // I control has minor oscillating problems 
+        pidRL.gain.i.max = 1.0; // I control has minor oscillating problems 
         pidRL.finalGain = 0.54;
         pidRL.qualityFadeThreshold = .022;
         pidRL.qualityFadeGain = 2;
-        pidRL.gain.p.loTrans = -0.05;  // "bumper" points of increased gain for lane proximity
-        pidRL.gain.p.hiTrans = +0.05; 
+        pidRL.gain.p.loTrans = -0.02;  // "bumper" points of increased gain for lane proximity
+        pidRL.gain.p.hiTrans = +0.02; 
  		pidRL.reset();
         
         pidLL.copySettings(pidRL);
@@ -370,7 +370,7 @@ class FrameProcessor {
     
     int pendingKeyCode = 0;
     void keyPressed(int keyCode) {
-		System.out.printf("Got key %d\n", keyCode);
+		//System.out.printf("Got key %d\n", keyCode);
     	if (keyCode == 'N' || keyCode == 'Z')
     		keyPressedSync(keyCode);
     	else
@@ -431,17 +431,6 @@ class FrameProcessor {
 //		}
         else if (keyCode == 10) { // [ENTER] key
 			toggleTd();
-		}  else if (keyCode == 32) { // [SPACE] key
-			noSteering = !noSteering;
-			//noProcessing = !noProcessing;
-			reset();
-			steer = 0;
-			tfFindTargetNow = false;
-			tdFindResult = null;
-			setSteering(0);
-			
-			//noProcessing = disarmed;
-	           	
         } else if (keyCode == 8) { // backspace
         	System.out.printf("Keyboard reset at frame %d,  time %d\n", count, time);
         	onCruiseJoystick(4);
@@ -523,7 +512,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.20;	
+    double epsSteeringGain = 1.30;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
@@ -574,7 +563,7 @@ class FrameProcessor {
 		}
         x = x * epsSteeringGain * speedAdjust;
 
-		sendEspNow(String.format("PPDEG 7821849B14F0 %.3f %.3f\n", x, x));
+		sendEspNow(String.format("GW PPDEG 7821849B14F0 %.3f %.3f\n", x, x));
 
 		if (false) { 
 			try {
@@ -757,14 +746,18 @@ class FrameProcessor {
    			coi = oi.deepCopy();
    		
    		if (!noProcessing) { 
-	   		tfrc.findAll(coi, tfrcRect);
-	   		
-	   		if (Main.debug("xDEBUG_COLOR_SEGMENTATION")) { 
-		   		BufferedImageDisplay.nextX = 640;
-		   		BufferedImageDisplay.nextY = 20;
-		   		tfrc.hh.draw(1);
-	   		}
-	   		
+	   		if (tfrc != null) {
+				tfrc.findAll(coi, tfrcRect);	   		
+				if (Main.debug("xDEBUG_COLOR_SEGMENTATION")) { 
+					BufferedImageDisplay.nextX = 640;
+					BufferedImageDisplay.nextY = 20;
+					tfrc.hh.draw(1);
+				}
+		   		tfrc.sa.x = inputZeroPoint.zeroPoint.vanX - tfrc.sa.width / 2;
+				tfrc.rescaleDisplay = rescale; 
+	
+			}
+
 	   		final int vanRectW = 64 ;//* width / 320;
 	   		final int vanRectH = 32;// * height / 240;
 			final int vpScale = 1;
@@ -777,7 +770,7 @@ class FrameProcessor {
 	   			Rectangle(inputZeroPoint.zeroPoint.vanX - vanRectW / 2, 
 	   					inputZeroPoint.zeroPoint.vanY - vanRectH / 2, vanRectW, vanRectH);
 			
-	   		tfrc.sa.x = inputZeroPoint.zeroPoint.vanX - tfrc.sa.width / 2;
+
 
 			tfex.setVanRect(new Rectangle(inputZeroPoint.zeroPoint.vanX - vanRectW / 2, 
 	   					inputZeroPoint.zeroPoint.vanY - vanRectH / 2, vanRectW, vanRectH));
@@ -1247,7 +1240,7 @@ class FrameProcessor {
             	display.g2.setStroke(new BasicStroke(2));
  
 				// draw blue target lines adjusted for dynamicLandWidth
-				tfrc.rescaleDisplay = tflo.rescaleDisplay = tfro.rescaleDisplay = tfr.rescaleDisplay = tfl.rescaleDisplay = rescale;
+				tflo.rescaleDisplay = tfro.rescaleDisplay = tfr.rescaleDisplay = tfl.rescaleDisplay = rescale;
 	            setLineColorAndWidth(dynamicLaneWidthAdj == 0 ? Color.white : Color.blue, 4 * rescale);
 				final int lx = (int)Math.round(inputZeroPoint.zeroPoint.lLane - (dynamicLaneWidthAdj * width));
 				final int rx = (int)Math.round(inputZeroPoint.zeroPoint.rLane + (dynamicLaneWidthAdj * width));
@@ -1268,7 +1261,8 @@ class FrameProcessor {
        			caL.display(display.g2);
     			caR.display(display.g2);
                 setLineColorAndWidth(Color.lightGray, 2);
-        		tfrc.draw(display.g2);
+				if (tfrc != null) 
+	        		tfrc.draw(display.g2);
 				if (tfl.vanLimits != null) display.g2.draw(TargetFinder.scaleRect(tfl.vanLimits, rescale));
 
     			int s = 7;

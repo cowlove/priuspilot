@@ -6,7 +6,7 @@
 
 
 class SteeringLogicSimpleLimits {
-	double maxSteer =  0.55;
+	double maxSteer =  0.65;
 	double maxChange = 0.0030; // per ms
 	double deadband = 0.00;
 	double curveGain = 0.20;
@@ -14,7 +14,7 @@ class SteeringLogicSimpleLimits {
 	double finalGain = 1.00;
 
 	long lastMs = 0;
-	double trim = -0.00;
+	double trim = -0.16;
 	double lastSteer = 0;
 	double steer(long ms, double st, double curve, double speed) { 
 		if (Double.isNaN(lastSteer)) lastSteer = 0.0;

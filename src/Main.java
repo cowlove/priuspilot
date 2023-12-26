@@ -680,7 +680,7 @@ public class Main {
 	}
 	public static int debugInt(String s) { 
 		String v = debugOpts.get(s);
-		return Integer.parseInt(v);
+		return v != null ? Integer.parseInt(v) : 0;
 
 	}
 	public static double debugDouble(String s, double def) { 
@@ -695,7 +695,7 @@ public class Main {
 	public static int debugInt(String s, int def) { 
 		try {
 			String v = debugOpts.get(s);
-			return Integer.parseInt(v);
+			return v != null ? Integer.parseInt(v) : def;
 		} catch(Exception e) { 
 			return def;
 		}

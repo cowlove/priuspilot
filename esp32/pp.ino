@@ -349,6 +349,7 @@ void loop() {
 	} 
 	if (j.parseSerial == false && Serial.available()) { 
         lb.add(Serial.read(), [](const char *line) {
+			char buf[128];
 			//OUT("wrote %s", line);
 			float f1, f2;
 			esp_now_send(broadcastAddress, (uint8_t *)line, strlen(line));  
@@ -357,7 +358,13 @@ void loop() {
 				j.parseSerial = true;
 			} else if (sscanf(line, "PPDEG %f %f", &f1, &f2) == 2 && f1 == f2) {
 				steerCmd = -f1;
-				setDeg(steerCmd);
+				setDeg(steerCmd);       
+			} else if (sscanf(line, "TPWM %f %f", &f1, &f2) == 2) {
+				pwm = f1;
+				pwmms = f2;
+			} else if (sscanf(line, "GW %s", buf) == 1) {
+				OUT(Sfmt("Gateway sending: %s", line + 3));
+				EspNowSend(line + 3);
 			}        
 		});
 	} 

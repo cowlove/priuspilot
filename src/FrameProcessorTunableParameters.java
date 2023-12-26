@@ -195,12 +195,25 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("testPulse duration", '9', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.duration += i; }});
-		add("testPulse type", '0', 1,
+		add("cruise arm", '0', 0,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					fp.armCruise(); return 0;  }});
+		add("arm steering", (char)32, 0,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					fp.armButton = !fp.armButton; return 0;  }});
+		add("cruise up", '=' /*also '+' key */, 0,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					fp.setCruise(true, fp.time); return 0;  }});
+		add("cruise up", '-', 0,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					fp.setCruise(false, fp.time); return 0;  }});
+/* 		add("testPulse type", '0', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.changeTestType((int) i); }},
 				new TunableParameter.Print() { public String print() { 
 					return fp.steeringTestPulse.testTypeNames[fp.steeringTestPulse.testType]; }});
-				
+*/
+
 	
 /*(add("FP selectedPid.gain.i", '8', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
@@ -228,7 +241,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 	//	add("TF nonmaxThreshold", 'U', .01,
 	//			new TunableParameter.Adjust() { public double adjust(double i) {
 	//				return fp.tf.param.nonmaxThreshold += i; }});
-		add("TF fp.lineIntensityDelta", 'V', 1,
+		add("TF steer.trim", 'V', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.lineIntensityDelta += i; }});
 
