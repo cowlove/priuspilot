@@ -6,8 +6,8 @@
 
 
 class SteeringLogicSimpleLimits {
-	double maxSteer =  0.65;
-	double maxChange = 0.0030; // per ms
+	double maxSteer =  0.055;
+	double maxChange = 0.0048; // per ms
 	double deadband = 0.00;
 	double curveGain = 0.20;
 	double speedGain = 0.00;

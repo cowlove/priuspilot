@@ -47,9 +47,10 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		
 		add("PID D period", '6', 1, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.period.d += i; }} );
-		add("PID L period", '7', 1, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.period.l += i; }} );
-				*/
+		*/
+		add("PID L gain", '7', .01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.l.loGain += i; }} );
+				
 
 		/*
 		add("Debug Lines", 'F', 1, 
@@ -206,7 +207,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 					fp.setCruise(true, fp.time); return 0;  }});
 		add("cruise up", '-', 0,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					fp.setCruise(false, fp.time); return 0;  }});
+			 		fp.setCruise(false, fp.time); return 0;  }});
 /* 		add("testPulse type", '0', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.changeTestType((int) i); }},
@@ -243,7 +244,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 	//				return fp.tf.param.nonmaxThreshold += i; }});
 		add("TF steer.trim", 'V', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.lineIntensityDelta += i; }});
+					return fp.steering.trim += i; }});
 
 		add("fp.keepFocus", 'F', 0, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 

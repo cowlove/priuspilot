@@ -262,7 +262,7 @@ class FrameProcessor {
 
 		//double lx = Silly.debugDouble("LX", 36)/ 20.0;
 
-		pidRL.setGains(2.50, 0.04, 2.00, 0, 1.8);
+		pidRL.setGains(2.75, 0.04, 2.00, 0, 1.8);
 		pidRL.period.l = 0.15;
 		pidRL.delays.l.delay = 1.75;
         pidRL.gain.p.hiGain = 1.52;
@@ -270,8 +270,8 @@ class FrameProcessor {
         pidRL.finalGain = 0.54;
         pidRL.qualityFadeThreshold = .022;
         pidRL.qualityFadeGain = 2;
-        pidRL.gain.p.loTrans = -0.02;  // "bumper" points of increased gain for lane proximity
-        pidRL.gain.p.hiTrans = +0.02; 
+        pidRL.gain.p.loTrans = -0.05;  // "bumper" points of increased gain for lane proximity
+        pidRL.gain.p.hiTrans = +0.05; 
  		pidRL.reset();
         
         pidLL.copySettings(pidRL);
