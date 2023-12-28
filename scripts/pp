@@ -26,7 +26,8 @@ java \
     -Dmbrola.base=/home/jim/mbrola/ -Xnoclassgc -Xbatch -dsa -da -classpath $CP $PROFILE Main  \
     -displaymode 63  \
     -rescale 2 -displayratio 1 \
-    $@
+    $@ | tee -a ./lanedumps/pp.log
+    
 
 #    -agentpath:/home/jim/src/async-profiler-2.9-linux-x64/build/libasyncProfiler.so=start,event=cpu,file=profile.html \
 #    -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints \

@@ -9,6 +9,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 			System.out.printf("Warning: key '%c'/%d already bound\n", k, (int)k);
 		super.add(new TunableParameter(s, k, inc, a, p));
 	}
+	TunableParameter.Print emptyPrint = new TunableParameter.Print() { 
+		public String print() { return ""; }};
+
 	public FrameProcessorTunableParameters(FrameProcessor f) { 
 		fp = f;
 		
@@ -199,13 +202,13 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("cruise arm", '0', 0,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					fp.armCruise(); return 0;  }});
-		add("arm steering", (char)32, 0,
+		add("arm steering", (char)32, 0, 
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					fp.armButton = !fp.armButton; return 0;  }});
 		add("cruise up", '=' /*also '+' key */, 0,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					fp.setCruise(true, fp.time); return 0;  }});
-		add("cruise up", '-', 0,
+		add("cruise down", '-', 0,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 			 		fp.setCruise(false, fp.time); return 0;  }});
 /* 		add("testPulse type", '0', 1,
@@ -251,7 +254,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 					fp.keepFocus = !fp.keepFocus; return fp.keepFocus ? 1.0 : 0.0;
 				}});
 
-				// Placeholders for hardcoded keys in FP class 
+		// Placeholders for hardcoded keys in FP class 
 		add("QUIT", 'Q', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		add("RESET", 'R', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
 		add("LOOP", 'T', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});

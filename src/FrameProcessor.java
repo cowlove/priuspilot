@@ -9,6 +9,7 @@ import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -133,7 +134,8 @@ class FrameProcessor {
     int width, height, displayRatio;
     FrameProcessorTunableParameters tp = new FrameProcessorTunableParameters(this);
     TargetFinder tf = null;
-       
+    DataInputStream console = new DataInputStream(System.in) ;
+
     TargetFinderLines tfl, tfr, tfro, tflo;
     TargetFinderRoadColor tfrc;
 	TargetFinderExperimental tfex; 
@@ -262,7 +264,7 @@ class FrameProcessor {
 
 		//double lx = Silly.debugDouble("LX", 36)/ 20.0;
 
-		pidRL.setGains(2.75, 0.04, 2.00, 0, 1.8);
+		pidRL.setGains(2.75, 0.04, 4.50, 0, 1.8);
 		pidRL.period.l = 0.15;
 		pidRL.delays.l.delay = 1.75;
         pidRL.gain.p.hiGain = 1.52;
@@ -279,7 +281,7 @@ class FrameProcessor {
 		        
         if (pidLV != null) {
 			pidLV.setGains(2.0,.00,0.60,0,.40);
-			pidLV.finalGain = .80;
+			pidLV.finalGain = 1.80;
 			pidLV.gain.i.max = 0.0;
 			pidLV.period.l = 0.2;
 			pidLV.delays.l.delay = 1.55;
@@ -289,7 +291,7 @@ class FrameProcessor {
 		
         //pidPV.copySettings(pidLV);
         pidPV.setGains(2.0, 0, 0.60, 0, 0.40);
-		pidPV.finalGain = 1.00;
+		pidPV.finalGain = 0.0;
     	pidPV.period.l = 0.2;
 		pidPV.delays.l.delay = 1.55;
 	    pidPV.qualityFadeThreshold = 0.015;
@@ -299,7 +301,7 @@ class FrameProcessor {
         //pidLV.setGains(0,0,0,0,0);
 		
 		pidTX.copySettings(pidPV);
-		pidTX.finalGain = 4.0;
+		pidTX.finalGain = 0.0;
 		pidTX.qualityFadeThreshold = 0.003;
         pidTX.qualityFadeGain = 2;
 		
@@ -313,10 +315,10 @@ class FrameProcessor {
 		}
         
 		if (pidCC != null) {
-			pidCC.setGains(.20, 0, .75, 0, 1);
+			pidCC.setGains(.20, 0, .30, 0, 1);
 			pidCC.finalGain = 1.2;
 			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 2);     
-			pidCC.qualityFadeThreshold = 1.0;
+			pidCC.qualityFadeThreshold = .5;
 			pidCC.qualityFadeGain = 1;
 			pidCC.reset();
 		}      
@@ -512,7 +514,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.30;	
+    double epsSteeringGain = 1.15;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
@@ -1372,6 +1374,10 @@ class FrameProcessor {
         	pendingKeyCode = 0;
         	keyPressedSync(key);
         }
+		while(console.available() > 0) {
+			int key = console.read(); 
+			keyPressedSync(key);
+		}
         this.notify();
     }
 
