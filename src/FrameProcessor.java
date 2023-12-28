@@ -785,17 +785,17 @@ class FrameProcessor {
 	   		// do the left side in a separate thread
 	   		Thread t1 = new Thread(new Runnable() { public void run() { 
 	   			tfl.findNearest(coi, null, 0, 0);
-	   			tflo.findNearest(coi, null, 0, 0);
+	   			//tflo.findNearest(coi, null, 0, 0);
 				//caL.seedCurve(tfl.sa, tfl.lumPoints, tfl.getAngle(), tfl.getInstantaneousX(height));
 				//caL.growCurve(tfl.sa, tfl.lumPoints);
 	
 	   	   		Rectangle r = (Rectangle)tfl.vanLimits.clone();
 	   	   		r.x -= tfl.sa.x;
 	   	   		r.y -= tfl.sa.y;
-	   	   		tfl.h2.projectIntoRect(vpL, r, vpScale);
-	   	   		r = (Rectangle)tflo.vanLimits.clone();
-	   	   		r.x -= tflo.sa.x;
-	   	   		r.y -= tflo.sa.y;
+	   	   		//tfl.h2.projectIntoRect(vpL, r, vpScale);
+	   	   		//r = (Rectangle)tflo.vanLimits.clone();
+	   	   		//r.x -= tflo.sa.x;
+	   	   		//r.y -= tflo.sa.y;
 				//tflo.h2.projectIntoRect(vpL, r, vpScale);
 	
 	   		} });
@@ -803,38 +803,39 @@ class FrameProcessor {
 	   	
 	   		// do right side concurrently while left side is running 
 	   		tfr.findNearest(coi, null, 0, 0);
-	   		tfro.findNearest(coi, null, 0, 0);
+	   		//tfro.findNearest(coi, null, 0, 0);
 			//caR.seedCurve(tfr.sa, tfr.lumPoints, tfr.getAngle(), tfr.getInstantaneousX(height));
 			//caR.growCurve(tfr.sa, tfr.lumPoints);
 	
 	   		Rectangle r = (Rectangle)tfr.vanLimits.clone();
 	   		r.x -= tfr.sa.x;
 	   		r.y -= tfr.sa.y;
-			tfr.h2.projectIntoRect(vpR, r, vpScale);
+			//tfr.h2.projectIntoRect(vpR, r, vpScale);
 	   	
-	   		r = (Rectangle)tfro.vanLimits.clone();
-	   		r.x -= tfro.sa.x;
-	   		r.y -= tfro.sa.y;
+	   		//r = (Rectangle)tfro.vanLimits.clone();
+	   		//r.x -= tfro.sa.x;
+	   		//r.y -= tfro.sa.y;
 			//tfro.h2.projectIntoRect(vpR, r, vpScale);
 	   		
 	   		try { 
 	   			t1.join(0);
 	   		} catch(Exception e) {}
 	   		
-	   		int [] vp = new int[vpL.length];
-	   		for(int i = 0; i < vp.length; i++)  
-	   			vp[i] = vpL[i] + vpR[i];
-	   		
-			double gr = Main.debugDouble("VP_GR", 3.2) / vpScale;
-			GaussianKernel gk = new GaussianKernel(gr, (int)(gr * 10), r.width / vpScale, 
-					r.height / vpScale);
-			gk.blur(vp);
+	   		//int [] vp = new int[vpL.length];
+	   		//for(int i = 0; i < vp.length; i++)  
+	   		//	vp[i] = vpL[i] + vpR[i];
+	   		//
+			//double gr = Main.debugDouble("VP_GR", 3.2) / vpScale;
+			//GaussianKernel gk = new GaussianKernel(gr, (int)(gr * 10), r.width / vpScale, 
+			//		r.height / vpScale);
+			//gk.blur(vp);
 	
-			houghVan.add(new Point(/*gk.bestColumn(vp)*/gk.bestX * vpScale + tfr.vanLimits.x, gk.bestY * vpScale + tfr.vanLimits.y));
-			if (gk.max > 15) {	
-				persVanX = (((double)houghVan.ax.calculate()  - inputZeroPoint.zeroPoint.vanX) / width) * pixelWidthPrescale;
-			}
+			//houghVan.add(new Point(/*gk.bestColumn(vp)*/gk.bestX * vpScale + tfr.vanLimits.x, gk.bestY * vpScale + tfr.vanLimits.y));
+			//if (gk.max > 15) {	
+			//	persVanX = (((double)houghVan.ax.calculate()  - inputZeroPoint.zeroPoint.vanX) / width) * pixelWidthPrescale;
+			//}
 			//System.out.printf("%f\n", persVanX);
+			persVanX = Double.NaN;
 			tfex.findNearest(coi, null, 0, 0);
 
 			tfl.markup(coi);
@@ -847,7 +848,7 @@ class FrameProcessor {
 			//setLineColorAndWidth(Color.lightGray, 2);
 			//display.g2.draw(scaleRect(tfex.vanRec, rescale));
 
-			
+			/* 
 	   		if (Main.debug("DEBUG_VAN")) {
 				// flip chart to make it easier to read
 	   			int w = tfr.vanLimits.width / vpScale;
@@ -863,7 +864,7 @@ class FrameProcessor {
 				gp.add3DGrid(vp, w, h);
 				gp.draw();
 		  	}
-			
+			*/
 			if (selectedPid == pidLL) 
 				pidRL.copySettings(pidLL);
 			else
