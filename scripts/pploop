@@ -1,5 +1,7 @@
 #!/bin/bash -x
 
+sudo /usr/local/bin/logkeys -m $HOME/src/priuspilot/keymap -s 
+
 while true; do
 	cd $HOME/src/priuspilot
 	git pull
