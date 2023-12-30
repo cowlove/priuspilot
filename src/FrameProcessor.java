@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -1382,6 +1383,9 @@ class FrameProcessor {
         this.notify();
     }
 
+    Process keyboardReader = Runtime.getRuntime().exec("sudo tail -f -c 0 /var/log/logkeys.log");
+	InputStreamReader keyboardStream = new InputStreamReader(keyboardReader.getInputStream());
+
     private void setLineColorAndWidth(Color c, int w) { 
     	display.g2.setStroke(new BasicStroke(w));
 		display.g2.setColor(c);    	
@@ -1389,6 +1393,23 @@ class FrameProcessor {
     int repeatFrame = 0;
     
     void processFrame(long t, OriginalImage orig) throws IOException {
+		// TODO move this somewhere that doesn't pause with Z key 
+		if (keyboardStream.ready()) {
+			int k = keyboardStream.read();
+			System.out.printf("keyboardStream: %d\n", k);
+			if (k == 10) return;
+			if (k >= 97 && k <= 122)
+				k -= 32;
+			if (k == '<') { 
+				String s = "";
+				while((k = keyboardStream.read()) != '>')
+					s += String.format("%c", k);
+				System.out.printf("keyboardStream got: " + s + "\n");
+				if (s.compareTo("Enter") == 0) keyPressed(10);
+			} else { 
+				this.keyPressed(k);
+			}
+		}
 	    count++;
     	do {
     		/*

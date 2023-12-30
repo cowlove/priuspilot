@@ -7,7 +7,14 @@ git clone https://github.com/cowlove/priuspilot.git
 cd ~/src/priuspilot
 mkdir lanedumps
 
-sudo apt-get -y install openjdk-17-jdk-headless openjdk-17-jdk xfce4-terminal automake tightvncserver syslog-ng
+sudo apt-get -y install openjdk-17-jdk-headless openjdk-17-jdk xfce4-terminal automake \
+    tightvncserver syslog-ng scons
+
+cd ~/src
+git clone https://gitlab.com/gpsd/gpsd.git
+cd cd gpsd
+scons
+
 
 
 
@@ -21,6 +28,7 @@ make
 sudo make install
 
 
+cd ~/src/priuspilot
 make -C joystick/linux
 cp joystick/lib/*.so pplib/
 

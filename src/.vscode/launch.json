@@ -15,14 +15,14 @@
         },
         {
             "type": "java",
-            "name": "Launch 20231116.131526.yuv",
+            "name": "Launch 20231116.131526.yuv.gz",
             "request": "launch",
             "env": {
                 "LD_LIBRARY_PATH": "/home/jim/src/priuspilot/pplib"
             },
             "mainClass": "Main",
             "args": [
-                "20231218.161903.yuv", "-key", "22,10"
+                "20231218.161903.yuv.gz", "-key", "22,10"
                 
                 ]
         },
