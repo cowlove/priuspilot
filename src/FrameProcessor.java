@@ -1397,16 +1397,18 @@ class FrameProcessor {
 		if (keyboardStream.ready()) {
 			int k = keyboardStream.read();
 			System.out.printf("keyboardStream: %d\n", k);
-			if (k == 10) return;
-			if (k >= 97 && k <= 122)
-				k -= 32;
-			if (k == '<') { 
+			if (k == 10) {
+				while((k = keyboardStream.read()) != '>')
+				keyboardStream.read();
+			} else if (k == '<') { 
 				String s = "";
 				while((k = keyboardStream.read()) != '>')
 					s += String.format("%c", k);
 				System.out.printf("keyboardStream got: " + s + "\n");
 				if (s.compareTo("Enter") == 0) keyPressed(10);
-			} else { 
+			} else {
+				if (k >= 97 && k <= 122)
+					k -= 32;
 				this.keyPressed(k);
 			}
 		}
