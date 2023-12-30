@@ -1398,8 +1398,11 @@ class FrameProcessor {
 			int k = keyboardStream.read();
 			System.out.printf("keyboardStream: %d\n", k);
 			if (k == 10) {
-				while((k = keyboardStream.read()) != '>')
-				keyboardStream.read();
+				while((k = keyboardStream.read()) != '>') {
+					System.out.printf("consuming %c\n", k);
+				}
+				k = keyboardStream.read();
+				System.out.printf("finally consuming %c\n", k);
 			} else if (k == '<') { 
 				String s = "";
 				while((k = keyboardStream.read()) != '>')
