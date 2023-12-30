@@ -106,6 +106,7 @@ class MyPanel extends JPanel implements MouseMotionListener, MouseListener, Acti
 	public void actionPerformed(ActionEvent ae) {
 		fp.actionPerformed(ae);
 		typingArea.requestFocus();
+		typingArea.setText("");
 	}
 	@Override
 	public void keyPressed(KeyEvent arg0) {

@@ -1,6 +1,21 @@
 #!/bin/bash -x 
 
-sudo apt-get install openjdk-11-jdk-headless openjdk-11-jdk xfce4-terminal
+mkdir ~/src
+cd !$
+git clone https://github.com/cowlove/priuspilot.git
+
+cd ~/src/priuspilot
+
+sudo apt-get -y install openjdk-17-jdk-headless openjdk-17-jdk xfce4-terminal automake 
+
+cd ~/src
+git clone https://github.com/kernc/logkeys.git
+cd logkeys
+./autogen.sh
+cd build
+../configure
+make
+sudo make install
 
 
 make -C joystick/linux

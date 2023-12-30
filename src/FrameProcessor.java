@@ -1521,11 +1521,11 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, VP=%.5f %.5f %.5f, LP=%.5f %.5f %.5f, avgAction=%.5f avgLogDiff=%.5f\n",
+ 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, LP=%.5f %.5f %.5f, avgAction=%.5f avgLogDiff=%.5f\n",
 			avgMs != 0 ? 1000.0 / avgMs : 0,  
 			pidLL.getAvgRmsErr(), (double)pidLL.lowQualityCount/count, pidLL.avgQuality.calculate(),
 			pidRL.getAvgRmsErr(), (double)pidRL.lowQualityCount/count, pidRL.avgQuality.calculate(),
-			pidPV.getAvgRmsErr(), (double)pidPV.lowQualityCount/count, pidPV.avgQuality.calculate(),
+			//pidPV.getAvgRmsErr(), (double)pidPV.lowQualityCount/count, pidPV.avgQuality.calculate(),
 			pidLV.getAvgRmsErr(), (double)pidLV.lowQualityCount/count, pidLV.avgQuality.calculate(),
 			steering.totalAction / count, totalLogDiff / count);
  	  	System.out.printf("CC=%.9f %.5f %.5f, TX=%.7f %.7f %.7f\n",
