@@ -1412,7 +1412,8 @@ class FrameProcessor {
 			} else {
 				if (k >= 97 && k <= 122)
 					k -= 32;
-				this.keyPressed(k);
+				if (k != 'Z' && k != 'N') // don't pause the screen we can't undo it yet 
+					this.keyPressed(k);
 			}
 		}
 	    count++;
