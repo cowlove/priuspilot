@@ -447,15 +447,11 @@ class FrameProcessor {
         	tp.adjustParam(-1);
         	tp.printCurrent();
         } else if (keyCode == 37) { // left arrow
-        	//tp.adjustParam(-10);
-    		//tp.printCurrent();
-    		//logPidSettings();	
-        	steeringTestPulse.startPulse(time, -1);
+			tp.selectNext(-1);
+        	tp.printCurrent();
         } else if (keyCode == 39) { // right arrow 
-         	//tp.adjustParam(10);
-         	//tp.printCurrent();
-         	//logPidSettings();
-         	steeringTestPulse.startPulse(time, 1);
+			tp.selectNext(+1);
+        	tp.printCurrent();
         } else if (keyCode == 127) { // delete
 			inputZeroPoint.setAutoZero(); 
         } else if (tp.findParam(keyCode) != null) {
