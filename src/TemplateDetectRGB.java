@@ -657,6 +657,8 @@ class TemplateDetectRGB extends TemplateDetect {
 
 	// weighted average of the x,y,scale of the 3 find results weighted according to scores
 	FindResult average3FindResults(FindResult l, FindResult m, FindResult r, double arg) {
+		if (l == null || m == null | r == null) 
+			return new FindResult();
 		FindResult rv = new FindResult(m); 
 		final double maxS = Math.max(l.score, Math.max(m.score, r.score)) * arg; // TODO- better way to weight? 
 		final double sumS = maxS - l.score + maxS - r.score + maxS - m.score;

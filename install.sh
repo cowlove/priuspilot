@@ -7,6 +7,10 @@ git clone https://github.com/cowlove/priuspilot.git
 cd ~/src/priuspilot
 mkdir lanedumps
 
+sudo mkdir -p /host/lanedumps
+sudo chown pi:pi !$
+
+
 sudo apt-get -y install openjdk-17-jdk-headless openjdk-17-jdk xfce4-terminal automake \
     tightvncserver syslog-ng scons
 
