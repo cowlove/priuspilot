@@ -5,8 +5,11 @@ cd !$
 git clone https://github.com/cowlove/priuspilot.git
 
 cd ~/src/priuspilot
+mkdir lanedumps
 
-sudo apt-get -y install openjdk-17-jdk-headless openjdk-17-jdk xfce4-terminal automake 
+sudo apt-get -y install openjdk-17-jdk-headless openjdk-17-jdk xfce4-terminal automake tightvncserver syslog-ng
+
+
 
 cd ~/src
 git clone https://github.com/kernc/logkeys.git
