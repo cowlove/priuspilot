@@ -1396,19 +1396,23 @@ class FrameProcessor {
 		// TODO move this somewhere that doesn't pause with Z key 
 		if (keyboardStream.ready()) {
 			int k = keyboardStream.read();
-			System.out.printf("keyboardStream: %d\n", k);
+			//System.out.printf("keyboardStream: %d\n", k);
 			if (k == 10) {
 				while((k = keyboardStream.read()) != '>') {
-					System.out.printf("consuming %c\n", k);
+					//System.out.printf("consuming %c\n", k);
 				}
 				k = keyboardStream.read();
-				System.out.printf("finally consuming %c\n", k);
+				//System.out.printf("finally consuming %c\n", k);
 			} else if (k == '<') { 
 				String s = "";
 				while((k = keyboardStream.read()) != '>')
 					s += String.format("%c", k);
-				System.out.printf("keyboardStream got: " + s + "\n");
+				//System.out.printf("keyboardStream got: " + s + "\n");
 				if (s.compareTo("Enter") == 0) keyPressed(10);
+				if (s.compareTo("Up") == 0) keyPressed(38);
+				if (s.compareTo("Down") == 0) keyPressed(40);
+				if (s.compareTo("Left") == 0) keyPressed(37);
+				if (s.compareTo("Right") == 0) keyPressed(39);
 			} else {
 				if (k >= 97 && k <= 122)
 					k -= 32;
