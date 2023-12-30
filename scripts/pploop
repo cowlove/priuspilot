@@ -6,6 +6,7 @@ while true; do
 	cd $HOME/src/priuspilot
 	git pull
  	VIDEODEV=`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
+	if [ "$VIDEODEV" == "" ]; then VIDEODEV=SIM; fi
 	$HOME/src/priuspilot/scripts/ppr \
 	/dev/video0 -minms 60 -keepfocus -rescale 1 -displayratio 10 $@
 
