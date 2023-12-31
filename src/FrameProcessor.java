@@ -271,7 +271,7 @@ class FrameProcessor {
         pidRL.gain.p.hiGain = 1.52;
         pidRL.gain.i.max = 1.0; // I control has minor oscillating problems 
         pidRL.finalGain = 0.54;
-        pidRL.qualityFadeThreshold = .022;
+        pidRL.qualityFadeThreshold = .025;
         pidRL.qualityFadeGain = 2;
         pidRL.gain.p.loTrans = -0.05;  // "bumper" points of increased gain for lane proximity
         pidRL.gain.p.hiTrans = +0.05; 
@@ -287,7 +287,7 @@ class FrameProcessor {
 			pidLV.period.l = 0.2;
 			pidLV.delays.l.delay = 1.55;
 			pidLV.qualityFadeThreshold = .020;
-			pidLV.qualityFadeGain = 2;
+			pidLV.qualityFadeGain = 3;
 		}
 		
         //pidPV.copySettings(pidLV);
@@ -1380,8 +1380,7 @@ class FrameProcessor {
         this.notify();
     }
 
-    Process keyboardReader = Main.debugInt("CONSOLEKEYS", 1) == 1 ? Runtime.getRuntime().exec("sudo tail -f -c 0 /var/log/logkeys.log") : null;
-	InputStreamReader keyboardStream = keyboardReader != null ? new InputStreamReader(keyboardReader.getInputStream()) : null;
+	InputStreamReader keyboardStream = null;
 
     private void setLineColorAndWidth(Color c, int w) { 
     	display.g2.setStroke(new BasicStroke(w));

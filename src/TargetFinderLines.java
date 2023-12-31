@@ -178,7 +178,7 @@ class PeriodicityDetector {
 	
 }
 class Focus { 
-	double minWeight = Main.debugDouble("MINWT", 22000); // see also MINWT2 TODO needs to be normalized, values change with useLuminance, etc
+	double minWeight = Main.debugDouble("MINWT", 20000); // see also MINWT2 TODO needs to be normalized, values change with useLuminance, etc
 	double minAngWidth, maxAngWidth;
 	int minSzWidth, maxSzWidth;
 	double defaultAngle = 0;
@@ -1116,7 +1116,7 @@ class TargetFinderLines extends TargetFinder {
 			if (step == 0) break;
 		}
 
-		System.out.printf("id %d bestAng: %f\n", h.id, bestAng);
+		//System.out.printf("id %d bestAng: %f\n", h.id, bestAng);
 		// TODO recalculate the results for bestAng
 		for(int y = 0; y < sa.height; y++) { 
 			for(int x = xstart(y); x < xend(y); x++) { 

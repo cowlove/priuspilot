@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
@@ -560,7 +561,10 @@ public class Main {
         			minFrameMs, useSystemClock);
         	if (fp.writer != null) 
         		fp.writer.fc = fc; 
-	    	
+	    
+			Process proc = Runtime.getRuntime().exec("sudo tail -f -c 0 /var/log/logkeys.log");
+	 		fp.keyboardStream = new InputStreamReader(proc.getInputStream());
+
         	int n;
         	// BROKEN- when frames are dropped, this thread could read data into the buffer
         	// currently being used by the FrameProcessor thread.  Probably just allocate/free
