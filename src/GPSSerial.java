@@ -141,7 +141,7 @@ class GPSSerial {
 
     	while(tty == null) { 
 	    	try {
-	    	    Process p = Runtime.getRuntime().exec("/home/jim/src/gpsd/gpsd-3.25.1~dev/clients/ubxtool -f " + devName + " -p CFG-RATE,100");
+				Process p = Runtime.getRuntime().exec(System.getenv("HOME") + "/src/gpsd/gpsd-3.25.1~dev/clients/ubxtool -f " + devName + " -p CFG-RATE,100");
 	    	    p.waitFor();
 	    	    p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
 	    	    p.waitFor();
@@ -244,7 +244,7 @@ class GPSSerial {
         	while(true) { 
         		BufferedReader fin;
 				try {
-					Process p = Runtime.getRuntime().exec("/home/jim/src/gpsd/gpsd-3.25.1~dev/clients/ubxtool -f " + devName + " -p CFG-RATE,100");
+					Process p = Runtime.getRuntime().exec(System.getenv("HOME") + "/src/gpsd/gpsd-3.25.1~dev/clients/ubxtool -f " + devName + " -p CFG-RATE,100");
 					p.waitFor();
 					p = Runtime.getRuntime().exec("stty -F " + devName + " 921600 sane -echo raw");
 					p.waitFor();
