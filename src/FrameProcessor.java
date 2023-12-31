@@ -200,11 +200,11 @@ class FrameProcessor {
         //td = new TemplateDetectCannyCorrelation(w, h);
         td = new TemplateDetectRGB(w, h);
         
-        int minSz = Main.debugInt("minSz", 38); // min/max radius
+        int minSz = (int)Main.debugDouble("minSz", 36); // min/max radius
         int maxSz = 130;
-		int minAng = Main.debugInt("minAng", 6);
-		int maxAng = Main.debugInt("maxAng", 55);
-        int houghSize = Main.debugInt("HOUGH_SIZE", 80);
+		int minAng = (int)Main.debugDouble("minAng", 6);
+		int maxAng = (int)Main.debugDouble("maxAng", 55);
+        int houghSize = (int)Main.debugDouble("HOUGH_SIZE", 32);
 		double vertPct = 1.0 - (inputZeroPoint.zeroPoint.vanY + Main.debugDouble("SAVF",9)) / h;
         tfl = new TargetFinderLines(w, h, null, true, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tfr = new TargetFinderLines(w, h, null, false, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
@@ -912,8 +912,9 @@ class FrameProcessor {
 
 			if (tfr.focus.getQuality() > laneMinQuality && tfl.focus.getQuality() > laneMinQuality) {
 	       		laneVanish = TargetFinderLines.linePairIntercept(tfl, tfr);
+				double vx = TargetFinderLines.linePairInterceptX(tfl, tfr);
 	      		if (tfl.insideVanRect(laneVanish))
-	      			laneVanX = ((double)(laneVanish.x - inputZeroPoint.zeroPoint.vanX)) / width * 1.5 * pixelWidthPrescale; 
+	      			laneVanX = (vx - inputZeroPoint.zeroPoint.vanX) / width * 1.5 * pixelWidthPrescale; 
 			}
 			
 			if (!Double.isNaN(lpos) && !Double.isNaN(rpos) && !Double.isNaN(laneVanish.x) && !Double.isNaN(laneVanish.y)) { 
@@ -1379,8 +1380,8 @@ class FrameProcessor {
         this.notify();
     }
 
-    Process keyboardReader = Runtime.getRuntime().exec("sudo tail -f -c 0 /var/log/logkeys.log");
-	InputStreamReader keyboardStream = new InputStreamReader(keyboardReader.getInputStream());
+    Process keyboardReader = Main.debugInt("CONSOLEKEYS", 1) == 1 ? Runtime.getRuntime().exec("sudo tail -f -c 0 /var/log/logkeys.log") : null;
+	InputStreamReader keyboardStream = keyboardReader != null ? new InputStreamReader(keyboardReader.getInputStream()) : null;
 
     private void setLineColorAndWidth(Color c, int w) { 
     	display.g2.setStroke(new BasicStroke(w));
@@ -1390,7 +1391,7 @@ class FrameProcessor {
     
     void processFrame(long t, OriginalImage orig) throws IOException {
 		// TODO move this somewhere that doesn't pause with Z key 
-		if (keyboardStream.ready()) {
+		if (keyboardStream != null && keyboardStream.ready()) {
 			int k = keyboardStream.read();
 			//System.out.printf("keyboardStream: %d\n", k);
 			if (k == 10) {
@@ -1548,7 +1549,7 @@ class FrameProcessor {
 
     void printFinalDebugStats() { 
         double avgMs = intTimer.average();
- 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, LP=%.5f %.5f %.5f, avgAction=%.5f avgLogDiff=%.5f\n",
+ 	  	System.out.printf("FPS=%06.2f RMS errs: LL=%.5f %.5f %.5f, RL=%.5f %.5f %.5f, LP=%.5f %.5f %.5f, aa=%.5f ld=%.5f\n",
 			avgMs != 0 ? 1000.0 / avgMs : 0,  
 			pidLL.getAvgRmsErr(), (double)pidLL.lowQualityCount/count, pidLL.avgQuality.calculate(),
 			pidRL.getAvgRmsErr(), (double)pidRL.lowQualityCount/count, pidRL.avgQuality.calculate(),
@@ -1634,7 +1635,7 @@ class FrameProcessor {
 	    			s = new String(logSpec);
 	    			s = s.replace("%LS1", "t=%time~cor=%corr~st=%steer~del=%delay");
 	    			s = s.replace("%TEST1", 
-		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx " +
+		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx lvx %lvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim cruise %cruise cruisepc %cruisepc but %buttons stass %stass %pidrl %pidll %pidpv %pidlv %pidtx %pidcc " +
 		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx");

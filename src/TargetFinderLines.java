@@ -254,8 +254,8 @@ class Focus {
 	double getLastAngle() { 
 		return angle.count > 0 ? lastAngle : defaultAngle;		
 	}
-	int getLastIntercept() { 
-		return (int)Math.round(intercept.count > 0 ? lastIntercept : defaultIntercept);
+	double getLastIntercept() { 
+		return intercept.count > 0 ? lastIntercept : defaultIntercept;
 	}
 	int getIntercept() {
 		return (int)Math.round(intercept.count > 0 ? intercept.averageY() : defaultIntercept);
@@ -632,7 +632,6 @@ class TargetFinderLines extends TargetFinder {
 		// steeper lines.
 		final double prefPoint = 0.1;
 		int ca = leftSide ? 0 : h.angSz;
-		
 		h.findClosest(ca, leftSide ? h.radSz : 0, 0.7f);
 		//h.findCG(ca);
 
@@ -1009,6 +1008,18 @@ class TargetFinderLines extends TargetFinder {
 		int y = (int)Math.round(x * m2 + b2);
 		return new Point(x, y);
 	}
+
+	static double linePairInterceptX(TargetFinderLines l1, TargetFinderLines l2) { 
+		double m1 = Math.tan(Math.toRadians(l1.focus.getLastAngle()));
+		double b1 = l1.sa.y + l1.focus.getLastIntercept() - l1.sa.x * m1;
+		double m2 = Math.tan(Math.toRadians(l2.focus.getLastAngle()));
+		double b2 = l2.sa.y + l2.focus.getLastIntercept() - l2.sa.x * m2;
+
+		double x = (b2 - b1) / (m1 - m2);
+		//double y = x * m2 + b2;
+		return x;
+	}
+
 	
 	static void displayLinePair(TargetFinderLines l1, TargetFinderLines l2, Graphics2D g2, int odotl, int odotr) {
 		Point p = linePairIntercept(l1, l2);
@@ -1052,7 +1063,6 @@ class TargetFinderLines extends TargetFinder {
 
 	public void filterVP() { 
 		double maxGrad = Main.debugDouble("MAXGRAD", 100);
-
 		// Filter for magnitudes perpendicular to the vanishing point lines 
 		for(int y = 0; y < sa.height; y++) { 
 			for(int x = xstart(y); x < xend(y); x++) { 
@@ -1064,37 +1074,73 @@ class TargetFinderLines extends TargetFinder {
 				c.results.gradResults[i] = (float)mag;
 			}
 		} 
+		if (Main.debug("SHOW_GRADS") && Main.debugInt("SHOW_GRADS") == h.id) {
+			c.results.gradResults[0] = -100; c.results.gradResults[1] = 100;
+			gp.startNew();
+			gp.title = String.format("Gradients Line #d", h.id);
+			gp.add3DGridF(c.results.gradResults, sa.width, sa.height, true);
+			gp.draw("set palette defined (-1 0 1 1, 0 0 0 0, 1 1 1 0)\n");
+		}
 
 		// rotate a few degrees and add 
 		float [] gr = new float[width * height];
+		double bestAng = 0;
+		double bestSum = 0;					
+		double lwAng = Main.debugDouble("LWANG", 1.53);
+
+		double angRange = Main.debugDouble("LWANG_RANGE", .15);
+		double step = angRange * 2 / 10;
+		for(double ang = lwAng - angRange; ang <= lwAng + angRange; ang += step) { 
+			double sumG = 0;
+			for(int y = 0; y < sa.height; y++) { 
+				for(int x = xstart(y); x < xend(y); x++) { 
+					double pang = Math.atan2(y - vpY, x - vpX);
+					double pdis = Math.sqrt((x - vpX) * (x - vpX) + (y - vpY) *(y - vpY));
+
+					int x2 = (int)(Math.round(Math.cos(pang + Math.PI / 180 * ang) * pdis) + vpX);
+					int y2 = (int)(Math.round(Math.sin(pang + Math.PI / 180 * ang) * pdis) + vpY);
+
+					if (x2 >= 0 && x2 < sa.width && y2 >= 0 && y2 < sa.height) {
+						float g = (float)(c.results.gradResults[x + y * sa.width] - 
+							c.results.gradResults[x2 + y2 * sa.width]);
+						g = Math.max(0F, Math.min((float)maxGrad, g));
+						gr[x + y * sa.width] = g;
+						sumG += g;
+					}
+				}
+			}
+			if (sumG > bestSum) { 
+				bestAng = ang;
+				bestSum = sumG;
+			}
+			if (step == 0) break;
+		}
+
+		System.out.printf("id %d bestAng: %f\n", h.id, bestAng);
+		// TODO recalculate the results for bestAng
 		for(int y = 0; y < sa.height; y++) { 
 			for(int x = xstart(y); x < xend(y); x++) { 
 				double pang = Math.atan2(y - vpY, x - vpX);
 				double pdis = Math.sqrt((x - vpX) * (x - vpX) + (y - vpY) *(y - vpY));
-				
-				double lwAng = Main.debugDouble("LWANG", 1.5);
-				double maxG = 0;
 
-				for (double a = lwAng - .0; a <= lwAng + .0; a += .1) {
-					int x2 = (int)(Math.round(Math.cos(pang + Math.PI / 180 * a) * pdis) + vpX);
-					int y2 = (int)(Math.round(Math.sin(pang + Math.PI / 180 * a) * pdis) + vpY);
+				int x2 = (int)(Math.round(Math.cos(pang + Math.PI / 180 * bestAng) * pdis) + vpX);
+				int y2 = (int)(Math.round(Math.sin(pang + Math.PI / 180 * bestAng) * pdis) + vpY);
 
-					if (x2 >= 0 && x2 < sa.width && y2 >= 0 && y2 < sa.height) {
-						if (Math.abs(c.results.gradResults[x2 + y2 * sa.width]) > Math.abs(maxG))
-							maxG = c.results.gradResults[x2 + y2 * sa.width];
-					}
+				if (x2 >= 0 && x2 < sa.width && y2 >= 0 && y2 < sa.height) {
+					float g = (float)(c.results.gradResults[x + y * sa.width] - 
+						c.results.gradResults[x2 + y2 * sa.width]);
+					g = Math.max(0F, Math.min((float)maxGrad, g));
+					gr[x + y * sa.width] = g;
 				}
-				gr[x + y * sa.width] = (float)(c.results.gradResults[x + y * sa.width] - maxG);
 			}
 		}
-		//gr[0] = -100; gr[1] = 100;
+
 		if (Main.debug("SHOW_IGRADS") && Main.debugInt("SHOW_IGRADS") == h.id) {
 			gp.startNew();
 			gp.title = String.format("Gradients Line #d", h.id);
 			gp.add3DGridF(gr, sa.width, sa.height, true);
 			gp.draw();
 		}
-
 
 		c.results.clear();
 		for(int y = 0; y < sa.height; y++) { 

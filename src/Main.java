@@ -617,7 +617,10 @@ public class Main {
 	       		}
        	 	} while(n > 0 || repeat);
         }
-    	System.out.printf("# %s frames %05d-%05d ", filename, skipFrames, count);
+		int dot = filename.lastIndexOf('.');
+		int sep = filename.lastIndexOf('/');
+	
+    	System.out.printf("%s %d-%d ", filename.substring(sep + 1, dot), skipFrames, count);
     	fp.printFinalDebugStats();
     	fp.close();
        	System.exit(0);
@@ -680,7 +683,7 @@ public class Main {
 	}
 	public static int debugInt(String s) { 
 		String v = debugOpts.get(s);
-		return v != null ? Integer.parseInt(v) : 0;
+		return v != null ? (int)Double.parseDouble(v) : 0;
 
 	}
 	public static double debugDouble(String s, double def) { 
