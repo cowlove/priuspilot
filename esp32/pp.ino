@@ -265,6 +265,11 @@ void setup() {
 			Serial.printf("{%.4f, %d},\n", analogAvgRead(pins.adc) * ADC2VDC, pwm);
 			esp_task_wdt_reset();
 		}
+		int pwm = 65535;
+		pwm1.set(pwm);
+		pwm2.set(pwm);
+		delay(100);
+		Serial.printf("{%.4f, %d},\n", analogAvgRead(pins.adc) * ADC2VDC, pwm);
 		return "";
 	});
 	j.cli.on("PPDTABLE", [](const char *s, smatch m){ 

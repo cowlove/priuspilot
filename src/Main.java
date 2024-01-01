@@ -562,7 +562,7 @@ public class Main {
         	if (fp.writer != null) 
         		fp.writer.fc = fc; 
 	    
-			Process proc = Runtime.getRuntime().exec("sudo tail -f -c 0 /var/log/logkeys.log");
+			Process proc = Runtime.getRuntime().exec("tail -f -c 0 /var/log/logkeys.log");
 	 		fp.keyboardStream = new InputStreamReader(proc.getInputStream());
 
         	int n;

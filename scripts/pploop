@@ -3,9 +3,7 @@
 sudo /usr/local/bin/logkeys -m $HOME/src/priuspilot/keymap -s 
 
 while true; do
-	sudo umount /host
-	sudo fsck -p /dev/sda1
-	sudo mount /dev/sda1 /host
+	sudo chmod 644 /var/log/logkeys.log
 	cd $HOME/src/priuspilot
 	git pull
  	VIDEODEV=`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
