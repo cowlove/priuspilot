@@ -283,7 +283,7 @@ class FrameProcessor {
         if (pidLV != null) {
 			pidLV.setGains(2.0,-0.05,0.60,0,.40);
 			pidLV.finalGain = 1.80;
-			pidLV.gain.i.max = 0.9;
+			pidLV.gain.i.max = 0.5;
 			pidLV.period.l = 0.2;
 			pidLV.delays.l.delay = 1.55;
 			pidLV.qualityFadeThreshold = .020;

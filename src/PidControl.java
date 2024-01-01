@@ -65,7 +65,8 @@ public class PidControl {
     		if (Double.isNaN(max))
     			return v;
     		if (max > 0) 
-    			return Math.min(max / loGain, Math.max(-max / loGain, v));
+    			return Math.min(max / Math.abs(loGain), 
+					Math.max(-max / Math.abs(loGain), v));
     		return 0;
     	}
     	double getCorrection(double v) {
