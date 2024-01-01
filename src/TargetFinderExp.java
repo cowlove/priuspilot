@@ -38,11 +38,6 @@ class TargetFinderExperimental extends TargetFinder {
 		c.zones.lsz.m1 = c.zones.lsz.m2 = Double.NaN;
 		c.processData(oi, sa);
 		canny = c.getData();
-		if ((Main.debugInt("EXP",0) & 1) == 1) { 
-			gp2.startNew();
-			gp2.add3DGridF(c.results.gradResults, sa.width, sa.height, true);
-			gp2.draw("set palette defined (-1 0 0 0, 1 1 1 0)\n");
-		}
 
 		// Filter for magnitudes perpendicular to the vanishing point lines 
 		for(int y = 0; y < height; y++) { 
@@ -55,6 +50,11 @@ class TargetFinderExperimental extends TargetFinder {
 					c.results.gradResults[i] * cosa * Math.abs(cosa)); 
 			}
 		} 
+		if ((Main.debugInt("EXP",0) & 1) == 1) { 
+			gp2.startNew();
+			gp2.add3DGridF(c.results.gradResults, sa.width, sa.height, true);
+			gp2.draw("set palette defined (-1 0 0 0, 1 1 1 0)\n");
+		}
 		//c.results.gradResults[0] = 250;
 		//c.results.gradResults[1] = -250;
 

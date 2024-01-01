@@ -203,7 +203,7 @@ class FrameProcessor {
         int minSz = (int)Main.debugDouble("minSz", 36); // min/max radius
         int maxSz = (int)Main.debugDouble("maxSz", 120); // min/max radius
 		int minAng = (int)Main.debugDouble("minAng", 6);
-		int maxAng = (int)Main.debugDouble("maxAng", 30);
+		int maxAng = (int)Main.debugDouble("maxAng", 50);
         int houghSize = (int)Main.debugDouble("HOUGH_SIZE", 32);
 		double vertPct = 1.0 - (inputZeroPoint.zeroPoint.vanY + Main.debugDouble("SAVF",9)) / h;
         tfl = new TargetFinderLines(w, h, null, true, 50, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
@@ -281,9 +281,9 @@ class FrameProcessor {
 		pidLL.reset();
 		        
         if (pidLV != null) {
-			pidLV.setGains(2.0,.00,0.60,0,.40);
+			pidLV.setGains(2.0,-0.05,0.60,0,.40);
 			pidLV.finalGain = 1.80;
-			pidLV.gain.i.max = 0.0;
+			pidLV.gain.i.max = 0.9;
 			pidLV.period.l = 0.2;
 			pidLV.delays.l.delay = 1.55;
 			pidLV.qualityFadeThreshold = .020;

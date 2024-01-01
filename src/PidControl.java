@@ -211,7 +211,7 @@ public class PidControl {
 	        d.add(n, delays.d.get(n, val));
 	        p.add(n, delays.p.get(n, val));
 			q.add(n, val);
-	        i = gain.i.limitToMax(i + delays.i.get(i, val));
+	        i = gain.i.limitToMax(i + delays.i.get(n, val));
         }
         
         err.p = gain.p.getCorrection(p.calculate());
