@@ -265,7 +265,7 @@ class FrameProcessor {
 
 		//double lx = Silly.debugDouble("LX", 36)/ 20.0;
 
-		pidRL.setGains(2.75, 0.04, 4.50, 0, 1.8);
+		pidRL.setGains(2.75, 0.04, 4.50, 0, 1.8, 0);
 		pidRL.period.l = 0.15;
 		pidRL.delays.l.delay = 1.75;
         pidRL.gain.p.hiGain = 1.52;
@@ -280,26 +280,17 @@ class FrameProcessor {
         pidLL.copySettings(pidRL);
 		pidLL.reset();
 		        
-        if (pidLV != null) {
-			pidLV.setGains(2.0,-0.05,0.60,0,.40);
-			pidLV.finalGain = 1.80;
-			pidLV.gain.i.max = 0.5;
-			pidLV.period.l = 0.2;
-			pidLV.delays.l.delay = 1.55;
-			pidLV.qualityFadeThreshold = .020;
-			pidLV.qualityFadeGain = 3;
-		}
+		pidLV.setGains(2.0, 0, 0.60, 0, 0.40, 0.003);
+		pidLV.finalGain = 1.80;
+		pidLV.gain.t.max = 0.5;
+		pidLV.period.l = 0.2;
+		pidLV.delays.l.delay = 1.55;
+		pidLV.qualityFadeThreshold = .020;
+		pidLV.qualityFadeGain = 3;
 		
-        //pidPV.copySettings(pidLV);
-        pidPV.setGains(2.0, 0, 0.60, 0, 0.40);
+        pidPV.copySettings(pidLV);
 		pidPV.finalGain = 0.0;
-    	pidPV.period.l = 0.2;
-		pidPV.delays.l.delay = 1.55;
-	    pidPV.qualityFadeThreshold = 0.015;
-        pidPV.qualityFadeGain = 2;
-		//pidPV.fadeCountMin = pidPV.fadeCountMax = 0;
 		pidPV.reset();
-        //pidLV.setGains(0,0,0,0,0);
 		
 		pidTX.copySettings(pidPV);
 		pidTX.finalGain = 0.0;
@@ -307,18 +298,18 @@ class FrameProcessor {
         pidTX.qualityFadeGain = 2;
 		
         if (pidCA != null) { 
-			pidCA.setGains(10.0, 0, 0, 0, 0);
+			pidCA.setGains(10.0, 0, 0, 0, 0, 0);
 			pidCA.finalGain = 0; //:1.55;
-			pidCA.period = pidCA.new PID(1.2, 1, 1, 1, 1);
+			pidCA.period = pidCA.new PID(1.2, 1, 1, 1, 1, 1);
 			pidCA.qualityFadeThreshold = 0.003;
 			pidCA.qualityFadeGain = 5;
 			pidCA.finalGain = 0; // disable
 		}
         
 		if (pidCC != null) {
-			pidCC.setGains(.20, 0, .30, 0, 1);
+			pidCC.setGains(.20, 0, .30, 0, 1, 0);
 			pidCC.finalGain = 1.2;
-			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 2);     
+			pidCC.period = pidCC.new PID(3, 1, 4.5, 1, 2, 1);     
 			pidCC.qualityFadeThreshold = .5;
 			pidCC.qualityFadeGain = 1;
 			pidCC.reset();
@@ -1305,6 +1296,7 @@ class FrameProcessor {
 		            display.rectangle(Color.red, "S", -pid.corr + 0.5, yoff, bWidth, 0.05, true);
 		            display.rectangle(Color.yellow, "P", pid.err.p * pds + 0.5, yoff + 0.005, bWidth, 0.04, true);
 		            display.rectangle(Color.white, "I", pid.err.i * pds + 0.5, yoff, bWidth, 0.03, true);
+		            display.rectangle(Color.pink, "T", pid.err.t * pds + 0.5, yoff, bWidth, 0.03, true);
 		            display.rectangle(Color.green, "D", pid.err.d * pds + 0.5, yoff + 0.01, bWidth, 0.02, true);	     
 		            display.rectangle(Color.black, "L", pid.err.l * pds + 0.5, yoff + 0.015, bWidth, 0.01, true);	     
 		        	Color c = pid.quality < 1.0 ? Color.red : Color.yellow;

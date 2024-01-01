@@ -15,21 +15,22 @@ public class PidControl {
 	static int EXPECTED_FPS = Main.debugInt("EXPECTED_FPS", 15);
 	Average avgRmsErr = new Average();
     class PID {
-        PID(double ap, double ai, double ad, double aj, double al) {
+        PID(double ap, double ai, double ad, double aj, double al, double at) {
             p = ap;
             i = ai;
             d = ad;
             j = aj;
             l = al;
+			t = at;
         }
-        PID() { p = i = d = j = l = 0; } 
+        PID() { p = i = d = j = l = t = 0; } 
         public PID clone() {
-        	return new PID(p, i, d, j, l);
+        	return new PID(p, i, d, j, l, t);
         }
-        double p, i, d, j,  l;
+        double p, i, d, j, l, t;
         public String toString(String pref) { 
-        	return String.format("%sp %.3f %si %.3f %sd %.3f %sj %.3f %sl %.3f", 
-        			pref, p, pref, i, pref, d, pref, j, pref, l); 
+        	return String.format("%sp %.3f %si %.3f %sd %.3f %sj %.3f %sl %.3f %st %.3f", 
+        			pref, p, pref, i, pref, d, pref, j, pref, l, pref, t); 
         }
     }
 	class DelayChannel { 
@@ -97,10 +98,11 @@ public class PidControl {
     	GainChannel i = new GainChannel();
     	GainChannel d = new GainChannel();
     	GainChannel l = new GainChannel();
-		void reset() { p.reset(); i.reset(); d.reset(); l.reset(); }
+		GainChannel t = new GainChannel();
+		void reset() { p.reset(); i.reset(); d.reset(); l.reset(); t.reset(); }
 		public GainControl clone() { 
 			GainControl n =  new GainControl();
-			n.p = p.clone(); n.i = i.clone(); n.d = d.clone(); n.l = l.clone();
+			n.p = p.clone(); n.i = i.clone(); n.d = d.clone(); n.l = l.clone(); n.t = t.clone();
 			return n;
 		}
     }
@@ -133,15 +135,16 @@ public class PidControl {
     double getAvgRmsErr() {
     	return avgRmsErr.calculate();
     }
-    void setGains(double gp, double gi, double gd, double gj, double gl) { 
+    void setGains(double gp, double gi, double gd, double gj, double gl, double gt) { 
     	gain.p.loGain = gp;
       	gain.i.loGain = gi;
       	gain.d.loGain = gd;
       	gain.l.loGain = gl;
+		gain.t.loGain = gt;
     }
     PID err = new PID(); 
-    PID period = new PID(0.05, 5, 0.5, 0.3, 1.2);  
-	PID delay = new PID(0, 0, 0, 0, 0);
+    PID period = new PID(0.05, 5, 0.5, 0.3, 1.2, 0);  
+	PID delay = new PID(0, 0, 0, 0, 0, 0);
     double finalGain = 1.85;
     int derrDegree = 2;
     int fadeCountMin = (int)Math.floor(period.d * EXPECTED_FPS * 0.2); 
@@ -156,7 +159,7 @@ public class PidControl {
 	double pendingCorrection = 0; // used externally to manage pending correction/input 
 
     // these values are set in reset() method
-    double i;
+    double i, t;
     RunningQuadraticLeastSquares p, d, l, q;
 	   
     RunningAverage defaultValue = new RunningAverage(150);
@@ -165,7 +168,8 @@ public class PidControl {
  
 	void reset() {
 		p = new RunningQuadraticLeastSquares(1, (int)(period.p * 2 * EXPECTED_FPS), period.p);
-        i = 0f;
+        i = 0;
+		t = 0;
         //dd = new RunningQuadraticLeastSquares(derrDegree, (int)(period.j * 2 * EXPECTED_FPS), period.j);
         d = new RunningQuadraticLeastSquares(derrDegree, (int)(period.d * 2 * EXPECTED_FPS), period.d);
 		l = new RunningQuadraticLeastSquares(1, (int)(period.l * 2 * EXPECTED_FPS), period.l);
@@ -192,16 +196,16 @@ public class PidControl {
 		q.rebase(-delta);
     }
     
-    double lastVal, drms;
+    double drms;
     double add(double val, long time) {
         if (starttime == 0) 
         	starttime = time;
         else if (time - starttime > 2 * 1000) { 
         	rebase(time);
         }
-        lastVal = val;
-        
+
         double n = ((double) (time - starttime)) / 1000;
+		err.t = gain.t.getCorrection(t);
         if (Double.isNaN(val) || Double.isInfinite(val)) { 
         	val = Double.NaN;
         	d.removeAged(n);
@@ -209,11 +213,14 @@ public class PidControl {
 			l.removeAged(n);
 			q.removeAged(n);
         } else {         
+			val -= err.t;
+			t = gain.t.limitToMax(t + val);
 	        d.add(n, delays.d.get(n, val));
 	        p.add(n, delays.p.get(n, val));
 			q.add(n, val);
 	        i = gain.i.limitToMax(i + delays.i.get(n, val));
         }
+        //lastVal = val;
         
         err.p = gain.p.getCorrection(p.calculate());
                 
