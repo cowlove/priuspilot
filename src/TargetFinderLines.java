@@ -348,10 +348,10 @@ class TargetFinderLines extends TargetFinder {
 		}
 		
 		if (leftSide) { 
-			focus.defaultIntercept = (int)(Math.tan(Math.toRadians(90 - defAngle)) * sa.width) - 40;
+			focus.defaultIntercept = (int)(Math.tan(Math.toRadians(90 - defAngle)) * sa.width);
 			focus.defaultAngle = 90 + defAngle;
 		} else { 
-			focus.defaultIntercept = -40;
+			focus.defaultIntercept = 0;
 			focus.defaultAngle = 90 - defAngle;
 		}
 		h = new HoughTransform(houghAngSz, houghRadSz);
@@ -559,7 +559,7 @@ class TargetFinderLines extends TargetFinder {
 				final int xe = xend(y); 
 				for(int x = xstart(y); x < xe; x++) {
 					if (x > 0 && x < sa.width) {
-						int i = (int)getLuminance(oi, sa, x, y, 0);
+						int i = (int)getMaxLuminance(oi, sa, x, y, 0);
 						if (i > 0 && i < 256) { 
 							lumDist[i]++;
 							lumCount++;
@@ -567,7 +567,7 @@ class TargetFinderLines extends TargetFinder {
 					}
 				}
 			}
-			double lumPercentile = Main.debugDouble("PCTLUM", 0.12);
+			double lumPercentile = Main.debugDouble("PCTLUM", 0.4);
 			for (lum90 = 0; lum90 < 256 && lumSum < lumCount * lumPercentile; lum90++) { 
 				lumSum += lumDist[lum90];
 			}
@@ -588,13 +588,14 @@ class TargetFinderLines extends TargetFinder {
 				}			
 				double wt =  c.results.gradResults[y*sa.width+x];
 				if (useLuminanceCheck) {
-					double rlum = (float)getLuminance(oi, sa, x, y, 1);
+					double rlum = (float)getMaxLuminance(oi, sa, x, y, Main.debugInt("LUMKERN", 1));
 					if (rlum >= lum90) { 
 						//wt *= rlum * rlum;
 					} else {
 						wt = 0;
 					}
-					//if (getDarkestNearestPixel(oi, sa, x, y, 1) < Silly.debugDouble("DCO", 20)) {
+					//if (getDarkestNearestPixel(oi, sa, x, y, Main.debugInt("DCOK", 2)) < 
+					//	Main.debugDouble("DCO", 53)) {
 					//	wt = 0;
 					//}
 				}	
@@ -632,7 +633,7 @@ class TargetFinderLines extends TargetFinder {
 		// steeper lines.
 		final double prefPoint = 0.1;
 		int ca = leftSide ? 0 : h.angSz;
-		h.findClosest(ca, leftSide ? h.radSz : 0, 0.7f);
+		h.findClosest(ca, leftSide ? h.radSz : 0, (float)Main.debugDouble("FCT", .7));
 		//h.findCG(ca);
 
 		if (Main.debug("SHOW_GRADS") && Main.debugInt("SHOW_GRADS") == h.id) {
@@ -810,7 +811,7 @@ class TargetFinderLines extends TargetFinder {
 	public Point hOriginOverride = null;
 
 	private float getDarkestNearestPixel(OriginalImage oi, Rectangle sa, int x, int y, int kern) {
-		float lum=255;
+		float lum = 255;
 		int count = 0;
 		// ???? The odd shape of this kernel lowered test results, don't understand why 
 		for(int dx = -kern; dx <= kern; dx++) { 
@@ -828,7 +829,7 @@ class TargetFinderLines extends TargetFinder {
 
 
 	// return luminance of pixel and surrounding area  normalized to 0-255
-	private float getLuminance(OriginalImage oi, Rectangle sa, int x, int y, int kern) {
+	private float getMaxLuminance(OriginalImage oi, Rectangle sa, int x, int y, int kern) {
 		float lum=0;
 		int count = 0;
 		// ???? The odd shape of this kernel lowered test results, don't understand why 
@@ -846,7 +847,7 @@ class TargetFinderLines extends TargetFinder {
 		return lum / count;
 				
 	}
-	
+		
 	private boolean checkLuminance(OriginalImage oi, Rectangle sa, int x, int y, int thresh) {
 		for(int dx = -1; dx <= 1; dx++) { 
 			for(int dy = -1; dy <= 1; dy++) { 			

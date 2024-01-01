@@ -201,13 +201,13 @@ class FrameProcessor {
         td = new TemplateDetectRGB(w, h);
         
         int minSz = (int)Main.debugDouble("minSz", 36); // min/max radius
-        int maxSz = 130;
+        int maxSz = (int)Main.debugDouble("maxSz", 120); // min/max radius
 		int minAng = (int)Main.debugDouble("minAng", 6);
-		int maxAng = (int)Main.debugDouble("maxAng", 55);
+		int maxAng = (int)Main.debugDouble("maxAng", 30);
         int houghSize = (int)Main.debugDouble("HOUGH_SIZE", 32);
 		double vertPct = 1.0 - (inputZeroPoint.zeroPoint.vanY + Main.debugDouble("SAVF",9)) / h;
-        tfl = new TargetFinderLines(w, h, null, true, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
-        tfr = new TargetFinderLines(w, h, null, false, Main.debugInt("defLAng", 55), houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfl = new TargetFinderLines(w, h, null, true, 50, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
+        tfr = new TargetFinderLines(w, h, null, false, 55, houghSize, minSz, maxSz, minAng, maxAng, vertPct);
         tflo = new TargetFinderLines(w, h, null, true, 77, 32, minSz, maxSz, 12, 35, .85);
         tfro = new TargetFinderLines(w, h, null, false, 77, 32, minSz, maxSz, 12, 35, .85);
 		tfex = new TargetFinderExperimental(w, h, null, 100);
