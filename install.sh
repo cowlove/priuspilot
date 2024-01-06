@@ -1,9 +1,11 @@
 #!/bin/bash -x 
 
+sudo raspi-config nonint do_boot_behaviour B1 
+
 sudo apt-get -y install \
-    git python3.9-distutils \
+    git python3-distutils \
     openjdk-17-jdk-headless openjdk-17-jdk xfce4-terminal automake \
-    tightvncserver scons
+    tightvncserver scons syslog-ng
 
 mkdir ~/src
 cd !$
