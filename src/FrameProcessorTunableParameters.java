@@ -188,9 +188,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("tdStartScale", '6', 0.01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.tdStartScale += i; }});
-		add("ccSetPoint", '7', 1,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.ccSetPoint += i; }});
+		//add("ccSetPoint", '7', 1,
+		//		new TunableParameter.Adjust() { public double adjust(double i) {
+		//			return fp.ccSetPoint += i; }});
 
 					
 		add("testPulse magnitude", '8', .05,

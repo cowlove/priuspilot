@@ -1,6 +1,7 @@
 #!/bin/bash -x 
 
 sudo raspi-config nonint do_boot_behaviour B1 
+touch ~/.hushlogin 
 
 sudo apt-get -y install \
     git python3-distutils \
