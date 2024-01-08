@@ -502,7 +502,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.05;	
+    double epsSteeringGain = 1.06;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
@@ -543,10 +543,9 @@ class FrameProcessor {
 		// todo - replace with proper interpolation table.  quick hack 
 		// based on observations that epsSteeringGain works best at
 		// 40MPH : .80
-		// 60MPH : 1.00
-		// 70MPH : 1.10 
+		// 70MPH : 1.00 
 		final double speedLo = 30, speedHi = 70;
-		final double gainLo = .70, gainHi = 1.0;
+		final double gainLo = .80, gainHi = 1.0;
 		if (gps.speed > speedLo && gps.speed < speedHi) {
 			speedAdjust = (gps.speed - speedLo) / (speedHi - speedLo) 
 				* (gainHi - gainLo) + gainLo;
