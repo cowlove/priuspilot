@@ -192,6 +192,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//		new TunableParameter.Adjust() { public double adjust(double i) {
 		//			return fp.ccSetPoint += i; }});
 
+		add("st.asymDetune", '\\', .01,
+				new TunableParameter.Adjust() { public double adjust(double i) {
+					return fp.steering.asymDetune += i; }});
 					
 		add("testPulse magnitude", '8', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {

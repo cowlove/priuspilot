@@ -12,6 +12,7 @@ class SteeringLogicSimpleLimits {
 	double curveGain = 0.00;
 	double speedGain = 0.00;
 	double finalGain = 1.00;
+	double asymDetune = -0.90;
 
 	long lastMs = 0;
 	double trim = -0.16;
@@ -27,6 +28,9 @@ class SteeringLogicSimpleLimits {
 		double curveMod = curve * curveGain;
 		st = Math.max(-maxSteer + curveMod, Math.min(maxSteer + curveMod, st));
 
+		if ((st < 0 && asymDetune < 0) || (st > 0 && asymDetune > 0)) { 
+			st *= Math.abs(asymDetune);
+		}
 		st += trim;
 
 		double maxDelta = maxChange * (ms - lastMs);
