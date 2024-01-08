@@ -1,11 +1,9 @@
 #!/bin/sh
 
-rw
-cd /ro/home/jim/workspace/priuspilot
-cvs -d jim@vheavy.com:/home/jim/cvsroot update
-cp src/*.java bin/
-cd src
-make priuspilot.jar
-make
+sudo mount -o rw,remount /dev/mmcblk0p2 /media/root-ro/
+cd /media/root-ro/home/pi/src/priuspilot/
+git pull
+sudo mount -o ro,remount /dev/mmcblk0p2 /media/root-ro
+
 killall java
 
