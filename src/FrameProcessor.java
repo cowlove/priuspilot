@@ -1408,6 +1408,8 @@ class FrameProcessor {
 					else if (ks.equals("DOWN")) keyPressedSync(40);
 					else if (ks.equals("LEFT")) keyPressedSync(37);
 					else if (ks.equals("RIGHT")) keyPressedSync(39);
+					else if (ks.equals("SPACE")) keyPressedSync(' ');
+					else if (ks.equals("ENTER")) keyPressedSync(10);
 					else keyPressedSync(ks.charAt(0));
 				}
 			}
