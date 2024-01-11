@@ -1394,12 +1394,12 @@ class FrameProcessor {
 					if (k.equals("H")) keyPressedSync('=');
 					if (k.equals("J")) keyPressedSync('-');
 					if (k.equals("G")) keyPressedSync('0');
-					if (k.equals("N")) keyPressedSync('A');
 					if (k.equals("C")) keyPressedSync(38);
 					if (k.equals("D")) keyPressedSync(40);
 					if (k.equals("E")) keyPressedSync(37);
 					if (k.equals("F")) keyPressedSync(39);
-					if (k.equals("O")) keyPressedSync('R');
+					if (k.equals("N")) keyPressedSync('R');
+					if (k.equals("O")) keyPressedSync('A');
 				} else {
 					// assume is normal keyboard. 
 					String ks = l.substring(p + 4);
