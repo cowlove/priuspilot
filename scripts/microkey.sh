@@ -3,7 +3,7 @@
 while sleep 1; do
     for f in { 1 .. 3 }; do 
         sleep 1
-        stdbuf -o0 evtest /dev/input/event3 | tee -a /tmp/keys  
+        stdbuf -o0 evtest /dev/input/event4 | tee -a /tmp/keys  
     done
     #echo power off | bluetoothctl
     #sleep 1
