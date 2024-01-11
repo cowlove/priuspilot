@@ -1385,20 +1385,31 @@ class FrameProcessor {
 			String l = keyboardStream.readLine();
 			//System.out.println("got keyline " + l);
 			int p = l.indexOf("KEY_");
-			if (l.indexOf("value 1") > 0 && p > 0) { 
-				String k = l.substring(p + 4, p + 5);
-				//System.out.println("got key " + k + ".");
-				if (k.equals("I")) keyPressedSync(' ');
-				if (k.equals("H")) keyPressedSync('=');
-				if (k.equals("J")) keyPressedSync('-');
-				if (k.equals("G")) keyPressedSync('0');
-				if (k.equals("N")) keyPressedSync('A');
-				if (k.equals("C")) keyPressedSync(38);
-				if (k.equals("D")) keyPressedSync(40);
-				if (k.equals("E")) keyPressedSync(37);
-				if (k.equals("F")) keyPressedSync(39);
-				if (k.equals("O")) keyPressedSync('R');
-				
+			if (p > 0) {
+				if (l.indexOf("/dev/input/event8") != -1) {
+					// handle little 8bit brand game controller's particular key mappings 
+					String k = l.substring(p + 4, p + 5);
+					//System.out.println("got key " + k + ".");
+					if (k.equals("I")) keyPressedSync(' ');
+					if (k.equals("H")) keyPressedSync('=');
+					if (k.equals("J")) keyPressedSync('-');
+					if (k.equals("G")) keyPressedSync('0');
+					if (k.equals("N")) keyPressedSync('A');
+					if (k.equals("C")) keyPressedSync(38);
+					if (k.equals("D")) keyPressedSync(40);
+					if (k.equals("E")) keyPressedSync(37);
+					if (k.equals("F")) keyPressedSync(39);
+					if (k.equals("O")) keyPressedSync('R');
+				} else {
+					// assume is normal keyboard. 
+					String ks = l.substring(p + 4);
+					ks = ks.substring(0, ks.indexOf(")"));
+					if (ks.equals("UP")) keyPressedSync(38);
+					else if (ks.equals("DOWN")) keyPressedSync(40);
+					else if (ks.equals("LEFT")) keyPressedSync(37);
+					else if (ks.equals("RIGHT")) keyPressedSync(39);
+					else keyPressedSync(ks.charAt(0));
+				}
 			}
 		}
 				

@@ -400,6 +400,9 @@ public class Main {
 			long ms = 0;
 			sim = new CarSim(width, height);
 
+			Process proc = Runtime.getRuntime().exec("tail -f -c 0 /tmp/keys");
+	 		fp.keyboardStream = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+
 			while(exitFrame == 0 || --exitFrame > 0) { 
 				ByteBuffer bb = sim.getFrame(ms); 
       			fp.processFrame(ms, new OriginalImage(bb, width, height));
