@@ -1387,7 +1387,7 @@ class FrameProcessor {
 			int p = l.indexOf("KEY_");
 			if (l.indexOf("value 1") > 0 && p > 0) { 
 				String k = l.substring(p + 4, p + 5);
-				System.out.println("got key " + k + ".");
+				//System.out.println("got key " + k + ".");
 				if (k.equals("I")) keyPressedSync(' ');
 				if (k.equals("H")) keyPressedSync('=');
 				if (k.equals("J")) keyPressedSync('-');
