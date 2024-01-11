@@ -6,7 +6,7 @@
 
 
 class SteeringLogicSimpleLimits {
-	double maxSteer =  0.65;
+	double maxSteer =  0.70;
 	double maxChange = 0.0048; // per ms
 	double deadband = 0.00;
 	double curveGain = 0.00;
@@ -36,7 +36,7 @@ class SteeringLogicSimpleLimits {
 		double maxDelta = maxChange * (ms - lastMs);
 		st = Math.min(lastSteer + maxDelta, Math.max(lastSteer - maxDelta, st));
 
-
+		// gain is set for nominal 60mph.  increase gain for faster speeds, decrease for lower
 		final double maxSpeedMod = 0.20;
 		double speedMod = Math.max(-maxSpeedMod, Math.min(maxSpeedMod, (speed - 60.0) * speedGain));
 		st *= (finalGain + speedMod);

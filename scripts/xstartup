@@ -8,8 +8,10 @@ xsetroot -solid grey
 export XKL_XMODMAP_DISABLE=1
 
 if [ "$DISPLAY" == ":1" ]; then
-	x-terminal-emulator &
-	sleep .2
+	#x-terminal-emulator &
+	#sleep .2
+	xfce4-terminal --color-bg=white --color-text=black --minimize  \
+ 	--hide-scrollbar	-e $HOME/src/priuspilot/scripts/microkey.sh &
 	xfce4-terminal --color-bg=white --color-text=black --fullscreen \
  	--hide-scrollbar	-e $HOME/src/priuspilot/scripts/pploop &
 	x-window-manager &

@@ -562,8 +562,8 @@ public class Main {
         	if (fp.writer != null) 
         		fp.writer.fc = fc; 
 	    
-			Process proc = Runtime.getRuntime().exec("tail -f -c 0 /var/log/logkeys.log");
-	 		fp.keyboardStream = new InputStreamReader(proc.getInputStream());
+			Process proc = Runtime.getRuntime().exec("tail -f -c 0 /tmp/keys");
+	 		fp.keyboardStream = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 
         	int n;
         	// BROKEN- when frames are dropped, this thread could read data into the buffer

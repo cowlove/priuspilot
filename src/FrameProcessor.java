@@ -254,7 +254,7 @@ class FrameProcessor {
         steeringTestPulse.offset = -0.00;
        
 		if (Main.debugInt("DITHERFF", 1) == 1) { 
-			steeringDitherPulse.duration = 2.0; // frames not seconds for FLIPFLOP
+			steeringDitherPulse.duration = 1.0; // frames not seconds for FLIPFLOP
 			steeringDitherPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_FLIPFLOP;
 			steeringDitherPulse.magnitude = 0.20;
 		} else { 
@@ -265,7 +265,7 @@ class FrameProcessor {
 
 		//double lx = Silly.debugDouble("LX", 36)/ 20.0;
 
-		pidRL.setGains(5.5, 0.04, 8.00, 0, 0.75, 0);
+		pidRL.setGains(5.5, 0.04, 8.00, 0, 1.75, 0);
 		pidRL.period.l = 0.15;
 		pidRL.delays.l.delay = 1.75;
         pidRL.gain.p.hiGain = 0.0;
@@ -285,7 +285,7 @@ class FrameProcessor {
 		pidLV.gain.t.max = 0.5;
 		pidLV.period.l = 0.2;
 		pidLV.delays.l.delay = 1.55;
-		pidLV.qualityFadeThreshold = .020;
+		pidLV.qualityFadeThreshold = .050;
 		pidLV.qualityFadeGain = 3;
 		
         pidPV.copySettings(pidLV);
@@ -502,7 +502,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.06;	
+    double epsSteeringGain = 1.00;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
@@ -1371,7 +1371,7 @@ class FrameProcessor {
         this.notify();
     }
 
-	InputStreamReader keyboardStream = null;
+	BufferedReader keyboardStream = null;
 
     private void setLineColorAndWidth(Color c, int w) { 
     	display.g2.setStroke(new BasicStroke(w));
@@ -1382,31 +1382,26 @@ class FrameProcessor {
     void processFrame(long t, OriginalImage orig) throws IOException {
 		// TODO move this somewhere that doesn't pause with Z key 
 		if (keyboardStream != null && keyboardStream.ready()) {
-			int k = keyboardStream.read();
-			//System.out.printf("keyboardStream: %d\n", k);
-			if (k == 10) {
-				while((k = keyboardStream.read()) != '>') {
-					//System.out.printf("consuming %c\n", k);
-				}
-				k = keyboardStream.read();
-				//System.out.printf("finally consuming %c\n", k);
-			} else if (k == '<') { 
-				String s = "";
-				while((k = keyboardStream.read()) != '>')
-					s += String.format("%c", k);
-				//System.out.printf("keyboardStream got: " + s + "\n");
-				if (s.compareTo("Enter") == 0) keyPressed(10);
-				if (s.compareTo("Up") == 0) keyPressed(38);
-				if (s.compareTo("Down") == 0) keyPressed(40);
-				if (s.compareTo("Left") == 0) keyPressed(37);
-				if (s.compareTo("Right") == 0) keyPressed(39);
-			} else {
-				if (k >= 97 && k <= 122)
-					k -= 32;
-				if (k != 'Z' && k != 'N') // don't pause the screen we can't undo it yet 
-					this.keyPressed(k);
+			String l = keyboardStream.readLine();
+			//System.out.println("got keyline " + l);
+			int p = l.indexOf("KEY_");
+			if (l.indexOf("value 1") > 0 && p > 0) { 
+				String k = l.substring(p + 4, p + 5);
+				System.out.println("got key " + k + ".");
+				if (k.equals("I")) keyPressedSync(' ');
+				if (k.equals("H")) keyPressedSync('=');
+				if (k.equals("J")) keyPressedSync('-');
+				if (k.equals("G")) keyPressedSync('0');
+				if (k.equals("N")) keyPressedSync('A');
+				if (k.equals("C")) keyPressedSync(38);
+				if (k.equals("D")) keyPressedSync(40);
+				if (k.equals("E")) keyPressedSync(37);
+				if (k.equals("F")) keyPressedSync(39);
+				if (k.equals("O")) keyPressedSync('R');
+				
 			}
 		}
+				
 	    count++;
     	do {
     		/*
