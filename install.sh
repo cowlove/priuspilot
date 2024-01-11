@@ -6,7 +6,7 @@ touch ~/.hushlogin
 sudo apt-get -y install \
     git python3-distutils \
     openjdk-17-jdk-headless openjdk-17-jdk xfce4-terminal automake \
-    tightvncserver scons syslog-ng
+    tightvncserver scons syslog-ng evtest
 
 mkdir ~/src
 cd !$
