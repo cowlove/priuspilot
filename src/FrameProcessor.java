@@ -502,7 +502,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 1.00;	
+    double epsSteeringGain = 0.72;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
@@ -1410,6 +1410,10 @@ class FrameProcessor {
 					else if (ks.equals("RIGHT")) keyPressedSync(39);
 					else if (ks.equals("SPACE")) keyPressedSync(' ');
 					else if (ks.equals("ENTER")) keyPressedSync(10);
+					else if (ks.equals("SEMICOLON")) keyPressedSync(';');
+					else if (ks.equals("BACKSLASH")) keyPressedSync('\\');
+					else if (ks.equals("MINUS")) keyPressedSync('-');
+					else if (ks.equals("EQUAL")) keyPressedSync('=');
 					else keyPressedSync(ks.charAt(0));
 				}
 			}
