@@ -3,6 +3,12 @@
 sudo mount -o rw,remount /dev/mmcblk0p2 /media/root-ro/
 cd /media/root-ro/home/pi/src/priuspilot/
 git pull
+cd src
+make
+cpp *.so ../pplib  
+sync
+sync
+sleep 1
 sudo mount -o ro,remount /dev/mmcblk0p2 /media/root-ro
 
 killall java

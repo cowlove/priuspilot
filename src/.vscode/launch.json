@@ -22,7 +22,7 @@
             },
             "mainClass": "Main",
             "args": [
-                "20231218.161903.yuv.gz", "-debug", "VANY=32"
+                "20240111.172519.yuv"
                 
                 ]
         },

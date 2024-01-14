@@ -178,12 +178,14 @@ public class Main {
         int targx = 0, targy = 0, targh = 0, targw = 0;
 		boolean keepFocus = false, noDither = false;
 		BufferedReader logDiffFile = null;
+		boolean timeStampAutoAdjust = false;
 
         for(int i = 0; i < args.length; i++) {
             String a = args[i];
             if (a.compareTo("-nodrop") == 0) dropFrames = false;
             else if (a.compareTo("-displayratio") == 0) displayratio = Integer.parseInt(args[++i]);
             else if (a.compareTo("-headless") == 0) displayratio = 0;
+            else if (a.compareTo("-tsa") == 0) timeStampAutoAdjust = true;
 	        else if (a.compareTo("-logdiff") == 0) {
 				String ldFile = args[++i];
 				logDiffFile = new BufferedReader(new FileReader(ldFile));
@@ -445,6 +447,7 @@ public class Main {
 
 			long lastRawTime = 0;
 			long timeAdjust = 0;
+			int timeAdjustments = 0;
         	do {
         		int picsize = height * width * 2;
         		if (rgb32) picsize = height * width * 4;
@@ -456,6 +459,13 @@ public class Main {
 	        
 	        	long time = 0;
 				InputStream fis = null;
+				if (!Files.isReadable(Paths.get(filename))) {
+					String [] prefixes = new String[] { "/host/lanedumps/", "../lanedumps/"};
+					for (String prefix : prefixes) {
+						if (Files.isReadable(Paths.get(prefix + filename)))
+							filename = prefix + filename;
+					}
+				}	
 				if (filename.equals("stdin")) { 
 					fis = System.in;
 				} else { 
@@ -493,10 +503,8 @@ public class Main {
 	        				offset += got;
 	        			}
 	        		} else {
-	        			//fis.read(timebb.array());  
-						//for (int n = 0; n < 8; n++) // fake the 8 bytes consumed by the timestamp 
-						//	bb.put((byte)0x0);
-		    			int needed = picsize;
+						// NOT a gzip stream, normal stream
+						int needed = picsize;
 	    				int offset = 0;
 	        			while(needed > 0) { 
 							int n = fis.read(bb.array(), offset, needed);
@@ -519,7 +527,6 @@ public class Main {
 		        		// Byte endianess for timeval 
 		        		timebb.rewind();
 		        		time = 0;
-		        		long posval = 0;
 		        		for(int bp = 0; bp < 8; bp++) {
 		        			int i1 = timebb.get() & 0xff;
 			        		time += ((long)i1) << (bp * 8);
@@ -528,8 +535,16 @@ public class Main {
 	        			time += 30;
 	        		}
 
-					if (time < lastRawTime || time > lastRawTime + 1000) {
-						timeAdjust += time - lastRawTime + 33;
+					if (timeStampAutoAdjust && (time < lastRawTime || time > lastRawTime + 1000)) {
+						System.out.printf("Timestamp difference of 0x%xd at time 0x%xd, adjusting\n", 
+							time -lastRawTime, time);
+						timeAdjust += time - lastRawTime + 68;
+						timeAdjustments++;
+						if (count > 10 && timeAdjustments > count) { 
+							System.out.println("Excessive time adjustments, corrupt timestamp?");
+							System.exit(-1);
+						}
+
 					}
 					lastRawTime = time;
 					time -= timeAdjust;
@@ -545,7 +560,9 @@ public class Main {
 						Thread.sleep(30 - ms);
 					}
 					//if (skipRatio == 0 || (count % skipRatio) == skipRatio - 1)
-	        			fp.processFrame(time, new OriginalImage(finalbb, width, height));
+					
+	        		//System.out.printf("t 0x%x\n", time);
+					fp.processFrame(time, new OriginalImage(finalbb, width, height));
         			//System.out.printf("%dms\n", (int)intTimer.tick());
 	        		count++;
 	        		if (exitFrame >0 && count == exitFrame)

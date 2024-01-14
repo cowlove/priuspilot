@@ -191,13 +191,6 @@ config *getCameraObject(int camIndex) {
 	return configs[camIndex];
 }
 
-void setLogData(int id, long steer, long timestamp) { 
-	config *c = getCameraObject(id);
-	c->logData.steer = steer;
-	c->logData.timestamp = timestamp; 
-
-}
-
 JNIEXPORT void JNICALL Java_FrameCaptureJNI_espnowSend
    (JNIEnv *env, jobject obj, jint cameraIndex, jstring msg) { 
 	jboolean iscopy;
@@ -317,6 +310,7 @@ extern "C" void process_image(config *conf, const unsigned char *in, unsigned ch
 	}
 		
 	if (conf->captureFd > 0) {
+			conf->logData.timestamp = -2;
 			memcpy((void *)in, (void *)&conf->frameTimestamp, 8); // stash the timestamp in the first bytes of the image
 			memcpy((void *)(in + 8), (void *)&conf->logData, sizeof(conf->logData)); // and the logged steering data 
 			asynch_write(conf->captureFd, in, PAGE_ROUND(conf->windHeight * conf->windWidth * 2));			
