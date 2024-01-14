@@ -5,7 +5,7 @@ cd /media/root-ro/home/pi/src/priuspilot/
 git pull
 cd src
 make
-cpp *.so ../pplib  
+cp *.so ../pplib  
 sync
 sync
 sleep 1
