@@ -726,7 +726,7 @@ class FrameProcessor {
 		time = t;
     	if (skipFrames > 0 && count < skipFrames)
     		return;
-		System.out.printf("t 0x%x\n", time);
+		//System.out.printf("t 0x%x\n", time);
     	profTimer.start();
     	corr = 0;
     	
