@@ -7,7 +7,8 @@ while true; do
 	sync
 	sudo mount /dev/sda1 /host
 	cd $HOME/src/priuspilot
- 	VIDEODEV=`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
+ 	VIDEODEV=/dev/video0 
+	#`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
 	if [ "$VIDEODEV" == "" ]; then VIDEODEV=SIM; fi
 	$HOME/src/priuspilot/scripts/ppr \
 	$VIDEODEV -minms 60 -keepfocus -rescale 1 -displayratio 10 $@
