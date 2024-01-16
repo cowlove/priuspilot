@@ -158,8 +158,8 @@ struct config {
 	int currentCapFileCount;
 	int count; // frame count
 	struct buffer *buffers;
-	long frameTimestamp;
-	long lastFrameTimestamp;
+	uint64_t frameTimestamp;
+	uint64_t lastFrameTimestamp;
 	unsigned char *obuf;
 	int totalFrames;
 	int droppedFrames;
@@ -169,8 +169,8 @@ struct config {
 	int minMsBetweenFrames; /* limit rate to this by dropping frames */
 	//struct aiocbp aio;
 	struct {
-		long timestamp;
-		long steer;
+		uint64_t timestamp;
+		uint64_t steer;
 	} logData; 
 	int fakeErr = 0;
 } *configs[10];
@@ -301,7 +301,7 @@ void asynch_write(int fd, const void *buf, int len) {
 extern "C" void process_image(config *conf, const unsigned char *in, unsigned char *out,
 	struct timeval *tv) {
 	if (tv != NULL) 
-		conf->frameTimestamp = (long)tv->tv_usec / 1000 + (long)tv->tv_sec * 1000;
+		conf->frameTimestamp = (uint64_t)tv->tv_usec / 1000 + (uint64_t)tv->tv_sec * 1000;
 	if (conf->flip) { 
 			printf("TODO- flip for yuyv\n");
 			exit(-1);
@@ -837,7 +837,7 @@ read_frame                      (config *conf, unsigned char *arg)
 		
 			assert (buf.index < n_buffers);
 			conf->totalFrames++;
-			long ts = (long)buf.timestamp.tv_usec / 1000 + (long)buf.timestamp.tv_sec * 1000;
+			uint64_t ts = (uint64_t)buf.timestamp.tv_usec / 1000 + (uint64_t)buf.timestamp.tv_sec * 1000;
 
 			if (v4l2mmap_poll(conf) != 0 || 
 				(conf->minMsBetweenFrames > 0 && ts - conf->lastFrameTimestamp < conf->minMsBetweenFrames)) {
