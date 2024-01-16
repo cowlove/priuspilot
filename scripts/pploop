@@ -7,12 +7,12 @@ while true; do
 	sync
 	sudo mount /dev/sda1 /host
 	cd $HOME/src/priuspilot
-	git pull
  	VIDEODEV=`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
 	if [ "$VIDEODEV" == "" ]; then VIDEODEV=SIM; fi
 	$HOME/src/priuspilot/scripts/ppr \
 	$VIDEODEV -minms 60 -keepfocus -rescale 1 -displayratio 10 $@
-
+	$HOME/src/priuspilot/scripts/ppupdate
+	while [ -f /tmp/pause ]; do sleep 1 ;done
 	sleep 1
 done
 
