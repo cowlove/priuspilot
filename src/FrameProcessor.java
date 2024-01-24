@@ -256,11 +256,11 @@ class FrameProcessor {
 		if (Main.debugInt("DITHERFF", 1) == 1) { 
 			steeringDitherPulse.duration = 1.0; // frames not seconds for FLIPFLOP
 			steeringDitherPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_FLIPFLOP;
-			steeringDitherPulse.magnitude = 0.20;
+			steeringDitherPulse.magnitude = 0.00;
 		} else { 
 			steeringDitherPulse.duration = .15;
 	    	steeringDitherPulse.testType = SteeringTestPulseGenerator.TEST_TYPE_SINE;
-        	steeringDitherPulse.magnitude = 0.20;
+        	steeringDitherPulse.magnitude = 0.00;
 		}
 
 		//double lx = Silly.debugDouble("LX", 36)/ 20.0;
@@ -502,7 +502,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 0.72;	
+    double epsSteeringGain = 0.65;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
