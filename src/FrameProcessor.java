@@ -431,6 +431,7 @@ class FrameProcessor {
         	setSteering(0);
         } else if (keyCode == '/') {
         	tp.printAll();
+			tp.changed = true; // force logging of configuration parameters
         } else if (keyCode == '.' || keyCode == 38) { // up arrow
         	tp.adjustParam(1);
         	tp.printCurrent();
