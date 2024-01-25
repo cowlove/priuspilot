@@ -109,16 +109,16 @@ class FrameProcessor {
 	double vsenseErrMax = 0.5;
     
     BufferedImageDisplayWithInputs display = null;
-    public PidControl pidCC = new PidControl("Cruise Control PID");
-    public PidControl pidLL = new PidControl("Left Line PID");         
-    public PidControl pidRL = new PidControl("Right Line PID");
-    public PidControl pidPV = new PidControl("Perspective PID");
-    public PidControl pidLV = new PidControl("Line X PID");
-    public PidControl pidTX = new PidControl("Template Match PID");
-    public PidControl pidCA = null; //new PidControl("Curvature PID");
-    //public PidControl pid = new PidControl("Main PID");
-    //public PidControl pidCSR = new PidControl("Right Lane Color Segment PID");
-    //public PidControl pidCSL = new PidControl("Right Lane Color Segment PID");
+    public PidControl pidCC = new PidControl("Cruise_Control_PID");
+    public PidControl pidLL = new PidControl("Left_Line_PID");         
+    public PidControl pidRL = new PidControl("Right_Line_PID");
+    public PidControl pidPV = new PidControl("Perspective_PID");
+    public PidControl pidLV = new PidControl("Line_X_PID");
+    public PidControl pidTX = new PidControl("Template_Match_PID");
+    public PidControl pidCA = null; //new PidControl("Curvature_PID");
+    //public PidControl pid = new PidControl("Main_PID");
+    //public PidControl pidCSR = new PidControl("Right_Lane_Color_Segment_PID");
+    //public PidControl pidCSL = new PidControl("Right_Lane_Color_Segment_PID");
     //LabJackJNI labjack = new LabJackJNI();
     public PidControl selectedPid = pidLL;
     public ArrayList<PidControl> pids = new ArrayList<PidControl>();
@@ -446,8 +446,11 @@ class FrameProcessor {
         } else if (keyCode == 127) { // delete
 			inputZeroPoint.setAutoZero(); 
         } else if (tp.findParam(keyCode) != null) {
-                tp.selectParam(keyCode);
-                tp.printCurrent();
+				TunableParameter p = tp.findParam(keyCode);
+				if (p.selectable)
+	                tp.selectParam(keyCode);
+				p.adjust(0);
+                p.print();
 		} else 
         	System.out.println("Unknown key pressed - " + keyCode);
         this.notifyAll();
@@ -1640,7 +1643,8 @@ class FrameProcessor {
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx lvx %lvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim cruise %cruise cruisepc %cruisepc but %buttons stass %stass %pidrl %pidll %pidpv %pidlv %pidtx %pidcc " +
-		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx");
+		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx " +
+		"%tunables") ;
 					s = s.replace("%lidar", String.format("%.0f", lidar));
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 					s = s.replace("%pidll", pidLL.toString("pidll-"));
@@ -1695,6 +1699,7 @@ class FrameProcessor {
 	    			s = s.replace("%gpstcount", String.format("%d", (int)trimCheat.count));
 					s = s.replace("%buttons", String.format("%d", joystick.buttonBits));
 					s = s.replace("~", " ");
+					s = s.replace("%tunables", tp.logAll());
 	    	}
 	       	logfile.write(s);
     	}

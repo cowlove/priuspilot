@@ -1,13 +1,13 @@
 
 class FrameProcessorTunableParameters extends TunableParameterList { 
 	void add(String s, char k, double inc, TunableParameter.Adjust a) { 
-		add(s,k,inc,a, null);		
+		add(s,k,inc,a, null, true);		
 	}
 	void add(String s, char k, double inc, TunableParameter.Adjust a, 
-			TunableParameter.Print p) { 
+			TunableParameter.Print p, boolean sel) { 
 		if (findParam((int)k) !=  null) 
 			System.out.printf("Warning: key '%c'/%d already bound\n", k, (int)k);
-		super.add(new TunableParameter(s, k, inc, a, p));
+		super.add(new TunableParameter(s, k, inc, a, p, sel));
 	}
 	TunableParameter.Print emptyPrint = new TunableParameter.Print() { 
 		public String print() { return ""; }};
@@ -140,7 +140,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				}},
 				new TunableParameter.Print() { public String print() {
 					return fp.selectedPid.description;
-				}}
+				}}, true
 				);
 		
 		//add("PID derrDegree", 'T', 1,
@@ -204,16 +204,19 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 					return fp.steeringTestPulse.duration += i; }});
 		add("cruise arm", '0', 0,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					fp.armCruise(); return 0;  }});
+					fp.armCruise(); return 0;  }}, noPrint, false);
 		add("arm steering", (char)32, 0, 
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					fp.armButton = !fp.armButton; return 0;  }});
+					return (fp.armButton = !fp.armButton) ? 1.0 : 0.0; }}, 
+				new TunableParameter.Print() { public String print() {
+					return fp.armButton ? "1" : "0"; }}, 
+				false);
 		add("cruise up", '=' /*also '+' key */, 0,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					fp.setCruise(true, fp.time); return 0;  }});
+					fp.setCruise(true, fp.time); return 0; }}, noPrint, false);
 		add("cruise down", '-', 0,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-			 		fp.setCruise(false, fp.time); return 0;  }});
+			 		fp.setCruise(false, fp.time); return 0; }}, noPrint, false);
 /* 		add("testPulse type", '0', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steeringTestPulse.changeTestType((int) i); }},
@@ -254,8 +257,8 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 
 		add("fp.keepFocus", 'F', 0, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
-					fp.keepFocus = !fp.keepFocus; return fp.keepFocus ? 1.0 : 0.0;
-				}});
+					return (fp.keepFocus = !fp.keepFocus) ? 1.0 : 0.0;
+				}}, noPrint, false);
 
 		// Placeholders for hardcoded keys in FP class 
 		add("QUIT", 'Q', 0, new TunableParameter.Adjust() { public double adjust(double i) { return 0; }});
