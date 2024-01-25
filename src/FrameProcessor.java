@@ -126,7 +126,7 @@ class FrameProcessor {
    
 	final int laneWidthPeriod = 20;
 	RunningQuadraticLeastSquares laneWidthAvg = 
-		new RunningQuadraticLeastSquares(1, (int)(laneWidthPeriod * PidControl.EXPECTED_FPS),
+		new RunningQuadraticLeastSquares(1, (int)(laneWidthPeriod * PidControl.EXPECTED_FPS) / 2,
 		laneWidthPeriod);
 
 	double lidar = Double.NaN;
@@ -899,7 +899,7 @@ class FrameProcessor {
 				//laneWidthAvg.clear();
 			}
 			laneWidthAvg.removeAged(time / 1000.0);
-			if (laneWidthAvg.rmsError() < .079365) { 
+			if (laneWidthAvg.rmsError() < .079365 && laneWidthAvg.isFull()) { 
 				dynamicLaneWidthAdj = laneWidthAvg.calculate() / 2;
 			}
 			//System.out.printf("%08.4f %08.4f %08.4f\n", dynamicLaneWidthAdj, laneWidthAvg.calculate(), laneWidthAvg.rmsError());

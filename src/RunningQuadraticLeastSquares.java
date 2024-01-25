@@ -226,7 +226,7 @@ public class RunningQuadraticLeastSquares {
 
     public void validate() {
 		double r = calculate();
-		if (Double.isNaN(r) || Double.isInfinite(r))
+		if (Double.isNaN(r) || Double.isInfinite(r) || Double.isNaN(rmsErr) || Double.isInfinite(rmsErr))
 			clear();
     }
 
