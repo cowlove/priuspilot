@@ -7,6 +7,7 @@ while true; do
 	#sudo chmod 644 /var/log/logkeys.log
 	sync
 	sudo mount /dev/sda1 /host
+	sudo rm -rf /host/lost+found
 	cd $HOME/src/priuspilot
  	VIDEODEV=/dev/video0 
 	#`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
