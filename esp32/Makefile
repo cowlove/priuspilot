@@ -1,6 +1,7 @@
 #BOARD=esp32doit-devkit-v1
 #BOARD=heltec_wifi_lora_32
 #BOARD=nodemcu-32s
+BOARD=d1_mini32
 VERBOSE=1
 MONITOR_SPEED=921600
 
