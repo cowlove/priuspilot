@@ -178,6 +178,7 @@ void EspNowOnDataRecv(const uint8_t *m, const uint8_t *in, int len) {
 	if (sscanf(s.c_str(), "GW %s %s", mac, msg) == 2) { 
 		Serial.print(msg);
 	}
+	digitalToggle(pins.led);
 }	
 
 #define ADC2VDC (2.5 / 700)
@@ -336,6 +337,9 @@ void loop() {
 				steerCmd = 0;
 		}
 	}
+	if (j.hz(.5)) { 
+		digitalToggle(pins.led);
+	}
 	if (j.hz(10)) { 
 		float vsense = analogAvgRead(pins.adc) * ADC2VDC;
 		float err = steerCmd + 2.5 - vsense;
@@ -358,7 +362,7 @@ void loop() {
 			//OUT("wrote %s", line);
 			float f1, f2;
 			esp_now_send(broadcastAddress, (uint8_t *)line, strlen(line));  
-			digitalToggle(2);       
+			digitalToggle(pins.led);       
 			if (strcmp(line, "CLI ON") == 0) { 
 				j.parseSerial = true;
 			} else if (sscanf(line, "PPDEG %f %f", &f1, &f2) == 2 && f1 == f2) {
