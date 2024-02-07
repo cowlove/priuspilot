@@ -1588,6 +1588,14 @@ class FrameProcessor {
         return Double.parseDouble(re(p, s));
     }
  
+	boolean testPulseDir = false;
+	double testPulse() { 
+		int rval = testPulseDir ? -1 : 1;
+		steeringTestPulse.startPulse(time, testPulseDir ? -1 : 1);
+		testPulseDir = !testPulseDir;
+		return rval;
+	}
+
 	double totalLogDiff = 0.0;
     void logData() {
 		double logDiffSteer = 0.0;

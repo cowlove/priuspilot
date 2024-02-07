@@ -245,9 +245,14 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("PID L delay", 'J', .05,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.selectedPid.delays.l.delay += i; }});
-		add("FP displayRatio", 'H', 1,
+		add("FP testPulse", 'H', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.displayRatio += i; }});
+					return fp.testPulse(); }}, 
+				new TunableParameter.Print() { public String print() {
+					return fp.testPulseDir ? "-1" : "1"; }}, false);
+	//	add("FP displayRatio", 'H', 1,
+	//			new TunableParameter.Adjust() { public double adjust(double i) {
+	//				return fp.displayRatio += i; }});
 	//	add("TF nonmaxThreshold", 'U', .01,
 	//			new TunableParameter.Adjust() { public double adjust(double i) {
 	//				return fp.tf.param.nonmaxThreshold += i; }});
