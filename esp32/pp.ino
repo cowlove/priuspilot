@@ -169,16 +169,17 @@ void EspNowOnDataRecv(const uint8_t *m, const uint8_t *in, int len) {
 		&& strcmp(mac, macAddress.c_str()) == 0) {
 		pwm = f1;
 		pwmms = f2;
+		digitalToggle(pins.led);
 	}
 	if (sscanf(s.c_str(), "PPDEG %s %f %f", mac, &f1, &f2) == 3 
 		&& strcmp(mac, macAddress.c_str()) == 0 && f1 == f2) { 
 		steerCmd = -f1;
 		setDeg(steerCmd);
+		digitalToggle(pins.led);
 	}
 	if (sscanf(s.c_str(), "GW %s %s", mac, msg) == 2) { 
 		Serial.print(msg);
 	}
-	digitalToggle(pins.led);
 }	
 
 #define ADC2VDC (2.5 / 700)
