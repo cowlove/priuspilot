@@ -32,9 +32,9 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.debugMode += i; }});
 
-		add("fp.epsSteeringGain", 'C', .01, 
+		add("steer.finalGain", 'C', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.epsSteeringGain += i; }} );
+					return fp.steering.finalGain += i; }} );
 					
 		add("PID P gain", 'P', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
@@ -151,10 +151,10 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//add("PID derrDegree", 'T', 1,
 		//		new TunableParameter.Adjust() { public double adjust(double i) {
 		//			return fp.pid.derrDegree += i; }} );
-		add("dither.magnitude", 'K', 0.01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.magnitude += i; }} );
-		add("dither.period", 'L', 0.01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.duration += i; }} );
+		//add("dither.magnitude", 'K', 0.01, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.magnitude += i; }} );
+		//add("dither.period", 'L', 0.01, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { return fp.steeringDitherPulse.duration += i; }} );
 
 		add("displayMode (bitwise 1-text, 2-PID, 4-background, 8-PID-D graph)", 'B', 1,
 			new TunableParameter.Adjust() { public double adjust(double i) {
