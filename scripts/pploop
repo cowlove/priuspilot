@@ -15,6 +15,7 @@ while true; do
 	$HOME/src/priuspilot/scripts/ppr \
 	$VIDEODEV -minms 60 -keepfocus -rescale 1 -displayratio 10 $@
 	$HOME/src/priuspilot/scripts/ppupdate
+	touch src/Main.java	
 	while [ -f /tmp/pause ]; do sleep 1 ;done
 	sleep 1
 done
