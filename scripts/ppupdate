@@ -10,6 +10,7 @@ sync
 sync
 sleep 1
 sudo mount -o ro,remount /dev/mmcblk0p2 /media/root-ro
+cp -a /media/root-ro/home/pi/src/priuspilot/src/*.java /home/pi/src/priuspilot/src/
 
 killall java
 
