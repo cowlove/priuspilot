@@ -113,6 +113,7 @@ public class PidControl {
 		DelayChannel l = new DelayChannel();
 		void reset() { p.reset(); i.reset(); d.reset(); l.reset();
 		}
+		void init(PID pid) { p.delay = pid.p; l.delay = pid.l; i.delay = pid.i; d.delay = pid.d; }
 		public DelayControl clone() { 
 			DelayControl n =  new DelayControl();
 			n.p = p.clone(); n.i = i.clone(); n.d = d.clone(); n.l = l.clone();
@@ -176,6 +177,7 @@ public class PidControl {
 		q = new RunningQuadraticLeastSquares(2, (int)(qualityPeriod * 2 * EXPECTED_FPS), qualityPeriod);
         defaultValue.clear();
         starttime = 0;
+		delays.init(delay);		
 		delays.reset();
 		gain.reset();
 		//System.out.printf("reset()\n");
@@ -248,8 +250,10 @@ public class PidControl {
     	err.d = gain.d.getCorrection(d.slope(n, 1));
   	    err.i = gain.i.getCorrection(i);
 		err.l = gain.l.getCorrection(l.calculate());
-	    if (err.l > 0 && (err.d + err.i + err.l) > 0 || err.l < 0 && (err.d + err.i + err.l) < 0)
+	    if (err.l > 0 && (err.d + err.i + err.p) > 0 || err.l < 0 && (err.d + err.i + err.p) < 0) {
 			err.l = 0;       
+			//l.clear();
+		}
 	    corr = -(err.p + err.d + err.i + err.l) * finalGain * quality + 
 	    	0 * (1 - quality);
 		if (Double.isNaN(defaultValue.calculate()))
@@ -257,13 +261,14 @@ public class PidControl {
 	    defaultValue.add(corr);
 	    if (Double.isNaN(corr))
 	    	corr = 0.0;
-			l.add(n, delays.l.get(n, corr));
+		l.add(n, delays.l.get(n, corr));
 		return corr;
     }
 
     void copySettings(PidControl pid) {  
     	gain = pid.gain.clone();
-		delays = pid.delays.clone();
+		delay = pid.delay.clone();
+		delays.init(delay);
     	period = pid.period.clone();
     	finalGain = pid.finalGain;
     	this.qualityFadeThreshold =  pid.qualityFadeThreshold;

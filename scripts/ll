@@ -11,12 +11,18 @@ fi
 CMD="set y2tic; set tic nomirror; p "
 shift
 AX=""
+NEG="+"
 while (($#)); do
     if [ "$1" == "2" ]; then 
         AX="ax x1y2"
         shift
     fi
-    CMD="$CMD '$LOG' u (\$2)/1000:`fieldno.py $1 $LOG` w l $AX, "
+    if [ "$1" == "-" ]; then 
+        NEG="-"
+        shift
+    fi
+    CMD="$CMD '$LOG' u (\$2)/1000:($NEG\$`fieldno.py $1 $LOG`) w l $AX, "
+    NEG="+"
     shift
 done
 

@@ -266,8 +266,8 @@ class FrameProcessor {
 		//double lx = Silly.debugDouble("LX", 36)/ 20.0;
 
 		pidRL.setGains(5.5, 0.04, 8.00, 0, 1.75, 0);
-		pidRL.period.l = 0.15;
-		pidRL.delays.l.delay = 1.75;
+		pidRL.period.l = 0.3;
+		pidRL.delay.l = 0.5;
         pidRL.gain.p.hiGain = 0.0;
         pidRL.gain.i.max = 1.0; // I control has minor oscillating problems 
         pidRL.finalGain = 0.54;
@@ -283,10 +283,11 @@ class FrameProcessor {
 		pidLV.setGains(2.0, 0, 1.5, 0, 0.40, 0.003);
 		pidLV.finalGain = 1.80;
 		pidLV.gain.t.max = 0.5;
-		pidLV.period.l = 0.2;
-		pidLV.delays.l.delay = 1.55;
+		pidLV.period.l = 0.3;
+		pidLV.delay.l = .5;
 		pidLV.qualityFadeThreshold = .050;
 		pidLV.qualityFadeGain = 3;
+		pidLV.reset();
 		
         pidPV.copySettings(pidLV);
 		pidPV.finalGain = 0.0;
@@ -1598,12 +1599,12 @@ class FrameProcessor {
 
 	double totalLogDiff = 0.0;
     void logData() {
-		double logDiffSteer = 0.0;
+		double logDiffSteer = 0.0, logSteer = 0.0;
 		if (logDiffFile != null) {
 			try { 
 				String s= logDiffFile.readLine();
-				double ls = reDouble(".*\\sst\\s+([-+]?[0-9.]+)", s);
-				logDiffSteer = ls - steer;
+				logSteer = reDouble(".*\\sst\\s+([-+]?[0-9.]+)", s);
+				logDiffSteer = logSteer - steer;
 				totalLogDiff += Math.abs(logDiffSteer);
 			} catch(Exception e) {}
 		}
@@ -1652,7 +1653,7 @@ class FrameProcessor {
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx lvx %lvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim cruise %cruise cruisepc %cruisepc but %buttons stass %stass %pidrl %pidll %pidpv %pidlv %pidtx %pidcc " +
-		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx " +
+		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logsteer %logsteer logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx " +
 		"%tunables") ;
 					s = s.replace("%lidar", String.format("%.0f", lidar));
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
@@ -1676,6 +1677,7 @@ class FrameProcessor {
 	    			s = s.replace("%tcurve", String.format("%f", trimCheat.curve));
 	    			s = s.replace("%gcurve", String.format("%f", gps.curve));
 	    			s = s.replace("%logdiff", String.format("%f", logDiffSteer));
+	    			s = s.replace("%logsteer", String.format("%f", logSteer));
 	    			s = s.replace("%cruise", String.format("%d", lastCruiseAction));
 	    			s = s.replace("%cruisepc", String.format("%f", pidCC.pendingCorrection));
 	    			s = s.replace("%tfx", String.format("%f", tfResult == null ? Double.NaN : tfResult.x));
