@@ -8,14 +8,15 @@ while true; do
 	sync
 	sudo mount /dev/sda1 /host
 	sudo rm -rf /host/lost+found
+	$HOME/src/priuspilot/scripts/ppupdate
+	touch src/Main.java	
+
 	cd $HOME/src/priuspilot
  	VIDEODEV=/dev/video0 
 	#`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
 	if [ ! -c $VIDEODEV ]; then VIDEODEV=SIM; fi
 	$HOME/src/priuspilot/scripts/ppr \
 	$VIDEODEV -minms 60 -keepfocus -rescale 1 -displayratio 10 $@
-	$HOME/src/priuspilot/scripts/ppupdate
-	touch src/Main.java	
 	while [ -f /tmp/pause ]; do sleep 1 ;done
 	sleep 1
 done
