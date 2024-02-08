@@ -11,11 +11,11 @@ class SteeringLogicSimpleLimits {
 	double deadband = 0.20;
 	double curveGain = 0.00;
 	double speedGain = 0.00;
-	double finalGain = .48;
-	double asymDetune = -0.90;
+	double finalGain = .50;
+	double asymDetune = -1.00;
+	double trim = -0.0;
 
 	long lastMs = 0;
-	double trim = -0.16;
 	double lastSteer = 0;
 	double steer(long ms, double st, double curve, double speed) { 
 		if (Double.isNaN(lastSteer)) lastSteer = 0.0;
@@ -24,9 +24,6 @@ class SteeringLogicSimpleLimits {
 			if (st > 0) st += deadband;
         }
 
-		// move the maxSteer limit window based on curve 
-		double curveMod = curve * curveGain;
-		st = Math.max(-maxSteer + curveMod, Math.min(maxSteer + curveMod, st));
 
 		double maxDelta = maxChange * (ms - lastMs);
 		st = Math.min(lastSteer + maxDelta, Math.max(lastSteer - maxDelta, st));
@@ -37,6 +34,10 @@ class SteeringLogicSimpleLimits {
 		final double maxSpeedMod = 0.20;
 		double speedMod = Math.max(-maxSpeedMod, Math.min(maxSpeedMod, (speed - 60.0) * speedGain));
 		st *= (finalGain + speedMod);
+
+		// move the maxSteer limit window based on curve 
+		double curveMod = curve * curveGain;
+		st = Math.max(-maxSteer + curveMod, Math.min(maxSteer + curveMod, st));
 
 		if ((st < 0 && asymDetune < 0) || (st > 0 && asymDetune > 0)) { 
 			st *= Math.abs(asymDetune);
