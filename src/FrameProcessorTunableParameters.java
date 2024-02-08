@@ -40,7 +40,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
 		add("PID I gain", 'I', 0.001, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.i.loGain += i; }} );
-		add("PID D gain", 'D', 0.01, 
+		add("PID D gain", 'D', 0.1, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.d.loGain += i; }} );
 /*
 		add("PID P period", '4', 1, 

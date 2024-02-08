@@ -507,7 +507,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 0.65;	
+    double epsSteeringGain = 0.48;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;
