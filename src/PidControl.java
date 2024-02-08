@@ -147,7 +147,7 @@ public class PidControl {
     PID period = new PID(0.05, 5, 0.5, 0.3, 1.2, 0);  
 	PID delay = new PID(0, 0, 0, 0, 0, 0);
     double finalGain = 1.85;
-    int derrDegree = 2;
+    int derrDegree = 3;
     int fadeCountMin = (int)Math.floor(period.d * EXPECTED_FPS * 0.2); 
     int fadeCountMax = (int)Math.floor(period.d * EXPECTED_FPS * 0.6);
     double qualityFadeGain = 4.0;
