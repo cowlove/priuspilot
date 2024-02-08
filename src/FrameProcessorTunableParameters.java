@@ -35,7 +35,12 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("steer.finalGain", 'C', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return fp.steering.finalGain += i; }} );
-					
+		add("PID D period", 'K', .01, 
+					new TunableParameter.Adjust() { public double adjust(double i) { 
+						double rval = fp.selectedPid.period.d += i;
+						fp.selectedPid.reset(); 
+					}} );
+						
 		add("PID P gain", 'P', 0.01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.p.loGain += i; }} );
 		add("PID I gain", 'I', 0.001, 
