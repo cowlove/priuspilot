@@ -96,15 +96,20 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		//				return fp.tfparamIndex;
 		//			}} );
 
-		add("fp.vsenseErrMax", 'Y', .01, 
-				new TunableParameter.Adjust() { public double adjust(double i) { 
-					return fp.vsenseErrMax += i; }} );
+		//add("fp.vsenseErrMax", 'Y', .01, 
+		//		new TunableParameter.Adjust() { public double adjust(double i) { 
+		//			return fp.vsenseErrMax += i; }} );
 //		add("detector.threshold1", 'Y', 1, 
 //				new TunableParameter.Adjust() { public double adjust(double i) { 
 //					return fp.tfparam.threshold1 = (fp.tfparam.threshold1 += i); }} );
-		//add("PID gain.p.loTrans", 'L', .001, 
-		//		new TunableParameter.Adjust() { public double adjust(double i) { 
-		//			return fp.selectedPid.gain.p.loTrans += i; }} );
+		add("PID gain.l", 'L', .05, 
+			new TunableParameter.Adjust() { public double adjust(double i) { 
+			return fp.selectedPid.gain.l.loGain += i; }} );
+			add("PID gain.l", 'Y', .01, 
+			new TunableParameter.Adjust() { public double adjust(double i) { 
+			return fp.selectedPid.delay.l += i; }} );
+
+
 		add("PID gain.p.hiGain", 'O', .02, 
 				new TunableParameter.Adjust() { public double adjust(double i) { 
 					return (fp.selectedPid.gain.p.hiGain += i); }} );

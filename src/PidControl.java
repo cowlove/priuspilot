@@ -200,6 +200,7 @@ public class PidControl {
     
     double drms;
     double add(double val, long time) {
+		delays.init(delay); // update any changes from setting pid.delay.l 
         if (starttime == 0) 
         	starttime = time;
         else if (time - starttime > 2 * 1000) { 

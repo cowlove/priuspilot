@@ -240,9 +240,9 @@ class FrameProcessor {
         //new Rectangle((int)(w * 0.44), (int)(h * 0.35), 
         //		(int)(w * .12), (int)(h * .30));
         pids.add(pidLL);
+        if (pidLV != null) pids.add(pidLV);
         pids.add(pidRL);
         pids.add(pidPV);
-        if (pidLV != null) pids.add(pidLV);
         if (pidCA != null) pids.add(pidCA);
 		if (pidTX != null) pids.add(pidTX);
         if (pidCC != null) pids.add(pidCC);
@@ -265,7 +265,7 @@ class FrameProcessor {
 
 		//double lx = Silly.debugDouble("LX", 36)/ 20.0;
 
-		pidRL.setGains(5.5, 0.04, 8.00, 0, 1.75, 0);
+		pidRL.setGains(5.5, 0.04, 8.00, 0, 0.40, 0);
 		pidRL.period.l = 0.3;
 		pidRL.delay.l = 0.5;
         pidRL.gain.p.hiGain = 0.0;
@@ -280,7 +280,7 @@ class FrameProcessor {
         pidLL.copySettings(pidRL);
 		pidLL.reset();
 		        
-		pidLV.setGains(2.0, 0, 1.5, 0, 0.40, 0.003);
+		pidLV.setGains(2.0, 0, 1.5, 0, 0.20, 0.003);
 		pidLV.finalGain = 1.80;
 		pidLV.gain.t.max = 0.5;
 		pidLV.period.l = 0.3;
@@ -507,7 +507,7 @@ class FrameProcessor {
 
     JoystickControl joystick = new JoystickControl();
     
-    double epsSteeringGain = 0.48;	
+    double epsSteeringGain = 1.0;	
     double trq1 = 0, trq2 = 0;
     
 	int lastCruiseAction = 0;

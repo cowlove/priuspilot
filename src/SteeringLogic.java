@@ -11,7 +11,7 @@ class SteeringLogicSimpleLimits {
 	double deadband = 0.20;
 	double curveGain = 0.00;
 	double speedGain = 0.00;
-	double finalGain = 1.00;
+	double finalGain = .48;
 	double asymDetune = -0.90;
 
 	long lastMs = 0;
@@ -28,22 +28,22 @@ class SteeringLogicSimpleLimits {
 		double curveMod = curve * curveGain;
 		st = Math.max(-maxSteer + curveMod, Math.min(maxSteer + curveMod, st));
 
-		if ((st < 0 && asymDetune < 0) || (st > 0 && asymDetune > 0)) { 
-			st *= Math.abs(asymDetune);
-		}
-		st += trim;
-
 		double maxDelta = maxChange * (ms - lastMs);
 		st = Math.min(lastSteer + maxDelta, Math.max(lastSteer - maxDelta, st));
+		lastMs = ms;
+		lastSteer = st; // pre final gain 
 
 		// gain is set for nominal 60mph.  increase gain for faster speeds, decrease for lower
 		final double maxSpeedMod = 0.20;
 		double speedMod = Math.max(-maxSpeedMod, Math.min(maxSpeedMod, (speed - 60.0) * speedGain));
 		st *= (finalGain + speedMod);
-		
+
+		if ((st < 0 && asymDetune < 0) || (st > 0 && asymDetune > 0)) { 
+			st *= Math.abs(asymDetune);
+		}
+		st += trim;
+
 		totalAction += Math.abs(st - lastSteer);
-		lastMs = ms;
-		lastSteer = st;
 		return st;
 	}
 	double totalAction = 0.0;
