@@ -39,6 +39,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 					new TunableParameter.Adjust() { public double adjust(double i) { 
 						double rval = fp.selectedPid.period.d += i;
 						fp.selectedPid.reset(); 
+						return rval;
 					}} );
 						
 		add("PID P gain", 'P', 0.01, 
