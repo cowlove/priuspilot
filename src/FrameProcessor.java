@@ -523,6 +523,7 @@ class FrameProcessor {
 	}
 
 	String steerCmdHost = "255.255.255.255";
+	double epsSteer = 0.0;
 
 	FileWriter cmdLink = null;
     synchronized void setSteering(double x) { 
@@ -556,7 +557,7 @@ class FrameProcessor {
 				* (gainHi - gainLo) + gainLo;
 		}
         x = x * epsSteeringGain * speedAdjust;
-
+		epsSteer = x;
 		sendEspNow(String.format("GW PPDEG 7821849B14F0 %.3f %.3f\n", x, x));
 
 		if (false) { 
@@ -1653,9 +1654,11 @@ class FrameProcessor {
 		"t %time st %steer corr %corr tfl %tfl tfr %tfr pvx %pvx lvx %lvx " +
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim cruise %cruise cruisepc %cruisepc but %buttons stass %stass %pidrl %pidll %pidpv %pidlv %pidtx %pidcc " +
-		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logsteer %logsteer logdiff %logdiff lidar %lidar tds %tds tdy %tdy tdx %tdx " +
+		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logsteer %logsteer logdiff %logdiff lidar %lidar " + 
+		"tds %tds tdy %tdy tdx %tdx eps %eps" +
 		"%tunables") ;
 					s = s.replace("%lidar", String.format("%.0f", lidar));
+					s = s.replace("%eps", String.format("%f", epsSteer));
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 					s = s.replace("%pidll", pidLL.toString("pidll-"));
 					s = s.replace("%pidpv", pidPV.toString("pidvp-"));
