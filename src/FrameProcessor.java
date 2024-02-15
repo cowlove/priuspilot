@@ -366,6 +366,7 @@ class FrameProcessor {
     Pauser pauser = new Pauser();
     
     int pendingKeyCode = 0;
+	int lastKeyPressed = 0;
     void keyPressed(int keyCode) {
 		//System.out.printf("Got key %d\n", keyCode);
     	if (keyCode == 'N' || keyCode == 'Z')
@@ -458,6 +459,7 @@ class FrameProcessor {
 		} else 
         	System.out.println("Unknown key pressed - " + keyCode);
         this.notifyAll();
+		lastKeyPressed = keyCode;
     }
 
     synchronized void onCruiseJoystick(int a) { 
@@ -1657,9 +1659,11 @@ class FrameProcessor {
 		"lat %lat lon %lon hdg %hdg speed %speed gpstrim %gpstrim tcurve %tcurve gcurve %gcurve " +
 		"strim %strim cruise %cruise cruisepc %cruisepc but %buttons stass %stass %pidrl %pidll %pidpv %pidlv %pidtx %pidcc " +
 		"tfl-ang %tfl-ang tfl-x %tfl-x tfr-ang %tfr-ang tfr-x %tfr-x logsteer %logsteer logdiff %logdiff lidar %lidar " + 
-		"tds %tds tdy %tdy tdx %tdx eps %eps" +
+		"tds %tds tdy %tdy tdx %tdx eps %eps lastkey %lastkey " +
 		"%tunables") ;
 					s = s.replace("%lidar", String.format("%.0f", lidar));
+					s = s.replace("%lastkey", String.format("%d", lastKeyPressed));
+					lastKeyPressed = 0;
 					s = s.replace("%eps", String.format("%f", epsSteer));
 					s = s.replace("%pidrl", pidRL.toString("pidrl-"));
 					s = s.replace("%pidll", pidLL.toString("pidll-"));
