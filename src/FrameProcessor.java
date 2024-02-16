@@ -281,8 +281,8 @@ class FrameProcessor {
         pidLL.copySettings(pidRL);
 		pidLL.reset();
 		        
-		pidLV.setGains(2.0, 0, 1.5, 0, 0.20, 0.003);
-		pidLV.finalGain = 1.80;
+		pidLV.setGains(3.6, 0, 2.7, 0, 0.36, 0.0054);
+		pidLV.finalGain = 1.00;
 		pidLV.gain.t.max = 0.5;
 		pidLV.period.l = 0.3;
 		pidLV.delay.l = .5;
