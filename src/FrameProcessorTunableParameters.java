@@ -53,10 +53,14 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.period.p += i; }} );
 		add("PID I period", '5', 1, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.period.i += i; }} );
+*/		
+		add("PID D period", '6', .01, 
+				new TunableParameter.Adjust() { public double adjust(double i) { 
+					double rval = fp.selectedPid.period.d += i;
+					fp.selectedPid.reset();
+					return rval;
+				 }} );
 		
-		add("PID D period", '6', 1, 
-				new TunableParameter.Adjust() { public double adjust(double i) { return fp.pid.period.d += i; }} );
-		*/
 		add("PID L gain", '7', .01, 
 				new TunableParameter.Adjust() { public double adjust(double i) { return fp.selectedPid.gain.l.loGain += i; }} );
 				
@@ -190,6 +194,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.tf.param.L.high += i; }});
 	*/
+	/* 
 		add("tdStartX", '4', 1,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.tdStartX += i; }});
@@ -199,6 +204,7 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 		add("tdStartScale", '6', 0.01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.tdStartScale += i; }});
+	*/
 		//add("ccSetPoint", '7', 1,
 		//		new TunableParameter.Adjust() { public double adjust(double i) {
 		//			return fp.ccSetPoint += i; }});
