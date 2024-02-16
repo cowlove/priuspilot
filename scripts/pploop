@@ -10,7 +10,7 @@ while true; do
 	sudo rm -rf /host/lost+found
 	$HOME/src/priuspilot/scripts/ppupdate
 	touch src/Main.java	
-
+	
 	cd $HOME/src/priuspilot
  	VIDEODEV=/dev/video0 
 	#`v4l2-ctl --list-devices | grep -A 1 'Webcam C920' | tail -1`
