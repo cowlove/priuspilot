@@ -185,6 +185,7 @@ class GPSSerial {
 	}
 
 	long startMs = 0, curTime = 0;
+	double lastLat, lastLon;  
 	void update(long ms) { 
 		if (startMs == 0)
 			startMs = ms;
@@ -196,8 +197,12 @@ class GPSSerial {
                 lon = reDouble(".*lon\\s+([-+]?[0-9.]+)", s);
                 hdg = reDouble(".*hdg\\s+([-+]?[0-9.]+)", s);
                 speed = reDouble(".*speed\\s+([-+]?[0-9.]+)", s);
-				long t = (long)reDouble("t\\s+([-+]?[0-9.]+)", s);	
-				processNewState(t);
+				long t = (long)reDouble("t\\s+([-+]?[0-9.]+)", s);
+				if (lastLat != lat || lastLon != lon || lastHdg != hdg)	
+					processNewState(t);
+				lastLat = lat;
+				lastLon = lon;	
+				lastHdg = hdg;
 				if (t > ms - startMs) 
 					break;				
 			} catch(Exception e) { 

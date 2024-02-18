@@ -22,8 +22,7 @@
             },
             "mainClass": "Main",
             "args": [
-                "20240206.215740.yuv"
-                
+                "/home/jim/src/priuspilot/lanedumps/c.yuv", "-fakeGps"  
                 ]
         },
         {
