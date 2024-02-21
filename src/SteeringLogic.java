@@ -8,10 +8,10 @@
 class SteeringLogicSimpleLimits {
 	double maxSteer =  0.60; // post-gain
 	double maxChange = 0.0048; // per ms pre-gain
-	double deadband = 0.15; // post-gain
+	double deadband = Main.debugDouble("DEADBAND", 0.0); // post-gain
 	double curveGain = 0.00;
 	double speedGain = 0.00;
-	double finalGain = .42;
+	double finalGain = .50;
 	double asymDetune = -1.00;
 	double trim = -0.06; // post-gain
 
@@ -23,7 +23,9 @@ class SteeringLogicSimpleLimits {
 		final double speedMod = Math.max(-maxSpeedMod, Math.min(maxSpeedMod, (speed - 60.0) * speedGain));
 		final double gain = finalGain + speedMod;
 
-		if (deadband > 0) { 
+		if (deadband < 0 && Math.abs(st) < Math.abs(deadband)) {
+			st = 0;
+		} else { 
 			if (st < 0) st -= deadband / gain;  // convert to post-gain value 
 			if (st > 0) st += deadband / gain;
 		}

@@ -1,20 +1,9 @@
-20231218.114728.yuv Ross tests 
-20231218.144708.yuv round tanker, rain 
-20231218.144844.yuv round tanker, heavy rain
-20231218.151844.yuv rect truck, heavy rain 
-20231218.152106.yuv same
-20231218.152437.yuv same
-20231218.153805.yuv ambulance with hi contrast graphics
-20231218.154118.yuv reflective truck with lane change
-20231218.154529.yuv reflective truck 
-20231218.160033.yuv white rect truck, cc live
-20231218.163214.yuv white truck, live cc, oscillations
-20231218.161903.yuv same
-20231218.163214.yuv black rect truck, live cc, oscillations
 
 TODO: i don't think the pidCC gets reset when it comes back online 
 TODO: add NNN.yymmdd.hhmmss.log in front of log/yuv filenames
 TODO: shell completions for ll and pp for .yuv and .log files
+
+TODO: gps refresh switched back to 1hz? 
 
 
 2023/12/15
