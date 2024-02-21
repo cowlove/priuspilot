@@ -131,7 +131,11 @@ public class Main {
             if (args[i].compareTo(f) == 0) return Double.parseDouble(args[++i]);
 		return def;
 	}
-	
+
+	public static String execCmd(String cmd) throws java.io.IOException {
+		java.util.Scanner s = new java.util.Scanner(Runtime.getRuntime().exec(cmd).getInputStream()).useDelimiter("\\A");
+		return s.hasNext() ? s.next() : "";
+	}
 	/*
 	public static int debugFlags = 0;
 	public static final int DEBUG_FPS = 1;
@@ -397,6 +401,7 @@ public class Main {
     	
         int count = 0;    
 		IntervalTimer intTimer = new IntervalTimer(30);
+		System.out.print("GIT commit: " + execCmd("git log -1 --format=%h,%ci"));
 	
 		if (filename.equals("SIM")) { 
 			long ms = 0;
