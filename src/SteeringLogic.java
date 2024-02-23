@@ -7,12 +7,12 @@
 
 class SteeringLogicSimpleLimits {
 	double maxSteer =  0.60; // post-gain
-	double maxSteerOffset = -0.10;
+	double maxSteerOffset = -0.15;
 	double maxChange = 0.0050; // per ms pre-gain
 	double deadband = Main.debugDouble("DEADBAND", -0.15); // post-gain
 	double curveGain = 0.00;
 	double speedGain = 0.00;
-	double finalGain = 0.75;
+	double finalGain = 0.50;
 	double asymDetune = +1.00;
 	double trim = +0.13; // post-gain
 
