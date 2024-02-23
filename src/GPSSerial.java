@@ -239,7 +239,7 @@ class GPSSerial {
 	double lastHdg = 0;
 	long lastMs = 0;
 	double maxCurve = 0.30;
-	double curveGain = 0.024;
+	double curveGain = 0.035;
 	double minCurveCorrectionSpeed = 20.0;	
 	double curve = 0.0;
 	RunningQuadraticLeastSquares avgCurve = 
