@@ -213,12 +213,15 @@ class FrameProcessorTunableParameters extends TunableParameterList {
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					return fp.steering.asymDetune += i; }});
 					
-		add("testPulse magnitude", '8', .05,
+		add("st.maxSteerOffset", '8', .01,
 				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steeringTestPulse.magnitude += i; }});
-		add("testPulse duration", '9', .05,
-				new TunableParameter.Adjust() { public double adjust(double i) {
-					return fp.steeringTestPulse.duration += i; }});
+					return fp.steering.maxSteerOffset += i; }});
+		//add("testPulse magnitude", '8', .05,
+		//		new TunableParameter.Adjust() { public double adjust(double i) {
+		//			return fp.steeringTestPulse.magnitude += i; }});
+		//add("testPulse duration", '9', .05,
+		//		new TunableParameter.Adjust() { public double adjust(double i) {
+		//			return fp.steeringTestPulse.duration += i; }});
 		add("cruise arm", '0', 0,
 				new TunableParameter.Adjust() { public double adjust(double i) {
 					fp.armCruise(); return 0;  }}, noPrint, false);

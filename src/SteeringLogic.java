@@ -7,6 +7,7 @@
 
 class SteeringLogicSimpleLimits {
 	double maxSteer =  0.60; // post-gain
+	double maxSteerOffset = -0.10;
 	double maxChange = 0.0048; // per ms pre-gain
 	double deadband = Main.debugDouble("DEADBAND", 0.0); // post-gain
 	double curveGain = 0.00;
@@ -42,7 +43,8 @@ class SteeringLogicSimpleLimits {
 		
 		// move the maxSteer limit window based on curve 
 		double curveMod = curve * curveGain;
-		st = Math.max(-maxSteer + curveMod, Math.min(maxSteer + curveMod, st));
+		st = Math.max(-maxSteer + curveMod + maxSteerOffset, 
+			Math.min(maxSteer + curveMod + maxSteerOffset, st));
 
 		if ((st < 0 && asymDetune < 0) || (st > 0 && asymDetune > 0)) { 
 			st *= Math.abs(asymDetune);
