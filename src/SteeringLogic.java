@@ -12,7 +12,7 @@ class SteeringLogicSimpleLimits {
 	double deadband = -0.05;
 	double curveGain = 0.00;
 	double speedGain = 0.00;
-	double finalGain = 0.45;
+	double finalGain = 0.40;
 	double asymDetune = +1.00;
 	double trim = +0.13; // post-gain
 
